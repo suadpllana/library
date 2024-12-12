@@ -1,0 +1,47 @@
+.book{
+    width: 250px;
+    height: 200px;
+    display: inline-block;
+    box-shadow: 4px 4px 15px rgba(14, 13, 13, 0.2);
+    margin-right: 2rem;
+    margin-top: 3rem;
+    text-align: center;
+    border-radius: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+}
+.bookContainer{
+   width: 80%;
+   margin-left: 10%;
+}
+.edit, .delete{
+    cursor: pointer;
+}
+.title{
+    width: 500px;
+}
+
+  .add-book-button {
+    background-color: chocolate;
+    width: 90px;
+    height: 28px;
+    border: none;
+    border-radius: 20px;
+    margin-left: 20px;
+    font-size: 17px;
+    cursor: pointer;
+  }
+  .add-book-button:hover{
+    opacity: 0.7;
+  }
+  .title-input{
+    width: 200px;
+    height: 25px;
+    border-radius: 20px;
+  }
+  
+  .edit.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  
