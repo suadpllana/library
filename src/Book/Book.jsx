@@ -26,7 +26,7 @@ const Book = () => {
         locked: false,
       },
     ]);
-
+  
   }
 
   function removeBook(id) {
@@ -89,7 +89,7 @@ const Book = () => {
                   onBlur={(e) => saveBook(book.id, e.target.value)}
                   
                 />
-                <button onClick={() => saveBook(book.id, book.title)}>
+                <button className="submit-button" onClick={() => saveBook(book.id, book.title)}>
                   Submit
                 </button>
               </>

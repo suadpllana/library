@@ -44,4 +44,13 @@
     opacity: 0.5;
     pointer-events: none;
   }
-  
+  .submit-button{
+    background-color: chocolate;
+    width: 70px;
+    height: 25px;
+    border: none;
+    border-radius: 20px;
+margin-left: 5px;
+    font-size: 17px;
+    cursor: pointer;
+  }
