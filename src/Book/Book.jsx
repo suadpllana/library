@@ -69,9 +69,9 @@ function enterBook(e){
       <div className="bookContainer">
        {books.length > 0 && books.map((book ,index) => (
         <div  className="book" key={index}>
-          {book.volumeInfo.imageLinks &&
+          {book.volumeInfo && book.volumeInfo.imageLinks ? 
                <img className="bookImage" src={book.volumeInfo.imageLinks.smallThumbnail} alt="" />
-         }
+          : <></>}
      
           <h2>Title: {book.volumeInfo.title}</h2>
           <p> Authors:
