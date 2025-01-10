@@ -2,103 +2,96 @@ import React, { useState, useRef, useEffect } from "react";
 import "./Book.css";
 
 const Book = () => {
-  const [books, setBooks] = useState(() => {
+  const [books,setBooks] = useState(() => {
     const booksData = localStorage.getItem("booksData");
-    return booksData ? JSON.parse(booksData) : [];
+    return booksData ? JSON.parse(booksData) : []
   });
 
+
   useEffect(() => {
-    localStorage.setItem("booksData", JSON.stringify(books));
-  }, [books]);
+      localStorage.setItem("booksData", JSON.stringify(books))
+  } ,[books])
 
-  const title = useRef(null);
 
-  function addBook() {
-    if (title.current.value === "") {
-      return;
-    }
-    setBooks((prev) => [
-      ...prev,
-      {
-        title: title.current.value,
-        id: Math.random(),
-        isEditing: false,
-        locked: false,
-      },
-    ]);
+  const [title , setTitle] = useState("")
+
+  async function getBookData() {
+    try {
+      if (title.trim() === "") return;
+
+
+      
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${title}`);
+      const data = await response.json();
+
+      if(books.some(book => book.volumeInfo.title === data.items[0].volumeInfo.title)){
+        return
+      }
   
+      if (data.items && data.items.length > 0) {
+        const firstBook = data.items[0]; 
+        setBooks((prevBooks) => [...prevBooks, firstBook]); 
+      }
+      console.log(books)
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  function removeBook(id) {
-    let filteredBooks = books.filter((book) => book.id !== id);
-    setBooks(filteredBooks);
+function deleteBook(id){
+  console.log(books)
+  const filteredBooks = books.filter((book) => book.id !== id)
+  setBooks(filteredBooks)
+}
+function enterBook(e){
+  if(e.key === "Enter"){
+    getBookData()
   }
+}
 
-  function editBook(id) {
-    setBooks((prev) =>
-      prev.map((book) =>
-        book.id === id ? { ...book, isEditing: true, locked: true } : book
-      )
-    );
-  }
 
-  function saveBook(id, updatedTitle) {
-    setBooks((prev) =>
-      prev.map((book) =>
-        book.id === id
-          ? { ...book, title: updatedTitle, isEditing: false, locked: false }
-          : book
-      )
-    );
-  }
 
   return (
     <div>
+      <h1>Add your favorite books or make a book list you will read later!</h1>
       <input
+      onKeyDown={(e) => enterBook(e)}
         className="title-input"
-        placeholder="Enter a book's name"
-        ref={title}
+        placeholder="Enter  book's name"
+      onChange={(e) => setTitle(e.target.value)}
         type="text"
       />
-      <button className="add-book-button" onClick={addBook}>
+      <button className="add-book-button" onClick={getBookData}>
         Add book
-      </button>
+      </button> 
+    
 
       <div className="bookContainer">
-        {books.map((book) => (
-          <div className="book" key={book.id}>
-            <span
-              onClick={!book.locked ? () => editBook(book.id) : null}
-              className={`edit ${book.locked ? "disabled" : ""}`}
-            >
-              ✏️
-            </span>
-            <span
-              onClick={() => removeBook(book.id)}
-              className="delete"
-            >
-              ❌
-            </span>
-            <br />
-            <br />
-            {book.isEditing ? (
-              <>
-                <input
-                  type="text"
-                  defaultValue={book.title}
-                  onBlur={(e) => saveBook(book.id, e.target.value)}
-                  
-                />
-                <button className="submit-button" onClick={() => saveBook(book.id, book.title)}>
-                  Submit
-                </button>
-              </>
-            ) : (
-              <p>{book.title}</p>
-            )}
-          </div>
-        ))}
+       {books.length > 0 && books.map((book ,index) => (
+        <div  className="book" key={index}>
+          {book.volumeInfo.imageLinks &&
+               <img className="bookImage" src={book.volumeInfo.imageLinks.smallThumbnail} alt="" />
+         }
+     
+          <h2>Title: {book.volumeInfo.title}</h2>
+          <p> Authors:
+          {book.volumeInfo.authors[0] && book.volumeInfo.authors.map(author => (
+           <span> {author}</span>
+          ))}
+          </p>
+           {book.volumeInfo.categories[0] && book.volumeInfo.categories.map(category => (
+            <p>Category/ies: {category  }</p>
+          ))}
+          {book.searchInfo && 
+          <p className="description">{book.searchInfo.textSnippet}</p>
+          }
+         <button className="delete-book-button" onClick={() => deleteBook(book.id)}>Delete Book</button>
+        </div>
+       ))}
       </div>
+
+
+
     </div>
   );
 };
