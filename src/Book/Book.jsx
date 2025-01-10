@@ -67,27 +67,28 @@ function enterBook(e){
     
 
       <div className="bookContainer">
-       {books.length > 0 && books.map((book ,index) => (
+       {books.length > 0 ? books.map((book ,index) => (
         <div  className="book" key={index}>
           {book.volumeInfo && book.volumeInfo.imageLinks ? 
                <img className="bookImage" src={book.volumeInfo.imageLinks.smallThumbnail} alt="" />
           : <></>}
-     
-          <h2>Title: {book.volumeInfo.title}</h2>
+        {book.volumeInfo && book.volume.title ? 
+        <h2>Title: {book.volumeInfo.title}</h2> : <></>}
+          
           <p> Authors:
-          {book.volumeInfo.authors[0] && book.volumeInfo.authors.map(author => (
+          {book.volumeInfo && book.volumeInfo.authors[0] ? book.volumeInfo.authors.map(author => (
            <span> {author}</span>
-          ))}
+          )) : <></>}
           </p>
-           {book.volumeInfo.categories[0] && book.volumeInfo.categories.map(category => (
+           {book.volumeInfo && book.volumeInfo.categories[0] ? book.volumeInfo.categories.map(category => (
             <p>Category/ies: {category  }</p>
-          ))}
-          {book.searchInfo && 
+          )) : <></>}
+          {book.searchInfo && book.searchInfo.textSnippet ?
           <p className="description">{book.searchInfo.textSnippet}</p>
-          }
+           : <></>}
          <button className="delete-book-button" onClick={() => deleteBook(book.id)}>Delete Book</button>
         </div>
-       ))}
+       )) : <></>}
       </div>
 
 
