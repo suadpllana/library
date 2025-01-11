@@ -24,7 +24,7 @@ const Book = () => {
       const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${title}`);
       const data = await response.json();
 
-      if(books.some(book => book.volumeInfo.title === data.items[0].volumeInfo.title)){
+      if(books.some(book => book.volumeInfo?.title === data.items[0].volumeInfo?.title)){
         return
       }
   
@@ -72,7 +72,7 @@ function enterBook(e){
           {book.volumeInfo && book.volumeInfo.imageLinks ? 
                <img className="bookImage" src={book.volumeInfo.imageLinks.smallThumbnail} alt="" />
           : <></>}
-        {book.volumeInfo && book.volume.title ? 
+        {book.volumeInfo && book.volumeInfo.title ? 
         <h2>Title: {book.volumeInfo.title}</h2> : <></>}
           
           <p> Authors:
