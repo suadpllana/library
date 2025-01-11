@@ -141,7 +141,8 @@ margin-left: 5px;
   position: relative;
   width: 60%;
   background-color: aliceblue;
-  height: 80vh;
+  max-height: 80vh;
+  overflow: scroll;
 }
 .modal-header{
   display: grid;
