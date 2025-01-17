@@ -90,7 +90,9 @@ const Book = () => {
       </div>
 
       <hr />
+      {books.length > 0 && <h2 className="book-length">{books.length} books saved</h2>}
       <div className="bookContainer">
+       
         {books.length > 0 ? (
           books.map((book, index) => (
             <div onClick={() => openModal(book.id)} className="book" key={index}>
