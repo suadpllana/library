@@ -115,7 +115,7 @@ const Book = () => {
             {book.volumeInfo?.imageLinks?.smallThumbnail && (
               <img className="bookImage" src={book.volumeInfo.imageLinks.smallThumbnail} alt="" />
             )}
-            <h2>{book.volumeInfo?.title}</h2>
+            <h2>{book.volumeInfo?.title.slice(0,60)}</h2>
             <button className="delete-book-button" onClick={(e) => deleteBook(e, book.id)}>
               Delete Book
             </button>
@@ -141,7 +141,7 @@ const Book = () => {
                 <></>
               )}  
             <div className="content">
-              <h1>{book.volumeInfo?.title}</h1>   
+              <h1>{book.volumeInfo?.title.slice(0,60)}</h1>   
                 <p>{book.volumeInfo?.authors}</p>
                 <p>{book.volumeInfo?.categories}</p>
               <p> {book.volumeInfo?.publisher} {book.volumeInfo?.publishedDate}</p>
