@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./Book.css";
 import kidsWithBook from "../assets/image.png";
 import booksImage from "../assets/image copy.png";
-
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const Book = () => {
   const [books, setBooks] = useState(() => {
     const booksData = localStorage.getItem("booksData");
@@ -44,6 +45,8 @@ const Book = () => {
 
       if (!books.some((book) => book.id === firstBook.id)) {
         setBooks((prevBooks) => [...prevBooks, firstBook]);
+        toast.success("Book added successfully!");
+
       }
 
       setTitle(""); 
@@ -54,6 +57,7 @@ const Book = () => {
   const deleteBook = (e, id) => {
     e.stopPropagation();
     setBooks(books.filter((book) => book.id !== id));
+    toast.success("Book deleted successfully!");
   };
 
   const openModal = (id) => {
@@ -157,6 +161,18 @@ const Book = () => {
         </div>
       </div>
       }
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+
+        />
 
 
     </>
