@@ -77,12 +77,6 @@ const Book = () => {
         <div className="searchContainer">
           <h1>Find your book</h1>
           <input
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              getBookData(recommendedBooks[0]);
-            }
-          }
-        }
             className="title-input"
             placeholder="Enter book's name"
             value={title}
