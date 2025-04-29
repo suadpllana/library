@@ -5,6 +5,7 @@ body{
 }
 
 .headerContainer{
+  margin-top: 20px;
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
@@ -17,6 +18,23 @@ body{
 }
 .kidsImage{
   width: 30%;
+}
+.read-later-list{
+  text-align: center;
+}
+.loan-the-book-button{
+  min-width: 90px;
+  min-height: 25px;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  border: none;
+  background-color: #24a0ed;
+  font-size: 17px;
+  cursor: pointer;
+}
+.loan-the-book-button:hover{
+  opacity: 0.7;
 }
 
 .searchContainer{
@@ -44,9 +62,8 @@ body{
   background-color: red;
   font-size: 17px;
   cursor: pointer;
-  bottom: 0;
-left: 35%;
-  position: absolute;
+  margin-right: 20px;
+
 }
 .book .delete-book-button:hover{
   opacity: 0.7;
@@ -121,7 +138,7 @@ left: 35%;
     
 }
 .book:hover{
-    transform: scale(0.9);
+    transform: scale(1.02);
     background-color: rgba(255,255,255,0.8);
 }
 .book img{

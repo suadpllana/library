@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import "./Book.css";
 import kidsWithBook from "../assets/image.png";
 import booksImage from "../assets/image copy.png";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-const Book = () => {
+import LoanModal from "./LoanModal";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+const Book = ({setLoanedBooks}) => {
   const [books, setBooks] = useState(() => {
     const booksData = localStorage.getItem("booksData");
     return booksData ? JSON.parse(booksData) : [];
@@ -14,6 +16,7 @@ const Book = () => {
   const [recommendedBooks, setRecommendedBooks] = useState([]);
   const [modal, setModal] = useState(false);
   const [modalData, setModalData] = useState([]);
+  const [loanModal, setLoanModal] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("booksData", JSON.stringify(books));
@@ -46,11 +49,10 @@ const Book = () => {
       if (!books.some((book) => book.id === firstBook.id)) {
         setBooks((prevBooks) => [...prevBooks, firstBook]);
         toast.success("Book added successfully!");
-
       }
 
-      setTitle(""); 
-      setRecommendedBooks([]); 
+      setTitle("");
+      setRecommendedBooks([]);
     }
   };
 
@@ -67,11 +69,18 @@ const Book = () => {
 
   const closeModal = () => setModal(false);
 
+
+  const openLoanModal = (e, id) => {
+    e.stopPropagation();
+    setLoanModal(prev => !prev);
+    setModalData(books.filter((book) => book.id === id));
+
+  }
   return (
     <>
       <div className="headerContainer">
         <div className="headerImage">
-          <h2>A book is a friend that<br /> never leaves your side.</h2>
+          
           <img src={booksImage} alt="" />
         </div>
         <div className="searchContainer">
@@ -82,79 +91,109 @@ const Book = () => {
             value={title}
             onChange={handleInputChange}
             type="text"
-          />  {recommendedBooks.length > 0 && (
+          />{" "}
+          {recommendedBooks.length > 0 && (
             <div className="recommendations">
               {recommendedBooks.slice(0, 5).map((book) => (
                 <div key={book.id} onClick={() => getBookData(book)}>
-                  <img src={book?.volumeInfo
-                    ?.imageLinks?.smallThumbnail} alt="" />
-                  <p >{book.volumeInfo?.title}</p>
+                  <img
+                    src={book?.volumeInfo?.imageLinks?.smallThumbnail}
+                    alt=""
+                  />
+                  <p>{book.volumeInfo?.title}</p>
                 </div>
               ))}
             </div>
           )}
-          <button className="add-book-button" onClick={() => getBookData(recommendedBooks[0])}>
+          <button
+            className="add-book-button"
+            onClick={() => getBookData(recommendedBooks[0])}
+          >
             Add book
           </button>
           <br />
           <img className="kidsImage" src={kidsWithBook} alt="" />
-
-        
-        
         </div>
       </div>
 
       <hr />
-      {books.length > 0 && <h2 className="book-length">{books.length} books saved</h2>}
+      <h1 className="read-later-list">Wishlist</h1>
+      {books.length > 0 && (
+        <h2 className="book-length">{books.length} books saved</h2>
+      )}
+      
 
       <div className="bookContainer">
         {books.map((book) => (
-          <div key={book.id} className="book" onClick={() => openModal(book.id)}>
+          <div
+            key={book.id}
+            className="book"
+            onClick={() => openModal(book.id)}
+          >
             {book.volumeInfo?.imageLinks?.smallThumbnail && (
-              <img className="bookImage" src={book.volumeInfo.imageLinks.smallThumbnail} alt="" />
+              <img
+                className="bookImage"
+                src={book.volumeInfo.imageLinks.smallThumbnail}
+                alt=""
+              />
             )}
-            <h2>{book.volumeInfo?.title.slice(0,60)}</h2>
-            <button className="delete-book-button" onClick={(e) => deleteBook(e, book.id)}>
+            <h2>{book.volumeInfo?.title.slice(0, 60)}</h2>
+            <button
+              className="delete-book-button"
+              onClick={(e) => deleteBook(e, book.id)}
+            >
               Delete Book
+            </button>
+            <button className="loan-the-book-button" onClick={(e) => openLoanModal(e ,book.id)}>
+              Loan the book
             </button>
           </div>
         ))}
       </div>
 
-      {modal &&
+      {modal && (
         <div className="overlay" onClick={closeModal}>
-        <div className="modal" onClick={(e) => e.stopPropagation()}>
-          <span onClick={closeModal} className="close"> x</span>
-          {modalData.map((book,index) => (
-            <>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <span onClick={closeModal} className="close">
+              {" "}
+              x
+            </span>
+            {modalData.map((book, index) => (
+              <>
+                <div key={index} className="modal-header">
+                  {book.volumeInfo && book.volumeInfo.imageLinks ? (
+                    <img
+                      className="bookImage"
+                      src={book.volumeInfo.imageLinks.smallThumbnail}
+                      alt=""
+                    />
+                  ) : (
+                    <></>
+                  )}
+                  <div className="content">
+                    <h1>{book.volumeInfo?.title.slice(0, 60)}</h1>
+                    <p>{book.volumeInfo?.authors}</p>
+                    <p>{book.volumeInfo?.categories}</p>
+                    <p>
+                      {" "}
+                      {book.volumeInfo?.publisher}{" "}
+                      {book.volumeInfo?.publishedDate}
+                    </p>
+                    <a href={book.volumeInfo?.previewLink} target="_blank">
+                      <button>More</button>
+                    </a>
+                  </div>
+                </div>
 
-      <div key={index} className="modal-header">
-      {book.volumeInfo && book.volumeInfo.imageLinks ? (
-                <img
-                  className="bookImage"
-                  src={book.volumeInfo.imageLinks.smallThumbnail}
-                  alt=""
-                />
-              ) : (
-                <></>
-              )}  
-            <div className="content">
-              <h1>{book.volumeInfo?.title.slice(0,60)}</h1>   
-                <p>{book.volumeInfo?.authors}</p>
-                <p>{book.volumeInfo?.categories}</p>
-              <p> {book.volumeInfo?.publisher} {book.volumeInfo?.publishedDate}</p>
-             <a href={book.volumeInfo?.previewLink} target="_blank"><button>More</button></a> 
-            </div>
+                <p className="description">
+                  {book.volumeInfo?.description || book.volumeInfo?.title}
+                </p>
+              </>
+            ))}
           </div>
-
-          <p className="description">{book.volumeInfo?.description || book.volumeInfo?.title}</p>
-            </>
-            
-          ))}
-          
         </div>
-      </div>
-      }
+      )}
+      {loanModal && <LoanModal setLoanedBooks={setLoanedBooks} modalData={modalData} setLoanModal={setLoanModal}/>}
       <ToastContainer
         position="bottom-right"
         autoClose={5000}
@@ -165,10 +204,7 @@ const Book = () => {
         draggable
         pauseOnHover
         theme="dark"
-
-        />
-
-
+      />
     </>
   );
 };
