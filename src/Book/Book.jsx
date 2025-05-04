@@ -22,6 +22,11 @@ const Book = ({setLoanedBooks}) => {
     localStorage.setItem("booksData", JSON.stringify(books));
   }, [books]);
 
+
+useEffect(() => {
+  console.log("Books data updated:", books);
+} , []);
+
   const handleInputChange = async (e) => {
     const value = e.target.value;
     setTitle(value);
