@@ -43,6 +43,52 @@
     transform: scale(0.97);
   }
 
+.custom-modal {
+  background: #1e1e2f;
+  padding: 30px;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 80%;
+  margin: auto;
+  text-align: center;
+  color: white;
+}
+
+.custom-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.confirm {
+  background-color: red;
+  border: none;
+  padding: 10px 20px;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.cancel {
+  background-color: grey;
+  border: none;
+  padding: 10px 20px;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
 
 @media (max-width: 768px) {
     .loaned-books-header{

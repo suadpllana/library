@@ -3,10 +3,13 @@ import "./Book.css";
 import kidsWithBook from "../assets/image.png";
 import booksImage from "../assets/image copy.png";
 import LoanModal from "./LoanModal";
+import Modal from "react-modal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const Book = ({setLoanedBooks}) => {
+Modal.setAppElement("#root"); // required for accessibility
+
+const Book = ({ setLoanedBooks }) => {
   const [books, setBooks] = useState(() => {
     const booksData = localStorage.getItem("booksData");
     return booksData ? JSON.parse(booksData) : [];
@@ -18,14 +21,12 @@ const Book = ({setLoanedBooks}) => {
   const [modalData, setModalData] = useState([]);
   const [loanModal, setLoanModal] = useState(false);
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState(null);
+
   useEffect(() => {
     localStorage.setItem("booksData", JSON.stringify(books));
   }, [books]);
-
-
-useEffect(() => {
-  console.log("Books data updated:", books);
-} , []);
 
   const handleInputChange = async (e) => {
     const value = e.target.value;
@@ -61,10 +62,21 @@ useEffect(() => {
     }
   };
 
-  const deleteBook = (e, id) => {
+  const openDeleteModal = (e, book) => {
     e.stopPropagation();
-    setBooks(books.filter((book) => book.id !== id));
-    toast.success("Book deleted successfully!");
+    setBookToDelete(book);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setBookToDelete(null);
+    setDeleteModalOpen(false);
+  };
+
+  const confirmDeleteBook = () => {
+    setBooks(books.filter((b) => b.id !== bookToDelete.id));
+    toast.success(`Book deleted successfully!`);
+    closeDeleteModal();
   };
 
   const openModal = (id) => {
@@ -74,18 +86,16 @@ useEffect(() => {
 
   const closeModal = () => setModal(false);
 
-
   const openLoanModal = (e, id) => {
     e.stopPropagation();
-    setLoanModal(prev => !prev);
+    setLoanModal((prev) => !prev);
     setModalData(books.filter((book) => book.id === id));
+  };
 
-  }
   return (
     <>
       <div className="headerContainer">
         <div className="headerImage">
-          
           <img src={booksImage} alt="" />
         </div>
         <div className="searchContainer">
@@ -96,7 +106,7 @@ useEffect(() => {
             value={title}
             onChange={handleInputChange}
             type="text"
-          />{" "}
+          />
           {recommendedBooks.length > 0 && (
             <div className="recommendations">
               {recommendedBooks.slice(0, 5).map((book) => (
@@ -126,7 +136,6 @@ useEffect(() => {
       {books.length > 0 && (
         <h2 className="book-length">{books.length} books saved</h2>
       )}
-      
 
       <div className="bookContainer">
         {books.map((book) => (
@@ -145,11 +154,14 @@ useEffect(() => {
             <h2>{book.volumeInfo?.title.slice(0, 60)}</h2>
             <button
               className="delete-book-button"
-              onClick={(e) => deleteBook(e, book.id)}
+              onClick={(e) => openDeleteModal(e, book)}
             >
               Delete Book
             </button>
-            <button className="loan-the-book-button" onClick={(e) => openLoanModal(e ,book.id)}>
+            <button
+              className="loan-the-book-button"
+              onClick={(e) => openLoanModal(e, book.id)}
+            >
               Loan the book
             </button>
           </div>
@@ -160,27 +172,23 @@ useEffect(() => {
         <div className="overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <span onClick={closeModal} className="close">
-              {" "}
               x
             </span>
             {modalData.map((book, index) => (
-              <>
-                <div key={index} className="modal-header">
-                  {book.volumeInfo && book.volumeInfo.imageLinks ? (
+              <React.Fragment key={index}>
+                <div className="modal-header">
+                  {book.volumeInfo?.imageLinks?.smallThumbnail && (
                     <img
                       className="bookImage"
                       src={book.volumeInfo.imageLinks.smallThumbnail}
                       alt=""
                     />
-                  ) : (
-                    <></>
                   )}
                   <div className="content">
                     <h1>{book.volumeInfo?.title.slice(0, 60)}</h1>
                     <p>{book.volumeInfo?.authors}</p>
                     <p>{book.volumeInfo?.categories}</p>
                     <p>
-                      {" "}
                       {book.volumeInfo?.publisher}{" "}
                       {book.volumeInfo?.publishedDate}
                     </p>
@@ -189,16 +197,44 @@ useEffect(() => {
                     </a>
                   </div>
                 </div>
-
                 <p className="description">
                   {book.volumeInfo?.description || book.volumeInfo?.title}
                 </p>
-              </>
+              </React.Fragment>
             ))}
           </div>
         </div>
       )}
-      {loanModal && <LoanModal setLoanedBooks={setLoanedBooks} modalData={modalData} setLoanModal={setLoanModal}/>}
+
+      {loanModal && (
+        <LoanModal
+          setLoanedBooks={setLoanedBooks}
+          modalData={modalData}
+          setLoanModal={setLoanModal}
+        />
+      )}
+
+      <Modal
+        isOpen={deleteModalOpen}
+        onRequestClose={closeDeleteModal}
+        className="customModal"
+        overlayClassName="customOverlay"
+      >
+        <h2>Confirm book deletion</h2>
+        <p>
+          Are you sure you want to delete{" "}
+          <strong>{bookToDelete?.volumeInfo?.title}</strong>?
+        </p>
+        <div className="modal-buttons">
+          <button onClick={confirmDeleteBook} className="confirm-button">
+            Yes, Delete
+          </button>
+          <button onClick={closeDeleteModal} className="cancel-button">
+            Cancel
+          </button>
+        </div>
+      </Modal>
+
       <ToastContainer
         position="bottom-right"
         autoClose={5000}

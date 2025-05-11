@@ -1,9 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import ReactModal from 'react-modal';
 import "./LoanedBooks.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+ReactModal.setAppElement('#root');
+
 const LoanedBooks = ({ loanedBooks, setLoanedBooks }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [selectedBookInfo, setSelectedBookInfo] = useState({ title: "", client: "" });
 
   useEffect(() => {
     const loanedBooksData = localStorage.getItem("loanedBooksData");
@@ -12,11 +18,28 @@ const LoanedBooks = ({ loanedBooks, setLoanedBooks }) => {
     }
   }, []);
 
-  const handleDelete = (id) => {
-    const updatedBooks = loanedBooks.filter(book => book.id !== id);
+  const openModal = (id) => {
+    const book = loanedBooks.find(book => book.id === id);
+    setSelectedBookId(id);
+    setSelectedBookInfo({
+      title: book?.bookData?.volumeInfo?.title || "Unknown Title",
+      client: book?.clientName || "Unknown Client"
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelectedBookId(null);
+    setSelectedBookInfo({ title: "", client: "" });
+    setIsModalOpen(false);
+  };
+
+  const confirmDelete = () => {
+    const updatedBooks = loanedBooks.filter(book => book.id !== selectedBookId);
     setLoanedBooks(updatedBooks);
     localStorage.setItem("loanedBooksData", JSON.stringify(updatedBooks));
     toast.success("Loaned book deleted successfully!");
+    closeModal();
   };
 
   return (
@@ -46,7 +69,7 @@ const LoanedBooks = ({ loanedBooks, setLoanedBooks }) => {
                   <td>{book.returnDate}</td>
                   <td>Active</td>
                   <td>
-                    <button className="delete-loaned-book" onClick={() => handleDelete(book.id)}>Delete</button>
+                    <button className="delete-loaned-book" onClick={() => openModal(book.id)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -56,17 +79,35 @@ const LoanedBooks = ({ loanedBooks, setLoanedBooks }) => {
       ) : (
         <p className="no-loans-info">No books loaned yet.</p>
       )}
-        <ToastContainer
-              position="bottom-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="dark"
-            />
+
+      <ReactModal
+        isOpen={isModalOpen}
+        onRequestClose={closeModal}
+        contentLabel="Delete Confirmation"
+        className="custom-modal"
+        overlayClassName="custom-overlay"
+      >
+        <h2>Confirm Deletion</h2>
+        <p>
+          Are you sure you want to delete <strong>{selectedBookInfo.title}</strong> borrowed by <strong>{selectedBookInfo.client}</strong>?
+        </p>
+        <div className="modal-actions">
+          <button onClick={confirmDelete} className="confirm">Yes, Delete</button>
+          <button onClick={closeModal} className="cancel">Cancel</button>
+        </div>
+      </ReactModal>
+
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </div>
   );
 };
