@@ -16,11 +16,11 @@ const Book = ({ setLoanedBooks }) => {
   });
 
   const [title, setTitle] = useState("");
+  const [debouncedTitle, setDebouncedTitle] = useState("");
   const [recommendedBooks, setRecommendedBooks] = useState([]);
   const [modal, setModal] = useState(false);
   const [modalData, setModalData] = useState([]);
   const [loanModal, setLoanModal] = useState(false);
-
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [bookToDelete, setBookToDelete] = useState(null);
 
@@ -28,24 +28,37 @@ const Book = ({ setLoanedBooks }) => {
     localStorage.setItem("booksData", JSON.stringify(books));
   }, [books]);
 
-  const handleInputChange = async (e) => {
-    const value = e.target.value;
-    setTitle(value);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedTitle(title);
+    }, 500); 
 
-    if (value.trim() === "") {
-      setRecommendedBooks([]);
-      return;
-    }
+    return () => clearTimeout(timer);
+  }, [title]);
 
-    try {
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${value}`
-      );
-      const data = await response.json();
-      setRecommendedBooks(data.items || []);
-    } catch (err) {
-      console.error(err);
-    }
+  useEffect(() => {
+    const fetchBooks = async () => {
+      if (debouncedTitle.trim() === "") {
+        setRecommendedBooks([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=${debouncedTitle}`
+        );
+        const data = await response.json();
+        setRecommendedBooks(data.items || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchBooks();
+  }, [debouncedTitle]);
+
+  const handleInputChange = (e) => {
+    setTitle(e.target.value);
   };
 
   const getBookData = (selectedBook) => {
