@@ -150,16 +150,14 @@
   transition: background-color 0.3s ease;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .book-container {
     flex-direction: column;
     width: 100%;
   }
-
-  .book-image,
-  .book-details {
-    flex: none;
-    width: 100%;
-    padding: 15px;
+  .book-page{
+    padding: 0;
   }
+
+
 }
