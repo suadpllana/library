@@ -79,7 +79,7 @@ const Authors = () => {
           className="category-select"
           aria-label="Filter authors by category"
         >
-          {categories.map((category) => (
+          {categories?.map((category) => (
             <option key={category} value={category}>
               {category}
             </option>
@@ -90,7 +90,7 @@ const Authors = () => {
         {paginatedAuthors.length === 0 ? (
           <p style={{color: "white"}}>No authors found matching your criteria.</p>
         ) : (
-          paginatedAuthors.map((author) => (
+          paginatedAuthors?.map((author) => (
             <div
               key={author.name}
               className="author-item"
@@ -119,7 +119,7 @@ const Authors = () => {
           >
             Previous
           </button>
-          {getPageNumbers().map((page) => (
+          {getPageNumbers()?.map((page) => (
             <button
               key={page}
               onClick={() => handlePageChange(page)}

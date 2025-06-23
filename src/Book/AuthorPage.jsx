@@ -79,7 +79,7 @@ const AuthorPage = () => {
         </p>
       ) : (
         <div className="author-books-grid">
-          {filteredBooks.map((book) => (
+          {filteredBooks?.map((book) => (
             <div
               key={book.id}
               className="author-book-item"

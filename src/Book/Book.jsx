@@ -160,7 +160,7 @@ const Book = () => {
             disabled={books.length <= booksPerSlide}/>
       
           <div className="slide-items">
-            {visibleBooks.map((book) => (
+            {visibleBooks?.map((book) => (
               <div
                 key={book.id}
                 className="slide-item"
@@ -174,8 +174,8 @@ const Book = () => {
                 <p className="author" onClick={(e) => getAuthorFromBook(e,book?.volumeInfo?.authors[0])}>by {book?.volumeInfo?.authors?.join(", ") || "Unknown Author"}</p>
               </div>
             ))}
-            {visibleBooks.length < booksPerSlide &&
-              Array.from({ length: booksPerSlide - visibleBooks.length }).map((_, index) => (
+            {visibleBooks?.length < booksPerSlide &&
+              Array?.from({ length: booksPerSlide - visibleBooks.length })?.map((_, index) => (
                 <div key={`placeholder-${index}`} className="slide-item placeholder">
                   <div className="placeholder-image"></div>
                   <p>No Book Available</p>
@@ -210,7 +210,7 @@ const Book = () => {
           />
           {recommendedBooks.length > 0 && (
             <div className="recommendations">
-              {recommendedBooks.slice(0, 5).map((book) => (
+              {recommendedBooks?.slice(0, 5)?.map((book) => (
                 <div
                   key={book.id}
                   onClick={() => handleBookClick(book)}
@@ -239,7 +239,7 @@ const Book = () => {
             <div className="spinner"></div>
           </div>
         ) : (
-          Object.entries(categories).map(([category, books]) => (
+          Object.entries(categories)?.map(([category, books]) => (
             <div key={category} className="category-section">
               {renderSlideshow(category, books)}
             </div>

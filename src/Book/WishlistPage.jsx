@@ -36,7 +36,7 @@ const WishlistPage = () => {
         <p>Your wishlist is empty.</p>
       ) : (
         <div className="watchlist-container">
-          {watchlist.map((book, index) => (
+          {watchlist?.map((book, index) => (
             <div   key={index} className="watchlist-item">
               <div  className="watchlist-image">
                 <img
