@@ -1,0 +1,147 @@
+.authors-list {
+  padding: 20px;
+  min-height: 94.5vh;
+  background-color: #2c2c2c;
+  border-bottom: 1px solid #4a4a4a;
+}
+
+.authors-list h2 {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color: #d3d3d3;
+}
+
+.filters-container {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #4a4a4a;
+  border-radius: 5px;
+  width: 80%;
+  margin-left: 10%;
+  outline: none;
+  background-color: #3a3a3a;
+  color: #d3d3d3;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  border-color: #ff4d4d;
+}
+
+.category-select {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #4a4a4a;
+  border-radius: 5px;
+  background-color: #3a3a3a;
+  color: #d3d3d3;
+  cursor: pointer;
+  outline: none;
+  width: 150px;
+}
+
+.authors-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.author-item {
+  padding: 10px 20px;
+  background-color: #3a3a3a;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.author-item:hover {
+  background-color: #4a4a4a;
+}
+
+.author-item p {
+  margin: 0;
+  font-size: 1rem;
+  color: #d3d3d3;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.pagination-button {
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 1px solid #4a4a4a;
+  border-radius: 5px;
+  background-color: #3a3a3a;
+  color: #d3d3d3;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #4a4a4a;
+}
+
+.pagination-button:disabled {
+  background-color: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.pagination-button.active {
+  background-color: #ff4d4d;
+  color: #fff;
+  border-color: #ff4d4d;
+}
+
+@media (max-width: 767px) {
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input,
+  .category-select {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .authors-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .author-item {
+    width: 60%;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .pagination-container {
+    gap: 5px;
+  }
+
+  .pagination-button {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+}
+@media(min-width: 768px) and (max-width: 1217px){
+  .authors-list{
+    min-height: 96vh;
+  }
+}

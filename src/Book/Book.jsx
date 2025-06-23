@@ -1,37 +1,49 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Book.css";
-import kidsWithBook from "../assets/image.png";
 import booksImage from "../assets/image copy.png";
-import LoanModal from "./LoanModal";
-import Modal from "react-modal";
+import kidsWithBook from "../assets/image.png";
 import { ToastContainer, toast } from "react-toastify";
+import { FaChevronLeft } from "react-icons/fa";
+import { FaChevronRight } from "react-icons/fa";
+
 import "react-toastify/dist/ReactToastify.css";
 
-Modal.setAppElement("#root"); // required for accessibility
-
-const Book = ({ setLoanedBooks }) => {
-  const [books, setBooks] = useState(() => {
-    const booksData = localStorage.getItem("booksData");
-    return booksData ? JSON.parse(booksData) : [];
-  });
-
+const Book = () => {
   const [title, setTitle] = useState("");
   const [debouncedTitle, setDebouncedTitle] = useState("");
   const [recommendedBooks, setRecommendedBooks] = useState([]);
-  const [modal, setModal] = useState(false);
-  const [modalData, setModalData] = useState([]);
-  const [loanModal, setLoanModal] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [bookToDelete, setBookToDelete] = useState(null);
-
-  useEffect(() => {
-    localStorage.setItem("booksData", JSON.stringify(books));
-  }, [books]);
+  const [categories, setCategories] = useState({
+    mostReadBooks: [],
+    newReleases: [],
+    criticallyAcclaimed: [],
+    hiddenGems: [],
+    trendingNow: [],
+    bookClubFavorites: [],
+    bestOfTheYear: [],
+    readersChoice: [],
+    scienceTechnology: [],
+    fantasyEpics: []
+  });
+  const [currentSlides, setCurrentSlides] = useState({
+    mostReadBooks: 0,
+    newReleases: 0,
+    criticallyAcclaimed: 0,
+    hiddenGems: 0,
+    trendingNow: 0,
+    bookClubFavorites: 0,
+    bestOfTheYear: 0,
+    readersChoice: 0,
+    scienceTechnology: 0,
+    fantasyEpics: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedTitle(title);
-    }, 500); 
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [title]);
@@ -45,74 +57,150 @@ const Book = ({ setLoanedBooks }) => {
 
       try {
         const response = await fetch(
-          `https://www.googleapis.com/books/v1/volumes?q=${debouncedTitle}`
+          `https://www.googleapis.com/books/v1/volumes?q=${debouncedTitle}&maxResults=10`
         );
+        if (!response.ok) throw new Error("Failed to fetch books");
         const data = await response.json();
         setRecommendedBooks(data.items || []);
       } catch (err) {
         console.error(err);
+        toast.error("Failed to fetch books");
       }
     };
 
     fetchBooks();
   }, [debouncedTitle]);
 
+  useEffect(() => {
+    const fetchCategoryBooks = async () => {
+      setLoading(true);
+      const categoryQueries = {
+        mostReadBooks: "bestseller&maxResults=10",
+        newReleases: "subject:fiction&orderBy=newest&maxResults=10",
+        criticallyAcclaimed: "subject:literature&maxResults=10",
+        hiddenGems: "subject:literary+fiction&maxResults=10",
+        trendingNow: "bestseller&maxResults=10",
+        bookClubFavorites: "subject:book+club&maxResults=10",
+        bestOfTheYear: "subject:fiction&orderBy=newest&maxResults=10",
+        readersChoice: "bestseller&maxResults=10",
+        scienceTechnology: "subject:science+technology&maxResults=10",
+        fantasyEpics: "subject:fantasy&maxResults=10"
+      };
+
+      try {
+        const results = {};
+        for (const [category, query] of Object.entries(categoryQueries)) {
+          const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${query}`
+          );
+          if (!response.ok) throw new Error(`Failed to fetch ${category}`);
+          const data = await response.json();
+          results[category] = data.items || [];
+        }
+        setCategories(results);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch category books");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategoryBooks();
+  }, []);
+
+  function getAuthorFromBook(e, author){
+    e.stopPropagation()
+    navigate(`/library/authors/${author}`)
+  }
+
+ const handleSlide = (category, direction) => {
+  setCurrentSlides((prev) => {
+    const totalBooks = categories[category].length;
+    const booksPerSlide = 4;
+    const maxIndex = Math.max(0, totalBooks - booksPerSlide);
+    let newIndex = prev[category] + direction * booksPerSlide;
+    
+    if (newIndex < 0) {
+      newIndex = Math.floor(maxIndex / booksPerSlide) * booksPerSlide;
+    } else if (newIndex > maxIndex) {
+      newIndex = 0;
+    } else {
+      newIndex = Math.round(newIndex / booksPerSlide) * booksPerSlide;
+    }
+    
+    return { ...prev, [category]: newIndex };
+  });
+};
+
   const handleInputChange = (e) => {
     setTitle(e.target.value);
   };
 
-  const getBookData = (selectedBook) => {
-    if (recommendedBooks.length > 0) {
-      const firstBook = selectedBook || recommendedBooks[0];
+  const handleBookClick = (book) => {
+    navigate(`/library/book/${book.id}`, { state: { book } });
+  };
 
-      if (!books.some((book) => book.id === firstBook.id)) {
-        setBooks((prevBooks) => [...prevBooks, firstBook]);
-        toast.success("Book added successfully!");
-      }
-
-      setTitle("");
-      setRecommendedBooks([]);
+  const renderSlideshow = (category, books) => {
+    if (!books || books.length === 0) {
+      return <p>No books available in {category.replace(/([A-Z])/g, " $1").trim()}</p>;
     }
-  };
 
-  const openDeleteModal = (e, book) => {
-    e.stopPropagation();
-    setBookToDelete(book);
-    setDeleteModalOpen(true);
-  };
+    const currentIndex = currentSlides[category];
+    const booksPerSlide = 4;
+    const visibleBooks = books.slice(currentIndex, currentIndex + booksPerSlide);
 
-  const closeDeleteModal = () => {
-    setBookToDelete(null);
-    setDeleteModalOpen(false);
-  };
-
-  const confirmDeleteBook = () => {
-    setBooks(books.filter((b) => b.id !== bookToDelete.id));
-    toast.success(`Book deleted successfully!`);
-    closeDeleteModal();
-  };
-
-  const openModal = (id) => {
-    setModal(true);
-    setModalData(books.filter((book) => book.id === id));
-  };
-
-  const closeModal = () => setModal(false);
-
-  const openLoanModal = (e, id) => {
-    e.stopPropagation();
-    setLoanModal((prev) => !prev);
-    setModalData(books.filter((book) => book.id === id));
+    return (
+      <div className="slideshow">
+        <h2>{category.replace(/([A-Z])/g, " $1").trim()}</h2>
+        <div className="slideshow-container">
+        
+            < FaChevronLeft  className="slide-button prev"
+            onClick={() => handleSlide(category, -1)}
+            disabled={books.length <= booksPerSlide}/>
+      
+          <div className="slide-items">
+            {visibleBooks.map((book) => (
+              <div
+                key={book.id}
+                className="slide-item"
+                onClick={() => handleBookClick(book)}
+              >
+                <img
+                  src={book?.volumeInfo?.imageLinks?.smallThumbnail || "https://placehold.co/128x192?text=No+Image"}
+                  alt={book?.volumeInfo?.title || "No Title"}
+                />
+                <p>{book?.volumeInfo?.title?.slice(0,100) || "Unknown Title"}</p>
+                <p className="author" onClick={(e) => getAuthorFromBook(e,book?.volumeInfo?.authors[0])}>by {book?.volumeInfo?.authors?.join(", ") || "Unknown Author"}</p>
+              </div>
+            ))}
+            {visibleBooks.length < booksPerSlide &&
+              Array.from({ length: booksPerSlide - visibleBooks.length }).map((_, index) => (
+                <div key={`placeholder-${index}`} className="slide-item placeholder">
+                  <div className="placeholder-image"></div>
+                  <p>No Book Available</p>
+                </div>
+              ))}
+          </div>
+        
+           <FaChevronRight 
+             className="slide-button next"
+            onClick={() => handleSlide(category, 1)}
+            disabled={books.length <= booksPerSlide}
+           />
+        </div>
+      </div>
+    );
   };
 
   return (
     <>
       <div className="headerContainer">
         <div className="headerImage">
-          <img src={booksImage} alt="" />
+          <img src={booksImage} alt="Books" />
         </div>
         <div className="searchContainer">
-          <h1>Find your book</h1>
+          <h1>Search the book</h1>
           <input
             className="title-input"
             placeholder="Enter book's name"
@@ -123,142 +211,43 @@ const Book = ({ setLoanedBooks }) => {
           {recommendedBooks.length > 0 && (
             <div className="recommendations">
               {recommendedBooks.slice(0, 5).map((book) => (
-                <div key={book.id} onClick={() => getBookData(book)}>
+                <div
+                  key={book.id}
+                  onClick={() => handleBookClick(book)}
+                  className="recommendation-item"
+                >
                   <img
-                    src={book?.volumeInfo?.imageLinks?.smallThumbnail}
-                    alt=""
+                    src={
+                      book?.volumeInfo?.imageLinks?.smallThumbnail ||
+                      book?.volumeInfo?.imageLinks?.thumbnail ||
+                      "https://placehold.co/128x192?text=No+Image"
+                    }
+                    alt={book.volumeInfo?.title || "No Title"}
                   />
-                  <p>{book.volumeInfo?.title}</p>
+                  <p>{book.volumeInfo?.title.slice(0,50) || "Unknown Title"} -  {book?.volumeInfo?.authors[0]}</p>
                 </div>
               ))}
             </div>
           )}
-          <button
-            className="add-book-button"
-            onClick={() => getBookData(recommendedBooks[0])}
-          >
-            Add book
-          </button>
-          <br />
-          <img className="kidsImage" src={kidsWithBook} alt="" />
+          <img className="kidsImage" src={kidsWithBook} alt="Kids with book" />
         </div>
       </div>
-
       <hr />
-      <h1 className="read-later-list">Wishlist</h1>
-      {books.length > 0 && (
-        <h2 className="book-length">{books.length} books saved</h2>
-      )}
-
-      <div className="bookContainer">
-        {books.map((book) => (
-          <div
-            key={book.id}
-            className="book"
-            onClick={() => openModal(book.id)}
-          >
-            {book.volumeInfo?.imageLinks?.smallThumbnail && (
-              <img
-                className="bookImage"
-                src={book.volumeInfo.imageLinks.smallThumbnail}
-                alt=""
-              />
-            )}
-            <h2>{book.volumeInfo?.title.slice(0, 60)}</h2>
-            <button
-              className="delete-book-button"
-              onClick={(e) => openDeleteModal(e, book)}
-            >
-              Delete Book
-            </button>
-            <button
-              className="loan-the-book-button"
-              onClick={(e) => openLoanModal(e, book.id)}
-            >
-              Loan the book
-            </button>
+      <div className="categories-container">
+        {loading ? (
+          <div className="loading-container">
+            <div className="spinner"></div>
           </div>
-        ))}
+        ) : (
+          Object.entries(categories).map(([category, books]) => (
+            <div key={category} className="category-section">
+              {renderSlideshow(category, books)}
+            </div>
+          ))
+        )}
+        {!loading &&  <footer style={{textAlign: "center"}}>Created by @Suad Pllana </footer>}
+       
       </div>
-
-      {modal && (
-        <div className="overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <span onClick={closeModal} className="close">
-              x
-            </span>
-            {modalData.map((book, index) => (
-              <React.Fragment key={index}>
-                <div className="modal-header">
-                  {book.volumeInfo?.imageLinks?.smallThumbnail && (
-                    <img
-                      className="bookImage"
-                      src={book.volumeInfo.imageLinks.smallThumbnail}
-                      alt=""
-                    />
-                  )}
-                  <div className="content">
-                    <h1>{book.volumeInfo?.title.slice(0, 60)}</h1>
-                    <p>{book.volumeInfo?.authors}</p>
-                    <p>{book.volumeInfo?.categories}</p>
-                    <p>
-                      {book.volumeInfo?.publisher}{" "}
-                      {book.volumeInfo?.publishedDate}
-                    </p>
-                    <a href={book.volumeInfo?.previewLink} target="_blank">
-                      <button>More</button>
-                    </a>
-                  </div>
-                </div>
-                <p className="description">
-                  {book.volumeInfo?.description || book.volumeInfo?.title}
-                </p>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {loanModal && (
-        <LoanModal
-          setLoanedBooks={setLoanedBooks}
-          modalData={modalData}
-          setLoanModal={setLoanModal}
-        />
-      )}
-
-      <Modal
-        isOpen={deleteModalOpen}
-        onRequestClose={closeDeleteModal}
-        className="customModal"
-        overlayClassName="customOverlay"
-      >
-        <h2>Confirm book deletion</h2>
-        <p>
-          Are you sure you want to delete{" "}
-          <strong>{bookToDelete?.volumeInfo?.title}</strong>?
-        </p>
-        <div className="modal-buttons">
-          <button onClick={confirmDeleteBook} className="confirm-button">
-            Yes, Delete
-          </button>
-          <button onClick={closeDeleteModal} className="cancel-button">
-            Cancel
-          </button>
-        </div>
-      </Modal>
-
-      <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-      />
     </>
   );
 };
