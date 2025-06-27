@@ -10,6 +10,9 @@ const CategoryPage = () => {
   const loading = location.state?.loading;
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log(categoryBooks)
+  } ,[ ])
 
  
   function sendBookInfo(book){
@@ -34,6 +37,7 @@ const CategoryPage = () => {
               <div key={book.id} onClick={() => sendBookInfo(book)}>
                 <img src={book.volumeInfo?.imageLinks?.thumbnail || book.volumeInfo?.imageLinks?.smallThumbnail || "https://placehold.co/128x192?text=No+Image"} alt="" />
                 <h3>{book.volumeInfo?.title.slice(0, 60)}</h3>
+                <p style={{color: "#a0a0a0"}}>By {book?.volumeInfo.authors[0]}</p>
               </div>
             ))}
           </div>

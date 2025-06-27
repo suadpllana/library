@@ -49,7 +49,7 @@ const WishlistPage = () => {
               <div className="watchlist-details">
                 <h3 
                   onClick={() => handleBookClick(book)}
-                  style={{ cursor: 'pointer', color: '#2c3e50' }}
+                  style={{ cursor: 'pointer' }}
                 >
                   {book.title || 'Unknown Title'}
                 </h3>

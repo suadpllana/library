@@ -208,11 +208,11 @@ const Book = () => {
             onChange={handleInputChange}
             type="text"
           />
-          {recommendedBooks.length > 0 && (
+          {recommendedBooks?.length > 0 && (
             <div className="recommendations">
               {recommendedBooks?.slice(0, 5)?.map((book) => (
                 <div
-                  key={book.id}
+                  key={book?.id}
                   onClick={() => handleBookClick(book)}
                   className="recommendation-item"
                 >
@@ -222,9 +222,9 @@ const Book = () => {
                       book?.volumeInfo?.imageLinks?.thumbnail ||
                       "https://placehold.co/128x192?text=No+Image"
                     }
-                    alt={book.volumeInfo?.title || "No Title"}
+                    alt={book?.volumeInfo?.title || "No Title"}
                   />
-                  <p>{book.volumeInfo?.title.slice(0,50) || "Unknown Title"} -  {book?.volumeInfo?.authors[0]}</p>
+                  <p>{book?.volumeInfo?.title.slice(0,50) || "Unknown Title"} -  {book?.volumeInfo?.authors[0]}</p>
                 </div>
               ))}
             </div>

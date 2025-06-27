@@ -338,7 +338,8 @@ body {
   gap: 2rem;
 }
 .book-category-container div {
-  background: #ffffff;
+   background-color: #3a3a3a;
+  color: #d3d3d3;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 1.2rem;
@@ -354,11 +355,12 @@ body {
 }
 
 .book-category-container div:hover {
-  transform: translateY(-6px);
+  transform: translateY(-6px);  
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  background-color: #f0f8ff;
 }
-
+.book-category-container div p:hover {
+  opacity: 0.7;
+}
 .book-category-container div span {
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
