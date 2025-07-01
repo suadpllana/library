@@ -224,7 +224,7 @@ const Book = () => {
                     }
                     alt={book?.volumeInfo?.title || "No Title"}
                   />
-                  <p>{book?.volumeInfo?.title.slice(0,50) || "Unknown Title"} -  {book?.volumeInfo?.authors[0]}</p>
+                  <p>{book?.volumeInfo?.title.slice(0,50) || "Unknown Title"} -  {book?.volumeInfo?.authors && book?.volumeInfo?.authors[0]}</p>
                 </div>
               ))}
             </div>
