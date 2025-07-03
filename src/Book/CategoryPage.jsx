@@ -16,7 +16,7 @@ const CategoryPage = () => {
 
  
   function sendBookInfo(book){
-    navigate(`/library/book/${book.id}`, { state: { book } });
+    navigate(`/book/${book.id}`, { state: { book } });
   }
 
   return (

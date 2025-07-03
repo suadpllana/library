@@ -28,7 +28,7 @@ const CategoryBooks = ({ setShowCategories, showCategories }) => {
       const data = await response.json();
       setCategoryBooks(data.items || []);
       setCategoryName(category);
-      navigate("/library/category", {
+      navigate("/category", {
         state: { categoryBooks: data.items || [], categoryName: category, loading: false }
       });
       setShowCategories(false); 

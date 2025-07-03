@@ -23,7 +23,7 @@ const WishlistPage = () => {
   };
 
   const handleBookClick = (book) => {
-    navigate(`/library/book/${book.id}`, { state: { book: { volumeInfo: book } } });
+    navigate(`/book/${book.id}`, { state: { book: { volumeInfo: book } } });
   };
 
   return (
@@ -53,7 +53,7 @@ const WishlistPage = () => {
                 >
                   {book.title || 'Unknown Title'}
                 </h3>
-                <p className="author" onClick={() => navigate(`/library/authors/${book.authors[0]}`)}>by {book.authors?.join(', ') || 'Unknown Author'}</p>
+                <p className="author" onClick={() => navigate(`/authors/${book.authors[0]}`)}>by {book.authors?.join(', ') || 'Unknown Author'}</p>
                 <button
                   className="remove-button"
                   onClick={(e) => handleRemoveFromWatchlist(e, book)}               >

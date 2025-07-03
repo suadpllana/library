@@ -21,13 +21,12 @@ function App() {
       <Router>
       <Nav/>
         <Routes>
-          <Route path="/library" element={<Book />}/>
           <Route path ="/" element={<Book />}/>
-          <Route path="/library/category" element={<CategoryPage />} />
-          <Route path="/library/book/:id" element={<BookPage/>} />
-          <Route path="/library/wishlist" element={<WishlistPage/>} />
-          <Route path="/library/authors" element={<Authors />} />
-          <Route path="/library/authors/:authorName" element={<AuthorPage/>} />
+          <Route path="/category" element={<CategoryPage />} />
+          <Route path="/book/:id" element={<BookPage/>} />
+          <Route path="/wishlist" element={<WishlistPage/>} />
+          <Route path="/authors" element={<Authors />} />
+          <Route path="/authors/:authorName" element={<AuthorPage/>} />
         </Routes>
 
           

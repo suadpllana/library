@@ -48,7 +48,7 @@ const AuthorPage = () => {
   }, [authorBooks, searchTerm]);
 
   const handleBookClick = (book) => {
-    navigate(`/library/book/${book.id}`, { state: { book } });
+    navigate(`/book/${book.id}`, { state: { book } });
   };
 
   return (

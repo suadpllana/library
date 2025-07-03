@@ -10,6 +10,10 @@ const Authors = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE =50;
 
+  useEffect(() => {
+    setSearchTerm("")
+  }, [selectedCategory])
+
   const filteredAuthors = useMemo(() => {
     return authors.filter((author) => {
       const matchesName = author.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -30,7 +34,7 @@ const Authors = () => {
 
   const handleAuthorClick = (authorName) => {
     const authorId = encodeURIComponent(authorName);
-    navigate(`/library/authors/${authorId}`);
+    navigate(`/authors/${authorId}`);
   };
 
   const handlePageChange = (page) => {

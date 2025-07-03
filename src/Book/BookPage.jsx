@@ -50,7 +50,7 @@ const BookPage = () => {
           </div>
           <div className="book-details">
             <h1>{book.title || 'Unknown Title'}</h1>
-            <p className="author" onClick={() => navigate(`/library/authors/${book.authors[0]}`)}>by {book.authors?.join(', ') || 'Unknown Author'}</p>
+            <p className="author" onClick={() => navigate(`/authors/${book.authors[0]}`)}>by {book.authors?.join(', ') || 'Unknown Author'}</p>
             
             <div className="description">
               <h2>Description</h2>

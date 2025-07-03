@@ -111,7 +111,7 @@ const Book = () => {
 
   function getAuthorFromBook(e, author){
     e.stopPropagation()
-    navigate(`/library/authors/${author}`)
+    navigate(`/authors/${author}`)
   }
 
  const handleSlide = (category, direction) => {
@@ -138,7 +138,7 @@ const Book = () => {
   };
 
   const handleBookClick = (book) => {
-    navigate(`/library/book/${book.id}`, { state: { book } });
+    navigate(`/book/${book.id}`, { state: { book } });
   };
 
   const renderSlideshow = (category, books) => {

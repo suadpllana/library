@@ -1,10 +1,12 @@
 export const categories = [
   'Show all',
-  'Fiction',
-  'Non-Fiction',
-  'Philosophy',
+    'Philosophy',
   'Science',
   'Fantasy',
+  "Albanian",
+  'Fiction',
+  'Non-Fiction',
+
   'Horror',
   'Mystery',
   'Romance',
@@ -333,5 +335,15 @@ export const authors = [
   { name: "Vikram Seth", genres: ["Fiction", "Literary"] },
   { name: "Wallace Stevens", genres: ["Poetry", "Classics"] },
   { name: "William Wordsworth", genres: ["Poetry", "Classics"] },
-  { name: "Yukio Mishima", genres: ["Fiction", "Literary"] }
+  { name: "Yukio Mishima", genres: ["Fiction", "Literary"] },
+  { name: "Ismail Kadare", genres: ["Fiction", "Historical Fiction", "Albanian"] },
+{ name: "Dritëro Agolli", genres: ["Poetry", "Fiction", "Albanian"] },
+{ name: "Gjergj Fishta", genres: ["Poetry", "Epic", "Albanian"] },
+{ name: "Naim Frashëri", genres: ["Poetry", "Romanticism", "Albanian"] },
+{ name: "Migjeni", genres: ["Poetry", "Prose", "Albanian"] },
+{ name: "Luljeta Lleshanaku", genres: ["Poetry", "Contemporary", "Albanian"] },
+{ name: "Fatos Kongoli", genres: ["Fiction", "Contemporary", "Albanian"] },
+{ name: "Ernest Koliqi", genres: ["Prose", "Fiction", "Albanian"] },
+{ name: "Mitrush Kuteli", genres: ["Prose", "Folklore", "Albanian"] },
+{ name: "Faik Konica", genres: ["Non-Fiction", "Literary Criticism", "Albanian"] }
 ];
