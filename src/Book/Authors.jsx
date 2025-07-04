@@ -10,18 +10,17 @@ const Authors = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE =50;
 
-  useEffect(() => {
-    setSearchTerm("")
-  }, [selectedCategory])
-
-  const filteredAuthors = useMemo(() => {
-    return authors.filter((author) => {
-      const matchesName = author.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        selectedCategory === 'Show all' || author.genres.includes(selectedCategory);
-      return matchesName && matchesCategory;
-    });
-  }, [searchTerm, selectedCategory]);
+  
+  
+const filteredAuthors = useMemo(() => {
+  return authors.filter((author) => {
+    const matchesName = author.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = searchTerm
+      ? true 
+      : selectedCategory === 'Show all' || author.genres.includes(selectedCategory);
+    return matchesName && matchesCategory;
+  });
+}, [searchTerm, selectedCategory]);
 
   useEffect(() => {
     setCurrentPage(1);
