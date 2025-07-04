@@ -138,7 +138,7 @@ const Book = () => {
   };
 
   const handleBookClick = (book) => {
-    navigate(`/book/${book.id}`, { state: { book } });
+    navigate(`/book/${book.id}`, { state: { book , id: book.id } });
   };
 
   const renderSlideshow = (category, books) => {

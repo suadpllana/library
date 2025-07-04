@@ -11,6 +11,7 @@ const WishlistPage = () => {
 
   useEffect(() => {
     localStorage.setItem('watchlist', JSON.stringify(watchlist));
+    console.log(watchlist)
   }, [watchlist]);
 
   const handleRemoveFromWatchlist = (e, book) => {
@@ -23,6 +24,7 @@ const WishlistPage = () => {
   };
 
   const handleBookClick = (book) => {
+    console.log(book)
     navigate(`/book/${book.id}`, { state: { book: { volumeInfo: book } } });
   };
 

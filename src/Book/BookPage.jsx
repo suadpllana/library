@@ -6,6 +6,7 @@ import { FaArrowLeftLong } from "react-icons/fa6";
 const BookPage = () => {
   const location = useLocation();
   const book = location.state?.book?.volumeInfo || {};
+  const id = location.state?.book?.id
   const navigate = useNavigate()
 
   const [isFullDescription, setIsFullDescription] = useState(false);
@@ -29,7 +30,7 @@ const BookPage = () => {
       setWatchlist(updatedWatchlist);
       toast.success("Book removed from watchlist");
     } else {
-      const updatedWatchlist = [...watchlist, book];
+      const updatedWatchlist = [...watchlist, {id, ...book}];
       setWatchlist(updatedWatchlist);
       toast.success("Book added to watchlist");
     }

@@ -11,7 +11,6 @@ const Authors = () => {
   const ITEMS_PER_PAGE =50;
 
   
-  
 const filteredAuthors = useMemo(() => {
   return authors.filter((author) => {
     const matchesName = author.name.toLowerCase().includes(searchTerm.toLowerCase());
