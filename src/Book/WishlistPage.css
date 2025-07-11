@@ -71,3 +71,11 @@ background-color: #3a3a3a;
   font-style: italic;
   margin-bottom: 10px;
 }
+
+.watchlist-page input{
+  width: 85%;
+  height: 30px;
+  margin-bottom: 3rem;
+  margin-left: 7.5%;
+  border-radius: 20px;
+}

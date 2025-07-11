@@ -8,11 +8,17 @@ const WishlistPage = () => {
     return JSON.parse(localStorage.getItem('watchlist')) || [];
   });
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("")
+
+
 
   useEffect(() => {
     localStorage.setItem('watchlist', JSON.stringify(watchlist));
-    console.log(watchlist)
   }, [watchlist]);
+
+  const filteredBooks = watchlist.filter(book => book?.title?.toLowerCase().includes(searchTerm?.toLowerCase()))
+
+
 
   const handleRemoveFromWatchlist = (e, book) => {
     e.stopPropagation()
@@ -24,7 +30,6 @@ const WishlistPage = () => {
   };
 
   const handleBookClick = (book) => {
-    console.log(book)
     navigate(`/book/${book.id}`, { state: { book: { volumeInfo: book } } });
   };
 
@@ -34,11 +39,12 @@ const WishlistPage = () => {
             onClick={() => navigate(-1)}
         > <FaArrowLeftLong/> Go Back</h3>
       <h1>My Wishlist</h1>
+      <input  type="text" placeholder="Seach the wishlisted book" onChange={(e) => setSearchTerm(e.target.value  )} />
       {watchlist.length === 0 ? (
         <p>Your wishlist is empty.</p>
       ) : (
         <div className="watchlist-container">
-          {watchlist?.map((book, index) => (
+          {filteredBooks?.map((book, index) => (
             <div   key={index} className="watchlist-item">
               <div  className="watchlist-image">
                 <img
@@ -66,6 +72,7 @@ const WishlistPage = () => {
           ))}
         </div>
       )}
+      {filteredBooks.length === 0 && <p>No book matched the search</p>}
     </div>
   );
 };
