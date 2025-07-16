@@ -72,7 +72,7 @@ const WishlistPage = () => {
           ))}
         </div>
       )}
-      {filteredBooks.length === 0 && <p>No book matched the search</p>}
+      {watchlist.length !== 0 && filteredBooks.length === 0 && <p>No book matched the search</p>}
     </div>
   );
 };
