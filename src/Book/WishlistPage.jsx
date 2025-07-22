@@ -3,20 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import './WishlistPage.css';
 import { toast } from 'react-toastify';
 import { FaArrowLeftLong } from "react-icons/fa6";
+import WishlistModal from './WishlistModal';
 const WishlistPage = () => {
   const [watchlist, setWatchlist] = useState(() => {
     return JSON.parse(localStorage.getItem('watchlist')) || [];
   });
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("")
-
+  const [openModal, setOpenModal] = useState(false)
 
 
   useEffect(() => {
     localStorage.setItem('watchlist', JSON.stringify(watchlist));
   }, [watchlist]);
 
-  const filteredBooks = watchlist.filter(book => book?.title?.toLowerCase().includes(searchTerm?.toLowerCase()))
+  const filteredBooks = watchlist?.filter(book => book?.title?.toLowerCase().includes(searchTerm?.toLowerCase()))
 
 
 
@@ -40,6 +41,7 @@ const WishlistPage = () => {
         > <FaArrowLeftLong/> Go Back</h3>
       <h1>My Wishlist</h1>
       <input  type="text" placeholder="Seach the wishlisted book" onChange={(e) => setSearchTerm(e.target.value  )} />
+      <button className="sort-wishlist" onClick={() => setOpenModal(true)}>Sort the wishlist</button>
       {watchlist.length === 0 ? (
         <p>Your wishlist is empty.</p>
       ) : (
@@ -73,6 +75,9 @@ const WishlistPage = () => {
         </div>
       )}
       {watchlist.length !== 0 && filteredBooks.length === 0 && <p>No book matched the search</p>}
+
+      {openModal && <WishlistModal watchlist={watchlist} setWatchlist={setWatchlist} setOpenModal={setOpenModal} />}
+
     </div>
   );
 };

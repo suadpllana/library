@@ -1,0 +1,64 @@
+.wishlist-modal{
+    min-width: 100%;
+    min-height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5)
+;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-content{
+    position: relative;
+    width: 50%;
+    min-height: 50vh;
+    max-height: 85vh;
+    background-color: white;
+    overflow-y: scroll;
+
+}
+.modal-content div{
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.modal-content div img{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+.modal-content div p {
+    margin: 0;
+}
+.sorting-buttons{
+    margin-right: 10px;
+}
+.sorting-buttons .icon{
+    margin-right: 15px;
+    cursor: pointer;
+}
+.close-modal{
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 20px;
+    cursor: pointer;
+}
+.close-modal:hover{
+    opacity: 0.7;
+}
+
+@media (max-width: 767px){
+      .modal-content{
+    width: 80%;
+  }
+}
+@media (min-width: 768px) and (max-width: 1217px) {
+      .modal-content{
+        width: 70%;
+  }
+}
