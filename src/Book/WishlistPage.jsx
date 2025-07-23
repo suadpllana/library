@@ -40,6 +40,8 @@ const WishlistPage = () => {
             onClick={() => navigate(-1)}
         > <FaArrowLeftLong/> Go Back</h3>
       <h1>My Wishlist</h1>
+
+      {watchlist?.length > 0 && <p style={{textAlign: "center"}}>{watchlist.length} books wishlisted</p>}
       <input  type="text" placeholder="Seach the wishlisted book" onChange={(e) => setSearchTerm(e.target.value  )} />
       <button className="sort-wishlist" onClick={() => setOpenModal(true)}>Sort the wishlist</button>
       {watchlist.length === 0 ? (
