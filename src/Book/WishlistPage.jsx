@@ -27,7 +27,7 @@ const WishlistPage = () => {
       item => item.industryIdentifiers?.[0]?.identifier !== book.industryIdentifiers?.[0]?.identifier
     );
     setWatchlist(updatedWatchlist);
-    toast.success("Book removed from watchlist");
+    toast.error("Book removed from watchlist");
   };
 
   const handleBookClick = (book) => {

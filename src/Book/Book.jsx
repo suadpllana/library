@@ -22,8 +22,7 @@ const Book = () => {
     bookClubFavorites: [],
     bestOfTheYear: [],
     readersChoice: [],
-    scienceTechnology: [],
-    fantasyEpics: []
+
   });
   const [currentSlides, setCurrentSlides] = useState({
     mostReadBooks: 0,
@@ -34,8 +33,7 @@ const Book = () => {
     bookClubFavorites: 0,
     bestOfTheYear: 0,
     readersChoice: 0,
-    scienceTechnology: 0,
-    fantasyEpics: 0
+
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -75,16 +73,11 @@ const Book = () => {
     const fetchCategoryBooks = async () => {
       setLoading(true);
       const categoryQueries = {
-        mostReadBooks: "bestseller&maxResults=10",
-        newReleases: "subject:fiction&orderBy=newest&maxResults=10",
-        criticallyAcclaimed: "subject:literature&maxResults=10",
-        hiddenGems: "subject:literary+fiction&maxResults=10",
-        trendingNow: "bestseller&maxResults=10",
-        bookClubFavorites: "subject:book+club&maxResults=10",
-        bestOfTheYear: "subject:fiction&orderBy=newest&maxResults=10",
-        readersChoice: "bestseller&maxResults=10",
-        scienceTechnology: "subject:science+technology&maxResults=10",
-        fantasyEpics: "subject:fantasy&maxResults=10"
+        mostReadBooks: "bestseller&maxResults=8",
+        newReleases: "subject:fiction&orderBy=newest&maxResults=8",
+        hiddenGems: "subject:literary+fiction&maxResults=8",
+        bookClubFavorites: "subject:book+club&maxResults=8",
+
       };
 
       try {
