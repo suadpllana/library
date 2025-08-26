@@ -15,7 +15,7 @@ export const categories = [
   { name: "Technology", emoji: "💻" },
   { name: "Mythology", emoji: "🐉" },
   {name: "Animals" , emoji:"🫎"},
-    { name: "Comics", emoji: "🦸‍♂️" },
+    { name: "Cinema", emoji: "🦸‍♂️" },
   { name: "Politics", emoji: "🏛️" },
   { name: "Art", emoji: "🎨" },
   { name: "Music", emoji: "🎵" },
