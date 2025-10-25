@@ -1,0 +1,109 @@
+.profile-page {
+  padding: 2rem;
+  color: white;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+}
+
+.profile-container {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  padding: 2rem;
+}
+
+.profile-container h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #e74c3c;
+}
+
+.profile-info {
+  margin-bottom: 3rem;
+}
+
+.profile-info h2,
+.wishlist-section h2 {
+  color: #e74c3c;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid rgba(231, 76, 60, 0.3);
+  padding-bottom: 0.5rem;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+.info-item label {
+  font-weight: bold;
+  width: 150px;
+  color: #e74c3c;
+}
+
+.info-item span {
+  flex: 1;
+}
+
+.saved-books-list {
+  list-style: none;
+  padding: 0;
+}
+
+.saved-books-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.saved-books-list li:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.book-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #e74c3c;
+}
+
+.book-authors {
+  font-style: italic;
+  color: #ccc;
+}
+
+.save-date {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 1rem;
+  }
+  
+  .info-item {
+    flex-direction: column;
+  }
+  
+  .info-item label {
+    width: 100%;
+    margin-bottom: 0.25rem;
+  }
+}

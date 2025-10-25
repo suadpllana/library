@@ -30,7 +30,8 @@ const Nav = () => {
           {showCategories && <CategoryBooks setShowCategories={setShowCategories}/>}
           <Link to="/authors">Authors</Link>
           <Link to="/wishlist">Wishlist</Link>
-        <button onClick={handleSignOut} className="sign-out-btn">Sign Out</button>
+          <Link to="/profile">Profile</Link>
+          <button onClick={handleSignOut} className="sign-out-btn">Sign Out</button>
 
         </div>
       </nav>

@@ -10,6 +10,7 @@ import Authors from "./Book/Authors";
 import AuthorPage from "./Book/AuthorPage";
 import Auth from './components/Auth/Auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ProfilePage from './Book/ProfilePage';
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -40,6 +41,7 @@ function App() {
                       <Route path="/wishlist" element={<WishlistPage />} />
                       <Route path="/authors" element={<Authors />} />
                       <Route path="/authors/:authorName" element={<AuthorPage />} />
+                      <Route path="/profile" element={<ProfilePage />} />
                     </Routes>
                   </>
                 </PrivateRoute>
