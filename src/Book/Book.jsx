@@ -6,6 +6,7 @@ import kidsWithBook from "../assets/image.png";
 import { ToastContainer, toast } from "react-toastify";
 import { FaChevronLeft } from "react-icons/fa";
 import { FaChevronRight } from "react-icons/fa";
+import AiWidget from '../components/AiWidget';
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -241,6 +242,8 @@ const Book = () => {
         {!loading &&  <footer style={{textAlign: "center"}}>Created by @Suad Pllana </footer>}
        
       </div>
+            <AiWidget />
+
     </>
   );
 };
