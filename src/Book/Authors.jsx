@@ -105,14 +105,7 @@ const filteredAuthors = useMemo(() => {
       </div>
       {totalPages > 1 && (
         <div className="pagination-container" role="navigation" aria-label="Pagination">
-          <button
-            onClick={() => handlePageChange(1)}
-            disabled={currentPage === 1}
-            className="pagination-button first"
-            aria-label="First page"
-          >
-            First
-          </button>
+         
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
@@ -140,14 +133,7 @@ const filteredAuthors = useMemo(() => {
           >
             Next
           </button>
-          <button
-            onClick={() => handlePageChange(totalPages)}
-            disabled={currentPage === totalPages}
-            className="pagination-button last"
-            aria-label="Last page"
-          >
-            Last
-          </button>
+       
         </div>
       )}
     </div>

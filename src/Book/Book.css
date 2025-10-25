@@ -297,7 +297,7 @@ body {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 30px;
+  top: 40px;
   width: 600px;
   max-height: 500px;
   overflow-y: auto;
@@ -339,7 +339,6 @@ body {
 }
 .book-category-container div {
    background-color: #3a3a3a;
-  color: #d3d3d3;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 1.2rem;
@@ -351,6 +350,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-height: 80%;
   justify-content: center;
 }
 
@@ -364,6 +364,9 @@ body {
 .book-category-container div span {
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
+}
+.book-category-container img {
+  max-height: 200px;
 }
 
 .categories-container {
@@ -432,7 +435,6 @@ body {
   margin: 6px 0;
   font-size: 0.95rem;
   font-weight: 500;
-  color: #d3d3d3;
   text-align: center;
 }
 

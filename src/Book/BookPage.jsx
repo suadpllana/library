@@ -3,6 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "./BookPage.css";
 import { toast } from "react-toastify";
 import { FaArrowLeftLong } from "react-icons/fa6";
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
 const BookPage = () => {
   const location = useLocation();
   const book = location.state?.book?.volumeInfo || {};
@@ -10,29 +17,98 @@ const BookPage = () => {
   const navigate = useNavigate()
 
   const [isFullDescription, setIsFullDescription] = useState(false);
-  const [watchlist, setWatchlist] = useState(() => {
-    return JSON.parse(localStorage.getItem('watchlist')) || [];
-  });
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('watchlist', JSON.stringify(watchlist));
-  }, [watchlist]);
+    if (id) {
+      checkWishlistStatus();
+    }
+  }, [id]);
 
-  const isInWatchlist = watchlist.some(
-    item => item.industryIdentifiers?.[0]?.identifier === book.industryIdentifiers?.[0]?.identifier
-  );
+  const checkWishlistStatus = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('Authentication error:', authError);
+        setIsInWatchlist(false);
+        return;
+      }
 
-  const handleWatchlistToggle = () => {
-    if (isInWatchlist) {
-      const updatedWatchlist = watchlist.filter(
-        item => item.industryIdentifiers?.[0]?.identifier !== book.industryIdentifiers?.[0]?.identifier
-      );
-      setWatchlist(updatedWatchlist);
-      toast.success("Book removed from watchlist");
-    } else {
-      const updatedWatchlist = [...watchlist, {id, ...book}];
-      setWatchlist(updatedWatchlist);
-      toast.success("Book added to watchlist");
+      const { data, error } = await supabase
+        .from('wishlist')
+        .select('*')
+        .eq('book_id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      setIsInWatchlist(!!data);
+    } catch (error) {
+      console.error('Error checking wishlist status:', error);
+      toast.error('Error checking wishlist status');
+    }
+  };
+
+  const handleWatchlistToggle = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('Authentication error:', authError);
+        toast.error('Please sign in to manage your wishlist');
+        return;
+      }
+
+      if (isInWatchlist) {
+        const { error: deleteError } = await supabase
+          .from('wishlist')
+          .delete()
+          .match({ book_id: id, user_id: user.id });
+        
+        if (deleteError) {
+          console.error('Delete error:', deleteError);
+          toast.error('Failed to remove book from wishlist');
+          return;
+        }
+
+        setIsInWatchlist(false);
+        toast.success("Book removed from wishlist");
+      } else {
+        if (!book.title) {
+          toast.error('Invalid book data');
+          return;
+        }
+
+        const { error: insertError } = await supabase
+          .from('wishlist')
+          .upsert([{
+            book_id: id,
+            title: book.title,
+            authors: book.authors || [],
+            image_url: book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image',
+            user_id: user.id
+          }], {
+            onConflict: 'user_id,book_id',
+            ignoreDuplicates: true
+          });
+        
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          if (insertError.code === '23505') {
+            toast.error('This book is already in your wishlist');
+          } else {
+            toast.error(`Failed to add book to wishlist: ${insertError.message}`);
+          }
+          return;
+        }
+        
+        setIsInWatchlist(true);
+        toast.success("Book added to wishlist");
+      }
+    } catch (error) {
+      console.error('Error updating wishlist:', error);
+      toast.error(`Failed to update wishlist: ${error.message}`);
     }
   };
 
@@ -82,24 +158,30 @@ const BookPage = () => {
                 <button className="more-info">More Info</button>
               </a>
               <button 
-                className="watchlist-button" 
+                className={`watchlist-button ${isInWatchlist ? 'remove' : ''}`}
                 onClick={handleWatchlistToggle}
-                style={{
-                  backgroundColor: isInWatchlist ? '#e74c3c' : '#2ecc71',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  marginLeft: '10px'
-                }}
               >
                 {isInWatchlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
               </button>
-                  <h3 style={{textAlign: "left", marginTop: "3rem",  cursor: "pointer", color: "white"}}
-            onClick={() => navigate(-1)}
-        > <FaArrowLeftLong /> Go Back</h3>
             </div>
+            <button 
+              onClick={() => navigate(-1)}
+              className="back-button"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                marginTop: '2rem',
+                padding: '0.5rem',
+                fontSize: '1rem'
+              }}
+            >
+              <FaArrowLeftLong /> Go Back
+            </button>
           </div>
         </div>
       ) : (
