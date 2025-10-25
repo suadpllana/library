@@ -15,6 +15,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   border-radius: 5px;
   overflow: hidden;
+  justify-content: left;
 }
 
 .book-image {
@@ -34,15 +35,15 @@
 }
 
 .book-details {
-  flex: 2;
+  flex: 1.5;
   padding: 20px;
   font-family: 'Helvetica Neue', Arial, sans-serif;
+  justify-content: left;
 }
 
 .book-details h1 {
   font-size: 24px;
   margin: 0 0 10px;
-  color: #d3d3d3;
 }
 
 .author {
@@ -59,7 +60,6 @@
 .price {
   font-size: 20px;
   font-weight: bold;
-  color: #d3d3d3;
   margin-bottom: 10px;
 }
 
@@ -71,7 +71,6 @@
 
 .quantity {
   font-size: 14px;
-  color: #d3d3d3;
   margin-bottom: 10px;
 }
 
@@ -93,14 +92,12 @@
 
 .shipping-note {
   font-size: 14px;
-  color: #d3d3d3;
   margin-bottom: 15px;
 }
 
 .description h2 {
   font-size: 18px;
   margin-bottom: 10px;
-  color: #d3d3d3;
 }
 
 .description p {
@@ -112,20 +109,17 @@
 
 .additional-info p {
   font-size: 14px;
-  color: #d3d3d3;
   margin-bottom: 5px;
 }
 
 .publication-info p {
   font-size: 14px;
-  color: #d3d3d3;
   margin-bottom: 5px;
 }
 
 .reviews h2 {
   font-size: 18px;
   margin-bottom: 10px;
-  color: #d3d3d3;
 }
 
 .reviews p {
@@ -135,19 +129,50 @@
   margin-bottom: 15px;
 }
 
-.more-info {
+.button-container {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.more-info, .watchlist-button {
   background-color: #4a4a4a;
   color: #fff;
   border: none;
-  padding: 10px 20px;
-  font-size: 16px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  flex: 1;
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.more-info:hover, .watchlist-button:hover {
+  transform: translateY(-2px);
 }
 
 .more-info:hover {
   background-color: #666;
-  transition: background-color 0.3s ease;
+}
+
+.watchlist-button {
+  background-color: #2ecc71;
+}
+
+.watchlist-button:hover {
+  background-color: #27ae60;
+}
+
+.watchlist-button.remove {
+  background-color: #e74c3c;
+  min-width: 220px;
+}
+
+.watchlist-button.remove:hover {
+  background-color: #c0392b;
 }
 
 @media (max-width: 767px) {

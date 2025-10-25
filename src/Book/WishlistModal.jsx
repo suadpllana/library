@@ -1,40 +1,56 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "./WishlistModal.css";
 import { FaArrowUp } from "react-icons/fa6";
 import { FaArrowDown } from "react-icons/fa6";
 import { TbXboxXFilled } from "react-icons/tb";
+import { toast } from 'react-toastify';
 
-const WishlistModal = ({ watchlist, setWatchlist, setOpenModal }) => {
-
-  useEffect(() => {
-    localStorage.setItem('watchlist', JSON.stringify(watchlist));
-  }, [watchlist]);
+const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, supabase, refreshWishlist }) => {
 
 
-    function moveBookDown(index){
+  async function persistPositions(currentList) {
+    try {
+      const positions = currentList.map((item, idx) => ({ id: item.id, position: idx }));
+      const { error } = await supabase
+        .from('wishlist')
+        .upsert(positions, { onConflict: 'id' });
+      if (error) throw error;
+      if (typeof refreshWishlist === 'function') await refreshWishlist();
+      toast.success('Wishlist order saved');
+    } catch (err) {
+      console.error('Error saving wishlist order:', err);
+   
+    }
+  }
+
+  function moveBookDown(index){
     if(index < watchlist.length - 1){
       const updatedWatchlist = [...watchlist];
       [updatedWatchlist[index], updatedWatchlist[index + 1]] = [updatedWatchlist[index + 1] , updatedWatchlist[index]];
-    setWatchlist(updatedWatchlist)
+      setWatchlist(updatedWatchlist)
     }
   }
   function moveBookUp(index){
     if(index > 0){
       const updatedWatchlist = [...watchlist];
       [updatedWatchlist[index], updatedWatchlist[index - 1]] = [updatedWatchlist[index - 1] , updatedWatchlist[index]];
-    setWatchlist(updatedWatchlist)
+      setWatchlist(updatedWatchlist)
     }
   }
 
+  const handleClose = async () => {
+    await persistPositions(watchlist);
+    setOpenModal(false);
+  }
 
   return (
-    <div className="wishlist-modal" onClick={() => setOpenModal(false)}>
+    <div className="wishlist-modal" onClick={handleClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}> 
         <h2 style={{textAlign: "center"}}>Sort the order of the books using the buttons up and down</h2>
         {watchlist?.map((book, index) => (
-            <>
-             <div className="book-in-modal" key={index}>
+            <React.Fragment key={book.id || index}>
+             <div className="book-in-modal">
             <div>
               <img
                 src={
@@ -42,7 +58,8 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal }) => {
                   "https://placehold.co/128x192?text=No+Image"
                 }
                 alt={book?.title}
-              />  <p>{book.title} - {book.authors.join(", ")}</p>
+              />
+              <p>{book.title} - {(book.authors || []).join(", ")}</p>
             </div>
             <div className="sorting-buttons">
                 <FaArrowDown onClick={() => moveBookDown(index)} className="icon down"/>
@@ -51,10 +68,9 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal }) => {
             </div>
           </div>
             <hr />
-            </>
-         
+            </React.Fragment>
         ))}
-              <TbXboxXFilled onClick={() => setOpenModal(false)} className="close-modal"/>
+              <TbXboxXFilled onClick={handleClose} className="close-modal"/>
 
       </div>
     </div>
