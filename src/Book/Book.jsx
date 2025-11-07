@@ -197,7 +197,7 @@ const Book = () => {
           <h1>Search the book</h1>
           <input
             className="title-input"
-            placeholder="Enter book's name"
+            placeholder="Enter a book's name"
             value={title}
             onChange={handleInputChange}
             type="text"

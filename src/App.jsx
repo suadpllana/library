@@ -59,7 +59,7 @@ function App() {
         draggable
         pauseOnHover
         theme="dark"
-          closeButton={false} // 🔥 hides the X
+          closeButton={false} 
 
       />
       
