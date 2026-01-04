@@ -2,8 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WishlistPage.css';
 import { toast } from 'react-toastify';
-import { FaArrowLeftLong } from "react-icons/fa6";
+import { FaArrowLeftLong, FaPlus } from "react-icons/fa6";
 import WishlistModal from './WishlistModal';
+import AddBookModal from './AddBookModal';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 import { supabase } from '../lib/supabase';
 
 const WishlistPage = () => {
@@ -11,6 +18,7 @@ const WishlistPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [openModal, setOpenModal] = useState(false);
+  const [openAddModal, setOpenAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loanStatuses, setLoanStatuses] = useState({});
   const [requestingLoan, setRequestingLoan] = useState({});
@@ -92,6 +100,10 @@ const WishlistPage = () => {
   const handleSortedWishlist = (sorted) => {
     setWatchlist(sorted);
     localStorage.setItem("wishlist_order", JSON.stringify(sorted));
+  };
+
+  const handleBookAdded = () => {
+    fetchWishlist();
   };
 
   const checkLoanStatuses = async () => {
@@ -181,6 +193,37 @@ const WishlistPage = () => {
         <p style={{ textAlign: "center" }}>{watchlist.length} books wishlisted</p>
       )}
 
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <button 
+          className="add-book-btn"
+          onClick={() => setOpenAddModal(true)}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.3s'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#218838';
+            e.target.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = '#28a745';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
+          <FaPlus /> Add Book Manually
+        </button>
+      </div>
+
       <input
         type="text"
         placeholder="Search the wishlisted book"
@@ -247,8 +290,15 @@ const WishlistPage = () => {
       {openModal && (
         <WishlistModal
           watchlist={watchlist}
-          setWatchlist={handleSortedWishlist} // ✅ use this to update localStorage too
+          setWatchlist={handleSortedWishlist}
           setOpenModal={setOpenModal}
+        />
+      )}
+
+      {openAddModal && (
+        <AddBookModal
+          setOpenModal={setOpenAddModal}
+          onBookAdded={handleBookAdded}
         />
       )}
     </div>
