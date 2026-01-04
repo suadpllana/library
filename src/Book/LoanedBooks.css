@@ -1,0 +1,277 @@
+/* ========================================
+   LOANED BOOKS PAGE - Modern Premium Style
+   ======================================== */
+
+.loaned-books-page {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+  min-height: 100vh;
+  margin-top: 70px;
+}
+
+.loaned-books-container {
+  width: 100%;
+  max-width: 1200px;
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.loaned-books-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.loaned-books-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100px;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  border-radius: 3px;
+}
+
+.loaned-books-header h1 {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: rgba(99, 102, 241, 0.25);
+  transform: translateY(-1px);
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem;
+  color: #6b6b8a;
+  font-size: 1.1rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 4rem;
+  color: #6b6b8a;
+}
+
+.no-data p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.explore-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.explore-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+}
+
+/* Table Styles */
+.table-container {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.loaned-books-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 700px;
+}
+
+.loaned-books-table th,
+.loaned-books-table td {
+  padding: 1.1rem 1.25rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.loaned-books-table th {
+  background: #252542;
+  color: #6b6b8a;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.loaned-books-table th:first-child {
+  border-radius: 16px 0 0 0;
+}
+
+.loaned-books-table th:last-child {
+  border-radius: 0 16px 0 0;
+}
+
+.loaned-books-table tbody tr {
+  transition: all 0.15s ease;
+}
+
+.loaned-books-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.loaned-books-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.book-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.book-thumbnail {
+  width: 45px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.book-title {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-approved {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-rejected {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-returned {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.due-date {
+  color: #a5a5c0;
+  font-size: 0.9rem;
+}
+
+.rejection-reason-row {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.rejection-reason-row:hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+
+.rejection-reason-row td {
+  padding: 1rem 1.25rem;
+  color: #f87171;
+  font-style: italic;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .loaned-books-page {
+    padding: 1rem;
+    margin-top: 60px;
+  }
+
+  .loaned-books-container {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+
+  .loaned-books-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .loaned-books-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .book-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .loaned-books-table {
+    font-size: 0.9rem;
+  }
+
+  .loaned-books-table th,
+  .loaned-books-table td {
+    padding: 0.85rem;
+  }
+}

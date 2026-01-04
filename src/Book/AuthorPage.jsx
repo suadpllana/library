@@ -12,9 +12,7 @@ const AuthorPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    console.log(authorName);
-  }, []);
+
 
   useEffect(() => {
     const fetchAuthorBooks = async () => {
@@ -28,7 +26,6 @@ const AuthorPage = () => {
         if (!response.ok) throw new Error("Failed to fetch author's books");
         const data = await response.json();
         setAuthorBooks(data.items || []);
-        console.log(data);
       } catch (err) {
         console.error(err);
         toast.error(`Failed to fetch books by ${decodeURIComponent(authorName)}`);

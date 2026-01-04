@@ -1,8 +1,13 @@
+/* ========================================
+   PROFILE PAGE - Modern Premium Style
+   ======================================== */
+
 .profile-page {
   padding: 2rem;
-  color: white;
+  color: #e0e0e0;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 80px auto 0;
+  min-height: calc(100vh - 80px);
 }
 
 .back-link {
@@ -11,19 +16,34 @@
   gap: 0.5rem;
   cursor: pointer;
   margin-bottom: 2rem;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  color: #818cf8;
+  transition: all 0.2s ease;
+}
+
+.back-link:hover {
+  color: #a5b4fc;
+  transform: translateX(-3px);
 }
 
 .profile-container {
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 10px;
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
   padding: 2rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
 
 .profile-container h1 {
   text-align: center;
   margin-bottom: 2rem;
-  color: #e74c3c;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .profile-info {
@@ -32,28 +52,53 @@
 
 .profile-info h2,
 .wishlist-section h2 {
-  color: #e74c3c;
+  color: #fff;
   margin-bottom: 1.5rem;
-  border-bottom: 2px solid rgba(231, 76, 60, 0.3);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.75rem;
+  position: relative;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.profile-info h2::after,
+.wishlist-section h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  border-radius: 3px;
 }
 
 .info-item {
   display: flex;
   margin-bottom: 1rem;
-  padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
+  padding: 1rem 1.25rem;
+  background: rgba(37, 37, 66, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.info-item:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.15);
 }
 
 .info-item label {
-  font-weight: bold;
+  font-weight: 600;
   width: 150px;
-  color: #e74c3c;
+  color: #818cf8;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .info-item span {
   flex: 1;
+  color: #e0e0e0;
 }
 
 .saved-books-list {
@@ -65,45 +110,56 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 1rem;
+  padding: 1.25rem;
   margin-bottom: 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
+  background: rgba(37, 37, 66, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .saved-books-list li:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: translateX(5px);
 }
 
 .book-title {
   font-size: 1.1rem;
-  font-weight: bold;
-  color: #e74c3c;
+  font-weight: 600;
+  color: #fff;
 }
 
 .book-authors {
-  font-style: italic;
-  color: #ccc;
+  font-style: normal;
+  color: #818cf8;
+  font-size: 0.95rem;
 }
 
 .save-date {
-  font-size: 0.9rem;
-  color: #888;
+  font-size: 0.85rem;
+  color: #6b6b8a;
 }
 
 @media (max-width: 768px) {
   .profile-page {
     padding: 1rem;
+    margin-top: 70px;
+  }
+
+  .profile-container {
+    padding: 1.5rem;
+    border-radius: 16px;
   }
   
   .info-item {
     flex-direction: column;
+    gap: 0.5rem;
   }
   
   .info-item label {
     width: 100%;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0;
   }
 }

@@ -11,6 +11,15 @@ import AuthorPage from "./Book/AuthorPage";
 import Auth from './components/Auth/Auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProfilePage from './Book/ProfilePage';
+import LoanedBooks from './Book/LoanedBooks';
+import AdminDashboard from './components/Admin/AdminDashboard';
+// New feature imports
+import Discover from './Book/Discover';
+import AdvancedSearch from './Book/AdvancedSearch';
+import MyCollections from './Book/MyCollections';
+import CollectionDetail from './Book/CollectionDetail';
+import ReadingHistory from './Book/ReadingHistory';
+
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -21,6 +30,53 @@ const PrivateRoute = ({ children }) => {
   return user ? children : <Navigate to="/auth" />;
 };
 
+
+const UserRoute = ({ children }) => {
+  const { user, userRole, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
+  
+  // Wait for userRole to be fetched (it should default to 'user')
+  if (userRole === null) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+  
+  if (userRole === 'admin') {
+    return <Navigate to="/admin" />;
+  }
+  
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user, userRole, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
+  
+  // Wait for userRole to be fetched
+  if (userRole === null) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+  
+  if (userRole !== 'admin') {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -29,22 +85,39 @@ function App() {
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route
+              path="/admin/*"
+              element={
+                <AdminRoute>
+                  <Routes>
+                    <Route path="/" element={<AdminDashboard />} />
+                    <Route path="*" element={<AdminDashboard />} />
+                  </Routes>
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/*"
               element={
-                <PrivateRoute>
+                <UserRoute>
                   <>
                     <Nav />
                     <Routes>
                       <Route path="/" element={<Book />} />
+                      <Route path="/discover" element={<Discover />} />
+                      <Route path="/search" element={<AdvancedSearch />} />
                       <Route path="/category" element={<CategoryPage />} />
                       <Route path="/book/:id" element={<BookPage />} />
                       <Route path="/wishlist" element={<WishlistPage />} />
+                      <Route path="/loaned-books" element={<LoanedBooks />} />
                       <Route path="/authors" element={<Authors />} />
                       <Route path="/authors/:authorName" element={<AuthorPage />} />
                       <Route path="/profile" element={<ProfilePage />} />
+                      <Route path="/collections" element={<MyCollections />} />
+                      <Route path="/collection/:id" element={<CollectionDetail />} />
+                      <Route path="/history" element={<ReadingHistory />} />
                     </Routes>
                   </>
-                </PrivateRoute>
+                </UserRoute>
               }
             />
           </Routes>

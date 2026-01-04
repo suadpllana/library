@@ -1,0 +1,148 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import { FaArrowLeftLong } from 'react-icons/fa6';
+import './LoanedBooks.css';
+
+const LoanedBooks = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loanedBooks, setLoanedBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchLoanedBooks();
+    }
+  }, [user?.id]);
+
+  const fetchLoanedBooks = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('loan_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('requested_at', { ascending: false });
+
+      if (error) throw error;
+      setLoanedBooks(data || []);
+    } catch (error) {
+      console.error('Error fetching loaned books:', error);
+      toast.error('Failed to fetch loaned books');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusBadge = (status) => {
+    const statusClasses = {
+      pending: 'status-pending',
+      approved: 'status-approved',
+      rejected: 'status-rejected',
+      returned: 'status-returned'
+    };
+    return <span className={`status-badge ${statusClasses[status]}`}>{status}</span>;
+  };
+
+  return (
+    <div className="loaned-books-page">
+      <div className="loaned-books-container">
+        <div className="loaned-books-header">
+          <h1>📚 My Loaned Books</h1>
+          <button 
+            onClick={() => navigate(-1)}
+            className="back-button"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '0.5rem',
+              fontSize: '1rem'
+            }}
+          >
+            <FaArrowLeftLong /> Go Back
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="loading">Loading your loaned books...</div>
+        ) : loanedBooks.length === 0 ? (
+          <div className="no-data">
+            <p>You haven't loaned any books yet.</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="explore-button"
+            >
+              Explore Books
+            </button>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="loaned-books-table">
+              <thead>
+                <tr>
+                  <th>Book</th>
+                  <th>Author(s)</th>
+                  <th>Requested Date</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loanedBooks.map((loan) => (
+                  <>
+                    <tr key={loan.id}>
+                      <td className="book-cell">
+                        <img 
+                          src={loan.book_image} 
+                          alt={loan.book_title}
+                          className="book-thumbnail"
+                        />
+                        <span className="book-title">{loan.book_title}</span>
+                      </td>
+                      <td>
+                        {Array.isArray(loan.book_authors) 
+                          ? loan.book_authors.join(', ') 
+                          : (loan.book_authors || 'Unknown Author')}
+                      </td>
+                      <td>{formatDate(loan.requested_at)}</td>
+                      <td>{getStatusBadge(loan.status)}</td>
+                      <td className="due-date">
+                        {loan.status === 'approved' ? formatDate(loan.due_date) : '—'}
+                      </td>
+                    </tr>
+                    {loan.status === 'rejected' && loan.notes && (
+                      <tr className="rejection-reason-row">
+                        <td colSpan="5">
+                          <strong>Rejection Reason:</strong> {loan.notes}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LoanedBooks;
