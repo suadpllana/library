@@ -2,13 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FaArrowLeftLong } from "react-icons/fa6";
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import './ProfilePage.css';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 const ProfilePage = () => {
   const navigate = useNavigate();

@@ -1,128 +1,169 @@
+/* ========================================
+   AUTHORS LIST - Modern Premium Style
+   ======================================== */
+
 .authors-list {
-  padding: 20px;
-  min-height: 94.5vh;
-  background-color: #2c2c2c;
-  border-bottom: 1px solid #4a4a4a;
-  color: white;
+  padding: 2rem;
+  min-height: calc(100vh - 70px);
+  background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+  margin-top: 70px;
+  color: #e0e0e0;
 }
 
 .authors-list h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 2rem;
-  margin-bottom: 15px;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
 }
 
 .filters-container {
   display: flex;
   gap: 15px;
-  margin-bottom: 20px;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
 }
 
 .search-input {
-  padding: 10px;
+  padding: 0.875rem 1.25rem;
   font-size: 1rem;
-  border: 1px solid #4a4a4a;
-  color: white;
-  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 12px;
   width: 80%;
-  margin-left: 10%;
+  max-width: 600px;
+  margin: 0 auto;
   outline: none;
-  background-color: #3a3a3a;
-  transition: border-color 0.3s;
+  background: #252542;
+  transition: all 0.2s ease;
 }
 
 .search-input:focus {
-  border-color: white;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.search-input::placeholder {
+  color: #6b6b8a;
 }
 
 .category-select {
-  padding: 10px;
+  padding: 0.875rem 1.25rem;
   font-size: 1rem;
-  border: 1px solid #4a4a4a;
-  color: white;
-  border-radius: 5px;
-  background-color: #3a3a3a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 12px;
+  background: #252542;
   cursor: pointer;
   outline: none;
-  width: 150px;
+  min-width: 150px;
+  transition: all 0.2s ease;
+}
+
+.category-select:focus {
+  border-color: #6366f1;
 }
 
 .authors-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .author-item {
-  padding: 10px 20px;
-  background-color: #3a3a3a;
-  border-radius: 5px;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(145deg, #252542 0%, #1e1e35 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
 }
 
 .author-item:hover {
-  background-color: #4a4a4a;
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
 }
 
 .author-item p {
   margin: 0;
   font-size: 1rem;
+  font-weight: 500;
+  color: #e0e0e0;
 }
 
+/* Pagination */
 .pagination-container {
-  display: grid;
-grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  margin: 20px auto;
-  margin-top: 80px;
+  display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+  margin: 3rem auto 2rem;
   padding: 0 20px;
   max-width: 600px;
+  justify-content: center;
 }
 
 .pagination-button {
-  min-width: 40px;
-  height: 35px;
-  padding: 0 8px;
+  min-width: 42px;
+  height: 38px;
+  padding: 0 10px;
   font-size: 0.9rem;
-  border: 1px solid #4a4a4a;
-  border-radius: 5px;
-  background-color: #3a3a3a;
-  color: #d3d3d3;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: #252542;
+  color: #a5a5c0;
   cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 0 0 auto;
-
+  transition: all 0.2s ease;
 }
 
 .pagination-button.first,
 .pagination-button.last {
-  min-width: 70px;
+  min-width: 75px;
 }
 
 .pagination-button:hover:not(:disabled) {
-  background-color: #4a4a4a;
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #fff;
   transform: translateY(-2px);
 }
 
 .pagination-button:disabled {
-  background-color: #333;
-  color: #666;
+  background: rgba(37, 37, 66, 0.5);
+  color: #4b5563;
   cursor: not-allowed;
   opacity: 0.5;
 }
 
 .pagination-button.active {
-  background-color: #ff4d4d;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: #fff;
-  border-color: #ff4d4d;
-  font-weight: bold;
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
 }
 
 @media (max-width: 767px) {
+  .authors-list {
+    padding: 1.5rem 1rem;
+    margin-top: 60px;
+  }
+
+  .authors-list h2 {
+    font-size: 1.5rem;
+  }
+
   .filters-container {
     flex-direction: column;
     align-items: stretch;
@@ -136,12 +177,11 @@ grid-template-columns: repeat(7, 1fr);
 
   .authors-container {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
   }
 
   .author-item {
-    width: 60%;
-    margin: 0 auto;
+    width: 100%;
     text-align: center;
   }
 
@@ -151,10 +191,10 @@ grid-template-columns: repeat(7, 1fr);
   }
 
   .pagination-button {
-    min-width: 35px;
-    height: 32px;
-    padding: 0 6px;
-    font-size: 0.8rem;
+    min-width: 36px;
+    height: 34px;
+    padding: 0 8px;
+    font-size: 0.85rem;
   }
 
   .pagination-button.first,
@@ -162,8 +202,9 @@ grid-template-columns: repeat(7, 1fr);
     min-width: 60px;
   }
 }
-@media(min-width: 768px) and (max-width: 1217px){
-  .authors-list{
-    min-height: 96vh;
+
+@media (min-width: 768px) and (max-width: 1217px) {
+  .authors-list {
+    min-height: calc(100vh - 70px);
   }
 }

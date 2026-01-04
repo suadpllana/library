@@ -3,27 +3,95 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "./BookPage.css";
 import { toast } from "react-toastify";
 import { FaArrowLeftLong } from "react-icons/fa6";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '../lib/supabase';
+import AddToCollectionModal from './AddToCollectionModal';
 
 const BookPage = () => {
   const location = useLocation();
   const book = location.state?.book?.volumeInfo || {};
+  const fullBook = location.state?.book; // Keep the full book object for modal
   const id = location.state?.book?.id
   const navigate = useNavigate()
 
   const [isFullDescription, setIsFullDescription] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [loanStatus, setLoanStatus] = useState(null); // null, 'pending', 'approved', 'rejected'
+  const [isRequestingLoan, setIsRequestingLoan] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
 
   useEffect(() => {
     if (id) {
       checkWishlistStatus();
+      checkLoanStatus();
     }
   }, [id]);
+
+  const checkLoanStatus = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('loan_requests')
+        .select('status')
+        .eq('book_id', id)
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'approved'])
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking loan status:', error);
+        return;
+      }
+      
+      setLoanStatus(data?.status || null);
+    } catch (error) {
+      console.error('Error checking loan status:', error);
+    }
+  };
+
+  const handleRequestLoan = async () => {
+    try {
+      setIsRequestingLoan(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast.error('Please sign in to request a loan');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('loan_requests')
+        .insert({
+          user_id: user.id,
+          book_id: id,
+          book_title: book.title || 'Unknown Title',
+          book_authors: book.authors || [],
+          book_image: book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image',
+          status: 'pending'
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('You already have an active request for this book');
+        } else {
+          toast.error('Failed to request loan: ' + error.message);
+        }
+        return;
+      }
+
+      setLoanStatus('pending');
+      toast.success('Loan request submitted! Waiting for admin approval.');
+    } catch (error) {
+      console.error('Error requesting loan:', error);
+      toast.error('Failed to request loan');
+    } finally {
+      setIsRequestingLoan(false);
+    }
+  };
 
   const checkWishlistStatus = async () => {
     try {
@@ -163,6 +231,21 @@ const BookPage = () => {
               >
                 {isInWatchlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
               </button>
+              <button 
+                className="collection-button"
+                onClick={() => setShowCollectionModal(true)}
+              >
+                📚 Add to Collection
+              </button>
+              <button 
+                className={`loan-button ${loanStatus === 'pending' ? 'pending' : ''} ${loanStatus === 'approved' ? 'approved' : ''}`}
+                onClick={handleRequestLoan}
+                disabled={isRequestingLoan || loanStatus === 'pending' || loanStatus === 'approved'}
+              >
+                {loanStatus === 'pending' ? '⏳ Loan Pending' : 
+                 loanStatus === 'approved' ? '✓ Loan Approved' : 
+                 isRequestingLoan ? 'Requesting...' : '📚 Request Loan'}
+              </button>
             </div>
             <button 
               onClick={() => navigate(-1)}
@@ -187,6 +270,13 @@ const BookPage = () => {
       ) : (
         <p>Something went wrong</p>
       )}
+      
+      {/* Add to Collection Modal */}
+      <AddToCollectionModal 
+        book={fullBook}
+        isOpen={showCollectionModal}
+        onClose={() => setShowCollectionModal(false)}
+      />
     </div>
   );
 };

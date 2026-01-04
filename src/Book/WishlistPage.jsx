@@ -4,12 +4,7 @@ import './WishlistPage.css';
 import { toast } from 'react-toastify';
 import { FaArrowLeftLong } from "react-icons/fa6";
 import WishlistModal from './WishlistModal';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '../lib/supabase';
 
 const WishlistPage = () => {
   const [watchlist, setWatchlist] = useState([]);
@@ -17,10 +12,18 @@ const WishlistPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loanStatuses, setLoanStatuses] = useState({});
+  const [requestingLoan, setRequestingLoan] = useState({});
 
   useEffect(() => {
     fetchWishlist();
   }, []);
+
+  useEffect(() => {
+    if (watchlist.length > 0) {
+      checkLoanStatuses();
+    }
+  }, [watchlist]);
 
   const fetchWishlist = async () => {
     try {
@@ -91,6 +94,79 @@ const WishlistPage = () => {
     localStorage.setItem("wishlist_order", JSON.stringify(sorted));
   };
 
+  const checkLoanStatuses = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return;
+      }
+
+      const bookIds = watchlist.map(book => book.id);
+      const { data, error } = await supabase
+        .from('loan_requests')
+        .select('book_id, status')
+        .eq('user_id', user.id)
+        .in('book_id', bookIds)
+        .in('status', ['pending', 'approved']);
+
+      if (error) {
+        console.error('Error checking loan statuses:', error);
+        return;
+      }
+
+      const statusMap = {};
+      data?.forEach(loan => {
+        statusMap[loan.book_id] = loan.status;
+      });
+      setLoanStatuses(statusMap);
+    } catch (error) {
+      console.error('Error checking loan statuses:', error);
+    }
+  };
+
+  const handleRequestLoan = async (e, book) => {
+    e.stopPropagation();
+    
+    try {
+      setRequestingLoan(prev => ({ ...prev, [book.id]: true }));
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast.error('Please sign in to request a loan');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('loan_requests')
+        .insert({
+          user_id: user.id,
+          book_id: book.id,
+          book_title: book.title || 'Unknown Title',
+          book_authors: book.authors || [],
+          book_image: book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image',
+          status: 'pending'
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('You already have an active request for this book');
+        } else {
+          toast.error('Failed to request loan: ' + error.message);
+        }
+        return;
+      }
+
+      setLoanStatuses(prev => ({ ...prev, [book.id]: 'pending' }));
+      toast.success('Loan request submitted!');
+    } catch (error) {
+      console.error('Error requesting loan:', error);
+      toast.error('Failed to request loan');
+    } finally {
+      setRequestingLoan(prev => ({ ...prev, [book.id]: false }));
+    }
+  };
+
   return (
     <div className="watchlist-page">
       <h3
@@ -141,12 +217,23 @@ const WishlistPage = () => {
                 >
                   by {book.authors?.join(', ') || 'Unknown Author'}
                 </p>
-                <button
-                  className="remove-button"
-                  onClick={(e) => handleRemoveFromWatchlist(e, book)}
-                >
-                  Remove from Watchlist
-                </button>
+                <div className="wishlist-actions">
+                  <button
+                    className={`loan-button ${loanStatuses[book.id] === 'pending' ? 'pending' : ''} ${loanStatuses[book.id] === 'approved' ? 'approved' : ''}`}
+                    onClick={(e) => handleRequestLoan(e, book)}
+                    disabled={requestingLoan[book.id] || loanStatuses[book.id] === 'pending' || loanStatuses[book.id] === 'approved'}
+                  >
+                    {loanStatuses[book.id] === 'pending' ? '⏳ Loan Pending' : 
+                     loanStatuses[book.id] === 'approved' ? '✓ Loan Approved' : 
+                     requestingLoan[book.id] ? 'Requesting...' : '📚 Request Loan'}
+                  </button>
+                  <button
+                    className="remove-button"
+                    onClick={(e) => handleRemoveFromWatchlist(e, book)}
+                  >
+                    Remove from Watchlist
+                  </button>
+                </div>
               </div>
             </div>
           ))}
