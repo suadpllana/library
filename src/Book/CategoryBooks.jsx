@@ -42,13 +42,13 @@ const CategoryBooks = ({ setShowCategories, showCategories }) => {
   return (
     <div
       className={`book-category ${showCategories ? 'visible' : 'hidden'}`}
+      style={{ top: '3.5rem' }}
       onMouseEnter={() => setShowCategories(true)}
       onMouseLeave={() => setShowCategories(false)}
     >
       {categories?.map(category => (
         <div key={category.name} onClick={() => bookInfo(category.name)}>
           <p>{category.emoji} {category.name}</p>
-          <hr />
         </div>
       ))}
     </div>

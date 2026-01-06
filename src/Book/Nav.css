@@ -135,11 +135,23 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.nav-dropdown-trigger:hover {
+.nav-dropdown-trigger:hover,
+.nav-dropdown-trigger:active {
   color: #ffffff;
   background: rgba(99, 102, 241, 0.15);
+}
+
+.nav-dropdown-trigger .arrow {
+  display: inline-flex;
+  transition: transform 0.3s ease;
+}
+
+.nav-dropdown-trigger.open .arrow {
+  transform: rotate(180deg);
 }
 
 .nav-dropdown-menu {

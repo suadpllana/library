@@ -17,8 +17,37 @@ const CategoryPage = () => {
 
 
   useEffect(() => {
-    console.log(categoryBooks)
-  } ,[ ])
+    if (!allBooks) return;
+    
+    const filtered = allBooks.filter((book) => {
+      const title = book.volumeInfo?.title?.toLowerCase() || "";
+      const author = book.volumeInfo?.authors?.[0]?.toLowerCase() || "";
+      const query = searchQuery.toLowerCase();
+      
+      return title.includes(query) || author.includes(query);
+    });
+    
+    setFilteredBooks(filtered);
+  }, [searchQuery, allBooks])
+
+  const fetchMoreBooks = async () => {
+    setLoadingMore(true);
+    const categoryQuery = categoryName.toLowerCase().replace(/\s+/g, '+');
+    const query = `subject:${categoryQuery}&maxResults=25&startIndex=${startIndex}`;
+    
+    try {
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+      const data = await response.json();
+      const newBooks = data.items || [];
+      
+      setAllBooks(prev => [...prev, ...newBooks]);
+      setStartIndex(prev => prev + 25);
+    } catch (error) {
+      console.error("Error fetching more books:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
  
   function sendBookInfo(book){
@@ -26,35 +55,15 @@ const CategoryPage = () => {
   }
 
   return (
-    <div style={{ background: 'linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%)', minHeight: '100vh', paddingTop: '70px' }}>
+    <>
       {loading ? (
-        <p style={{ color: '#818cf8', textAlign: 'center', padding: '3rem' }}>Loading...</p>
+        <p>Loading</p>
       ) : (
         <>
-        <h3 style={{
-          textAlign: "left", 
-          marginTop: "1.5rem", 
-          marginLeft: "20px", 
-          cursor: "pointer",
-          color: "#818cf8",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          transition: "all 0.2s ease"
-        }}
+        <h3 style={{textAlign: "left", marginTop: "5rem", marginLeft: "20px", cursor: "pointer"}}
             onClick={() => navigate(-1)}
         ><FaArrowLeftLong/> Go Back</h3>
-          <h2 style={{ 
-            marginTop: "1.5rem", 
-            textAlign: "center",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: "1.75rem",
-            fontWeight: "700",
-            background: "linear-gradient(135deg, #6366f1 0%, #ec4899 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text"
-          }}>
+          <h2 style={{ marginTop: "1rem", textAlign: "center" }}>
             {categoryName?.toUpperCase()} BOOKS
           </h2>
 
@@ -83,8 +92,8 @@ const CategoryPage = () => {
             {filteredBooks?.map((book) => (
               <div key={book.id} onClick={() => sendBookInfo(book)}>
                 <img src={book.volumeInfo?.imageLinks?.thumbnail || book.volumeInfo?.imageLinks?.smallThumbnail || "https://placehold.co/128x192?text=No+Image"} alt="" />
-                <h3 style={{color: "#fff"}}>{book.volumeInfo?.title.slice(0, 60)}</h3>
-                <p style={{color: "#818cf8"}}>By {book?.volumeInfo?.authors?.[0]}</p>
+                <h3>{book.volumeInfo?.title.slice(0, 60)}</h3>
+                <p style={{color: "#a0a0a0"}}>By {book?.volumeInfo?.authors?.[0]}</p>
               </div>
             ))}
           </div>
@@ -120,8 +129,9 @@ const CategoryPage = () => {
           )}
         </>
       )}
-    </div>
+    </>
   );
 };
 
 export default CategoryPage;
+

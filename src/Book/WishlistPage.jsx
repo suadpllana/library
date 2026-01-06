@@ -6,8 +6,6 @@ import { FaArrowLeftLong, FaPlus } from "react-icons/fa6";
 import WishlistModal from './WishlistModal';
 import AddBookModal from './AddBookModal';
 import { createClient } from '@supabase/supabase-js';
-
-
 import { supabase } from '../lib/supabase';
 
 const WishlistPage = () => {
