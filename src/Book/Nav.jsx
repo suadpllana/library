@@ -55,7 +55,17 @@ const Nav = () => {
                 <Link to="/wishlist" onClick={handleMenuItemClick}>💫 Wishlist</Link>
                 <Link to="/loaned-books" onClick={handleMenuItemClick}>📋 Loaned Books</Link>
 
-          <a onMouseLeave={() => setShowCategories(false)} onMouseEnter={() => setShowCategories(true)}>📂 Category</a>
+          <button 
+            className="category-trigger"
+            onMouseLeave={() => setShowCategories(false)} 
+            onMouseEnter={() => setShowCategories(true)}
+            onFocus={() => setShowCategories(true)}
+            onBlur={() => setShowCategories(false)}
+            aria-haspopup="true"
+            aria-expanded={showCategories}
+          >
+            📂 Category
+          </button>
           {showCategories && <CategoryBooks setShowCategories={setShowCategories}/>}
           <Link to="/authors">👨‍💼 Authors</Link>
           <div className="nav-dropdown" ref={dropdownRef}>

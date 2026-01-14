@@ -233,8 +233,8 @@ const WishlistPage = () => {
         <p>Your wishlist is empty.</p>
       ) : (
         <div className="watchlist-container">
-          {filteredBooks?.map((book, index) => (
-            <div key={index} className="watchlist-item">
+          {filteredBooks?.map((book) => (
+            <div key={book.id} className="watchlist-item">
               <div className="watchlist-image">
                 <img
                   onClick={() => handleBookClick(book)}
@@ -251,7 +251,8 @@ const WishlistPage = () => {
                 </h3>
                 <p
                   className="author"
-                  onClick={() => navigate(`/authors/${book.authors[0]}`)}
+                  onClick={() => book.authors?.[0] && navigate(`/authors/${book.authors[0]}`)}
+                  style={{ cursor: book.authors?.[0] ? 'pointer' : 'default' }}
                 >
                   by {book.authors?.join(', ') || 'Unknown Author'}
                 </p>

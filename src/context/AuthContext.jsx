@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }) => {
           async (event, session) => {
             if (!mounted) return;
 
-            ('Auth event:', event);
+            console.log('Auth event:', event);
 
             if (event === 'SIGNED_OUT' || !session) {
               setUser(null);

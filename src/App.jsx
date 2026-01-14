@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProfilePage from './Book/ProfilePage';
 import LoanedBooks from './Book/LoanedBooks';
 import AdminDashboard from './components/Admin/AdminDashboard';
+import ErrorBoundary from './components/ErrorBoundary';
 // New feature imports
 import Discover from './Book/Discover';
 import AdvancedSearch from './Book/AdvancedSearch';
@@ -80,7 +81,7 @@ const AdminRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <>
+      <ErrorBoundary>
         <Router>
           <Routes>
             <Route path="/auth" element={<Auth />} />
@@ -122,21 +123,21 @@ function App() {
             />
           </Routes>
         </Router>
-       <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-          closeButton={false} 
-
-      />
-      
-      </>
+        <ToastContainer
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+          closeButton={false}
+        />
+      </ErrorBoundary>
     </AuthProvider>
-  )
-} export default App
+  );
+}
+
+export default App;

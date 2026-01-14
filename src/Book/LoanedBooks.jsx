@@ -106,8 +106,8 @@ const LoanedBooks = () => {
               </thead>
               <tbody>
                 {loanedBooks.map((loan) => (
-                  <>
-                    <tr key={loan.id}>
+                  <React.Fragment key={loan.id}>
+                    <tr>
                       <td className="book-cell">
                         <img 
                           src={loan.book_image} 
@@ -134,7 +134,7 @@ const LoanedBooks = () => {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import './AddBookModal.css';
 import { toast } from 'react-toastify';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '../lib/supabase';
 
 const AddBookModal = ({ setOpenModal, onBookAdded }) => {
   const [title, setTitle] = useState('');
@@ -71,7 +66,7 @@ const AddBookModal = ({ setOpenModal, onBookAdded }) => {
     <div className="add-book-modal-overlay" onClick={() => setOpenModal(false)}>
       <div className="add-book-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="add-book-modal-header">
-          <h2>Add Book Manually</h2>
+          <h2>📚 Add Book Manually</h2>
           <button 
             className="close-btn" 
             onClick={() => setOpenModal(false)}
@@ -89,7 +84,7 @@ const AddBookModal = ({ setOpenModal, onBookAdded }) => {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter book title"
+              placeholder="e.g., The Great Gatsby"
               maxLength={200}
               required
             />
@@ -102,12 +97,11 @@ const AddBookModal = ({ setOpenModal, onBookAdded }) => {
               type="text"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
-              placeholder="Enter author name"
+              placeholder="e.g., F. Scott Fitzgerald"
               maxLength={100}
               required
             />
           </div>
-
 
           <div className="modal-actions">
             <button 
@@ -123,7 +117,7 @@ const AddBookModal = ({ setOpenModal, onBookAdded }) => {
               className="add-btn"
               disabled={loading}
             >
-              {loading ? 'Adding...' : 'Add Book'}
+              {loading ? 'Adding...' : '+ Add Book'}
             </button>
           </div>
         </form>
