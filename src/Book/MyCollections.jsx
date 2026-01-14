@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 import './MyCollections.css';
 
 const MyCollections = () => {
@@ -82,7 +83,7 @@ const MyCollections = () => {
       fetchCollections();
     } catch (error) {
       console.error('Error saving collection:', error);
-      alert('Failed to save collection');
+      toast.error('Failed to save collection');
     }
   };
 
@@ -107,10 +108,11 @@ const MyCollections = () => {
         .eq('id', collectionId);
 
       if (error) throw error;
+      toast.success('Collection deleted successfully');
       fetchCollections();
     } catch (error) {
       console.error('Error deleting collection:', error);
-      alert('Failed to delete collection');
+      toast.error('Failed to delete collection');
     }
   };
 

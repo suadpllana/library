@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Book.css";
 import booksImage from "../assets/image copy.png";
 import kidsWithBook from "../assets/image.png";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { FaChevronLeft } from "react-icons/fa";
 import { FaChevronRight } from "react-icons/fa";
 import AiWidget from '../components/AiWidget';
-
 import "react-toastify/dist/ReactToastify.css";
 
 const Book = () => {
@@ -218,7 +217,7 @@ const Book = () => {
                     }
                     alt={book?.volumeInfo?.title || "No Title"}
                   />
-                  <p>{book?.volumeInfo?.title.slice(0,50) || "Unknown Title"} -  {book?.volumeInfo?.authors && book?.volumeInfo?.authors[0]}</p>
+                  <p>{book?.volumeInfo?.title?.slice(0,50) || "Unknown Title"}{book?.volumeInfo?.authors?.[0] && ` - ${book.volumeInfo.authors[0]}`}</p>
                 </div>
               ))}
             </div>

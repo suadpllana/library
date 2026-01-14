@@ -233,7 +233,7 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      ('Fetching users...');
+      console.log('Fetching users...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -265,7 +265,7 @@ const AdminDashboard = () => {
         email: emailsMap[u.id] || 'N/A'
       }));
 
-      ('Users fetched:', usersWithEmails);
+      console.log('Users fetched:', usersWithEmails);
       setUsers(usersWithEmails || []);
     } catch (error) {
       console.error('Error fetching users:', error);

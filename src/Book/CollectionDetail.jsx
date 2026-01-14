@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 import './CollectionDetail.css';
 
 const CollectionDetail = () => {
@@ -76,9 +77,10 @@ const CollectionDetail = () => {
 
       if (error) throw error;
       setBooks(books.filter(b => b.book_id !== bookId));
+      toast.success('Book removed from collection');
     } catch (error) {
       console.error('Error removing book:', error);
-      alert('Failed to remove book');
+      toast.error('Failed to remove book');
     }
   };
 
