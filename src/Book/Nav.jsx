@@ -5,6 +5,8 @@ import CategoryBooks from './CategoryBooks';
 import {useState, useRef, useEffect} from "react"
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import NotificationBell from '../components/NotificationBell';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Nav = () => {
   const [showCategories, setShowCategories] = useState(false);
@@ -55,18 +57,22 @@ const Nav = () => {
                 <Link to="/wishlist" onClick={handleMenuItemClick}>💫 Wishlist</Link>
                 <Link to="/loaned-books" onClick={handleMenuItemClick}>📋 Loaned Books</Link>
 
-          <button 
-            className="category-trigger"
-            onMouseLeave={() => setShowCategories(false)} 
+          <div 
+            className="category-wrapper"
             onMouseEnter={() => setShowCategories(true)}
-            onFocus={() => setShowCategories(true)}
-            onBlur={() => setShowCategories(false)}
-            aria-haspopup="true"
-            aria-expanded={showCategories}
+            onMouseLeave={() => setShowCategories(false)}
           >
-            📂 Category
-          </button>
-          {showCategories && <CategoryBooks setShowCategories={setShowCategories}/>}
+            <button 
+              className="category-trigger"
+              onFocus={() => setShowCategories(true)}
+              onBlur={() => setShowCategories(false)}
+              aria-haspopup="true"
+              aria-expanded={showCategories}
+            >
+              📂 Category
+            </button>
+            {showCategories && <CategoryBooks setShowCategories={setShowCategories} showCategories={showCategories}/>}
+          </div>
           <Link to="/authors">👨‍💼 Authors</Link>
           <div className="nav-dropdown" ref={dropdownRef}>
             <span className={`nav-dropdown-trigger ${showMoreMenu ? 'open' : ''}`} onClick={toggleMoreMenu}>My Library <span className="arrow">▾</span></span>
@@ -77,10 +83,14 @@ const Nav = () => {
 
                 <Link to="/collections" onClick={handleMenuItemClick}>📚 Collections</Link>
                 <Link to="/history" onClick={handleMenuItemClick}>📖 Reading History</Link>
+                <Link to="/stats" onClick={handleMenuItemClick}>📊 Statistics</Link>
+                <Link to="/notes" onClick={handleMenuItemClick}>📝 Book Notes</Link>
               </div>
             )}
           </div>
           <Link to="/profile">👤 Profile</Link>
+          <ThemeToggle />
+          <NotificationBell />
           <button onClick={handleSignOut} className="sign-out-btn">🚪 Sign Out</button>
         </div>
       </nav>

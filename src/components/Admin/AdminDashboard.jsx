@@ -21,7 +21,10 @@ const AdminDashboard = () => {
     overdueLoans: 0,
     returnedLoans: 0,
     totalReviews: 0,
-    avgRating: 0
+    avgRating: 0,
+    rejectedLoans: 0,
+    totalWishlistItems: 0,
+    totalCollections: 0
   });
   const [loading, setLoading] = useState(true);
   const [rejectingLoanId, setRejectingLoanId] = useState(null);
@@ -38,6 +41,91 @@ const AdminDashboard = () => {
     role: 'user'
   });
   const [inviting, setInviting] = useState(false);
+
+  // Export functions
+  const exportToCSV = (data, filename) => {
+    if (data.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => 
+        headers.map(header => {
+          const value = row[header];
+          // Handle values with commas or quotes
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value ?? '';
+        }).join(',')
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    toast.success(`Exported ${data.length} records to ${filename}.csv`);
+  };
+
+  const exportLoans = () => {
+    const exportData = loanRequests.map(loan => ({
+      'Book Title': loan.book_title,
+      'User': `${loan.profiles?.first_name || ''} ${loan.profiles?.last_name || ''}`.trim(),
+      'User Email': loan.user_email || 'N/A',
+      'Status': loan.status,
+      'Requested Date': formatDate(loan.requested_at),
+      'Due Date': formatDate(loan.due_date),
+      'Returned Date': formatDate(loan.returned_at),
+      'Notes': loan.notes || ''
+    }));
+    exportToCSV(exportData, 'loan_requests');
+  };
+
+  const exportUsers = () => {
+    const exportData = users.map(u => ({
+      'First Name': u.first_name || '',
+      'Last Name': u.last_name || '',
+      'Email': u.email || 'N/A',
+      'Role': u.role || 'user',
+      'Created': formatDate(u.created_at),
+      'Last Updated': formatDate(u.updated_at)
+    }));
+    exportToCSV(exportData, 'users');
+  };
+
+  const exportReviews = () => {
+    const exportData = reviews.map(r => ({
+      'Book Title': r.book_title,
+      'Reviewer': r.user_name,
+      'Rating': r.rating,
+      'Review': r.review_text || '',
+      'Date': formatDate(r.created_at)
+    }));
+    exportToCSV(exportData, 'book_reviews');
+  };
+
+  const generateReport = () => {
+    const report = {
+      'Report Generated': new Date().toLocaleString(),
+      'Total Users': stats.totalUsers,
+      'Total Loans': stats.totalLoans,
+      'Pending Loans': stats.pendingLoans,
+      'Approved Loans': stats.approvedLoans,
+      'Overdue Loans': stats.overdueLoans,
+      'Returned Loans': stats.returnedLoans,
+      'Rejected Loans': stats.rejectedLoans,
+      'Total Reviews': stats.totalReviews,
+      'Average Rating': stats.avgRating,
+      'Total Wishlist Items': stats.totalWishlistItems,
+      'Total Collections': stats.totalCollections
+    };
+    exportToCSV([report], 'library_report');
+  };
 
   useEffect(() => {
     fetchData();
@@ -80,6 +168,7 @@ const AdminDashboard = () => {
       const pendingLoans = loans?.filter(l => l.status === 'pending').length || 0;
       const approvedLoans = loans?.filter(l => l.status === 'approved').length || 0;
       const returnedLoans = loans?.filter(l => l.status === 'returned').length || 0;
+      const rejectedLoans = loans?.filter(l => l.status === 'rejected').length || 0;
       const overdueLoans = loans?.filter(l => 
         l.status === 'approved' && l.due_date && new Date(l.due_date) < now
       ).length || 0;
@@ -94,6 +183,16 @@ const AdminDashboard = () => {
         ? (reviewsData.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
         : 0;
 
+      // Fetch wishlist count
+      const { count: wishlistCount } = await supabase
+        .from('wishlist')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch collections count
+      const { count: collectionsCount } = await supabase
+        .from('reading_collections')
+        .select('*', { count: 'exact', head: true });
+
       setStats({
         totalUsers: userCount || 0,
         totalLoans: loans?.length || 0,
@@ -101,8 +200,11 @@ const AdminDashboard = () => {
         approvedLoans,
         overdueLoans,
         returnedLoans,
+        rejectedLoans,
         totalReviews,
-        avgRating
+        avgRating,
+        totalWishlistItems: wishlistCount || 0,
+        totalCollections: collectionsCount || 0
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -288,16 +390,23 @@ const AdminDashboard = () => {
         updateData.due_date = dueDate.toISOString();
       }
 
-      if (action === 'rejected' && message) {
-        updateData.notes = message;
+      if (action === 'rejected') {
+        updateData.notes = message || 'Loan request rejected by administrator';
       }
 
-      const { error } = await supabase
+
+      const { data, error } = await supabase
         .from('loan_requests')
         .update(updateData)
-        .eq('id', loanId);
+        .eq('id', loanId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Update result:', data);
 
       toast.success(`Loan request ${action}!`);
       setRejectingLoanId(null);
@@ -623,6 +732,25 @@ const AdminDashboard = () => {
                 >
                   <span className="action-icon">⭐</span>
                   <span>Moderate Reviews</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Export & Reports Section */}
+            <div className="export-section">
+              <h3>📊 Reports & Export</h3>
+              <div className="export-buttons">
+                <button className="export-btn" onClick={generateReport}>
+                  <span>📋</span> Generate Summary Report
+                </button>
+                <button className="export-btn" onClick={exportLoans}>
+                  <span>📚</span> Export Loans (CSV)
+                </button>
+                <button className="export-btn" onClick={exportUsers}>
+                  <span>👥</span> Export Users (CSV)
+                </button>
+                <button className="export-btn" onClick={exportReviews}>
+                  <span>⭐</span> Export Reviews (CSV)
                 </button>
               </div>
             </div>

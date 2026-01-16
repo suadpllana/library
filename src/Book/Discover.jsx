@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaFire, FaStar, FaClock, FaAward, FaBookOpen, FaArrowRight } from 'react-icons/fa';
+import { FaFire, FaStar, FaClock, FaAward, FaBookOpen, FaArrowRight, FaUser, FaHeart, FaRandom, FaLightbulb } from 'react-icons/fa';
 import { HiSparkles } from 'react-icons/hi';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import './Discover.css';
 
 const Discover = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('trending');
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [featuredBook, setFeaturedBook] = useState(null);
+  const [personalizedBooks, setPersonalizedBooks] = useState([]);
+  const [userCategories, setUserCategories] = useState([]);
+  const [loadingPersonalized, setLoadingPersonalized] = useState(false);
+  const [randomPick, setRandomPick] = useState(null);
 
   const tabs = [
     { id: 'trending', label: 'Trending Now', icon: <FaFire />, query: 'subject:fiction&orderBy=relevance' },
+    { id: 'forYou', label: 'For You', icon: <FaUser />, query: null },
     { id: 'new', label: 'New Arrivals', icon: <HiSparkles />, query: 'subject:fiction&orderBy=newest' },
     { id: 'topRated', label: 'Top Rated', icon: <FaStar />, query: 'bestseller+2024' },
     { id: 'classics', label: 'Classics', icon: <FaAward />, query: 'subject:classics' },
@@ -20,8 +28,111 @@ const Discover = () => {
   ];
 
   useEffect(() => {
-    fetchBooks();
+    if (activeTab === 'forYou') {
+      fetchPersonalizedRecommendations();
+    } else {
+      fetchBooks();
+    }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserPreferences();
+    }
+  }, [user]);
+
+  const fetchUserPreferences = async () => {
+    try {
+      // Get user's wishlist and loans to understand their preferences
+      const [wishlistRes, loansRes] = await Promise.all([
+        supabase.from('wishlist').select('categories').eq('user_id', user.id),
+        supabase.from('loan_requests').select('categories').eq('user_id', user.id)
+      ]);
+
+      const allCategories = [];
+      
+      wishlistRes.data?.forEach(item => {
+        if (item.categories) {
+          allCategories.push(...(Array.isArray(item.categories) ? item.categories : [item.categories]));
+        }
+      });
+      
+      loansRes.data?.forEach(item => {
+        if (item.categories) {
+          allCategories.push(...(Array.isArray(item.categories) ? item.categories : [item.categories]));
+        }
+      });
+
+      // Count category frequency
+      const categoryCount = allCategories.reduce((acc, cat) => {
+        acc[cat] = (acc[cat] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Get top categories
+      const topCategories = Object.entries(categoryCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([cat]) => cat);
+
+      setUserCategories(topCategories.length > 0 ? topCategories : ['fiction', 'mystery', 'science']);
+    } catch (error) {
+      console.error('Error fetching user preferences:', error);
+      setUserCategories(['fiction', 'mystery', 'science']);
+    }
+  };
+
+  const fetchPersonalizedRecommendations = async () => {
+    setLoadingPersonalized(true);
+    setLoading(true);
+    
+    try {
+      const categoriesToUse = userCategories.length > 0 ? userCategories : ['fiction', 'mystery', 'science'];
+      const allBooks = [];
+
+      // Fetch books from user's preferred categories
+      for (const category of categoriesToUse.slice(0, 3)) {
+        const response = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=subject:${encodeURIComponent(category)}&maxResults=10&orderBy=relevance`
+        );
+        const data = await response.json();
+        if (data.items) {
+          allBooks.push(...data.items.map(book => ({ ...book, recommendedCategory: category })));
+        }
+      }
+
+      // Shuffle and remove duplicates
+      const uniqueBooks = Array.from(new Map(allBooks.map(b => [b.id, b])).values());
+      const shuffled = uniqueBooks.sort(() => Math.random() - 0.5);
+      
+      setBooks(shuffled.slice(0, 20));
+      setFeaturedBook(shuffled.find(b => b.volumeInfo?.imageLinks?.thumbnail));
+    } catch (error) {
+      console.error('Error fetching personalized books:', error);
+    } finally {
+      setLoading(false);
+      setLoadingPersonalized(false);
+    }
+  };
+
+  const getRandomPick = async () => {
+    setRandomPick(null);
+    const categories = ['thriller', 'romance', 'science fiction', 'biography', 'history', 'fantasy', 'mystery'];
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=subject:${randomCategory}&maxResults=40`
+      );
+      const data = await response.json();
+      if (data.items?.length > 0) {
+        const randomIndex = Math.floor(Math.random() * data.items.length);
+        setRandomPick(data.items[randomIndex]);
+      }
+    } catch (error) {
+      console.error('Error getting random pick:', error);
+    }
+  };
 
   const fetchBooks = async () => {
     setLoading(true);
@@ -81,6 +192,40 @@ const Discover = () => {
         )}
       </div>
 
+      {/* Personalized Section */}
+      {user && userCategories.length > 0 && activeTab !== 'forYou' && (
+        <div className="personalized-section">
+          <div className="personalized-header">
+            <FaLightbulb className="bulb-icon" />
+            <div>
+              <h3>Based on Your Interests</h3>
+              <p>You seem to enjoy: {userCategories.join(', ')}</p>
+            </div>
+            <button className="see-more-btn" onClick={() => setActiveTab('forYou')}>
+              See Recommendations <FaArrowRight />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Random Pick Section */}
+      <div className="random-pick-section">
+        <button className="random-btn" onClick={getRandomPick}>
+          <FaRandom /> Surprise Me!
+        </button>
+        {randomPick && (
+          <div className="random-result" onClick={() => handleBookClick(randomPick)}>
+            <img src={getBookImage(randomPick)} alt={randomPick.volumeInfo?.title} />
+            <div className="random-info">
+              <span className="random-label">Your Random Pick:</span>
+              <h4>{randomPick.volumeInfo?.title}</h4>
+              <p>{randomPick.volumeInfo?.authors?.[0]}</p>
+              <span className="random-category">{randomPick.volumeInfo?.categories?.[0] || 'General'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Tabs */}
       <div className="discover-tabs">
         {tabs.map(tab => (
@@ -95,12 +240,23 @@ const Discover = () => {
         ))}
       </div>
 
+      {/* For You Info Banner */}
+      {activeTab === 'forYou' && (
+        <div className="for-you-banner">
+          <FaHeart className="banner-icon" />
+          <div>
+            <h4>Personalized For You</h4>
+            <p>Books based on your reading history and wishlist preferences ({userCategories.join(', ')})</p>
+          </div>
+        </div>
+      )}
+
       {/* Books Grid */}
       <div className="discover-content">
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>Loading amazing books...</p>
+            <p>{activeTab === 'forYou' ? 'Finding books just for you...' : 'Loading amazing books...'}</p>
           </div>
         ) : (
           <div className="books-grid">
@@ -119,6 +275,11 @@ const Discover = () => {
                   {book.volumeInfo?.averageRating && (
                     <div className="rating-badge">
                       <FaStar /> {book.volumeInfo.averageRating}
+                    </div>
+                  )}
+                  {book.recommendedCategory && (
+                    <div className="recommended-badge">
+                      <FaHeart /> {book.recommendedCategory}
                     </div>
                   )}
                 </div>

@@ -412,3 +412,261 @@
     max-width: 300px;
   }
 }
+
+/* Personalized Section */
+.personalized-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 5% 1.5rem;
+}
+
+.personalized-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(145deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+}
+
+.personalized-header .bulb-icon {
+  font-size: 1.75rem;
+  color: #f59e0b;
+}
+
+.personalized-header h3 {
+  font-size: 1rem;
+  color: #fff;
+  margin: 0;
+}
+
+.personalized-header p {
+  font-size: 0.85rem;
+  color: #a5a5c0;
+  margin: 0;
+}
+
+.personalized-header > div {
+  flex: 1;
+}
+
+.see-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.see-more-btn:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+/* Random Pick Section */
+.random-pick-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 5% 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.random-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.random-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+}
+
+.random-btn svg {
+  font-size: 1.1rem;
+}
+
+.random-result {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(145deg, #252542 0%, #1e1e35 100%);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 14px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  flex: 1;
+  min-width: 300px;
+  animation: slideIn 0.4s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.random-result:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.2);
+}
+
+.random-result img {
+  width: 60px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.random-info {
+  flex: 1;
+}
+
+.random-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #ec4899;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.random-info h4 {
+  font-size: 1rem;
+  color: #fff;
+  margin: 0 0 0.25rem;
+  line-height: 1.3;
+}
+
+.random-info p {
+  font-size: 0.85rem;
+  color: #818cf8;
+  margin: 0 0 0.5rem;
+}
+
+.random-category {
+  display: inline-block;
+  background: rgba(236, 72, 153, 0.15);
+  color: #f472b6;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+/* For You Banner */
+.for-you-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 5%;
+  margin-bottom: 1rem;
+}
+
+.for-you-banner .banner-icon {
+  font-size: 1.5rem;
+  color: #f43f5e;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.for-you-banner h4 {
+  font-size: 1rem;
+  color: #fff;
+  margin: 0;
+}
+
+.for-you-banner p {
+  font-size: 0.85rem;
+  color: #a5a5c0;
+  margin: 0;
+}
+
+/* Recommended Badge */
+.recommended-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(236, 72, 153, 0.9);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.recommended-badge svg {
+  font-size: 0.65rem;
+}
+
+/* Responsive adjustments for new features */
+@media (max-width: 768px) {
+  .personalized-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  
+  .see-more-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .random-pick-section {
+    flex-direction: column;
+  }
+  
+  .random-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .random-result {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .for-you-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+}

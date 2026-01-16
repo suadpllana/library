@@ -212,6 +212,21 @@
 }
 
 /* Category trigger button */
+.category-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.category-wrapper .book-category {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-top: 1.5rem;
+  margin-top: 0;
+}
+
 .category-trigger {
   display: flex;
   align-items: center;
