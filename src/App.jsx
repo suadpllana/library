@@ -10,6 +10,7 @@ import Authors from "./Book/Authors";
 import AuthorPage from "./Book/AuthorPage";
 import Auth from './components/Auth/Auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProfilePage from './Book/ProfilePage';
 import LoanedBooks from './Book/LoanedBooks';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -20,6 +21,8 @@ import AdvancedSearch from './Book/AdvancedSearch';
 import MyCollections from './Book/MyCollections';
 import CollectionDetail from './Book/CollectionDetail';
 import ReadingHistory from './Book/ReadingHistory';
+import ReadingStats from './Book/ReadingStats';
+import BookNotes from './Book/BookNotes';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -80,21 +83,22 @@ const AdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <ErrorBoundary>
-        <Router>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/admin/*"
-              element={
-                <AdminRoute>
-                  <Routes>
-                    <Route path="/" element={<AdminDashboard />} />
-                    <Route path="*" element={<AdminDashboard />} />
-                  </Routes>
-                </AdminRoute>
-              }
+    <ThemeProvider>
+      <AuthProvider>
+        <ErrorBoundary>
+          <Router>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/admin/*"
+                element={
+                  <AdminRoute>
+                    <Routes>
+                      <Route path="/" element={<AdminDashboard />} />
+                      <Route path="*" element={<AdminDashboard />} />
+                    </Routes>
+                  </AdminRoute>
+                }
             />
             <Route
               path="/*"
@@ -116,6 +120,8 @@ function App() {
                       <Route path="/collections" element={<MyCollections />} />
                       <Route path="/collection/:id" element={<CollectionDetail />} />
                       <Route path="/history" element={<ReadingHistory />} />
+                      <Route path="/stats" element={<ReadingStats />} />
+                      <Route path="/notes" element={<BookNotes />} />
                     </Routes>
                   </>
                 </UserRoute>
@@ -135,8 +141,9 @@ function App() {
           theme="dark"
           closeButton={false}
         />
-      </ErrorBoundary>
-    </AuthProvider>
+        </ErrorBoundary>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './AiWidget.css';
 
-const HF_MODEL = import.meta.env.VITE_HF_MODEL || 'google/flan-t5-small';
+const HF_MODEL = import.meta.env.VITE_HF_MODEL || 'google/flan-t5-base';
 const HF_KEY = import.meta.env.VITE_HF_API_KEY;
 
 const AiWidget = () => {
@@ -30,37 +30,61 @@ const AiWidget = () => {
     }
   };
 
+  // Simple text summarization without AI
+  const simpleSummarize = (text, maxSentences = 3) => {
+    if (!text) return '';
+    // Split into sentences
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    // Return first few sentences
+    return sentences.slice(0, maxSentences).join('. ').trim() + '.';
+  };
+
   const callHuggingFace = async (prompt) => {
     if (!HF_KEY) {
-      throw new Error('Missing Hugging Face API key. Set VITE_HF_API_KEY in your env.');
+      console.warn('No Hugging Face API key configured');
+      return null; // Return null to trigger fallback
     }
 
     const url = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
-    const body = { inputs: prompt };
+    const body = { inputs: prompt, parameters: { max_new_tokens: 150 } };
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${HF_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${HF_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`HF error: ${res.status} ${text}`);
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`HF error: ${res.status} ${text}`);
+        return null; // Return null to trigger fallback
+      }
+
+      const data = await res.json();
+      
+      // Handle model loading state
+      if (data.error && data.error.includes('loading')) {
+        console.warn('Model is loading, using fallback');
+        return null;
+      }
+      
+      // result shape varies by model; handle common cases
+      if (Array.isArray(data)) {
+        const first = data[0];
+        return first.generated_text || first[0]?.generated_text || null;
+      }
+      if (data.generated_text) return data.generated_text;
+      if (data.data && Array.isArray(data.data) && data.data[0]?.generated_text) return data.data[0].generated_text;
+      
+      return null;
+    } catch (err) {
+      console.error('Hugging Face API error:', err);
+      return null;
     }
-
-    const data = await res.json();
-    // result shape varies by model; handle common cases
-    if (Array.isArray(data)) {
-      const first = data[0];
-      return first.generated_text || first[0]?.generated_text || JSON.stringify(first);
-    }
-    if (data.generated_text) return data.generated_text;
-    if (data.data && Array.isArray(data.data) && data.data[0]?.generated_text) return data.data[0].generated_text;
-    return JSON.stringify(data);
   };
 
   const handleAsk = async (type = 'description') => {
@@ -75,7 +99,7 @@ const AiWidget = () => {
     try {
       const bookItem = await fetchGoogleBook(query.trim());
       if (!bookItem) {
-        setResponse('No books found for that query.');
+        setResponse('No books found for that query. Try a different search term.');
         setLoading(false);
         return;
       }
@@ -85,27 +109,55 @@ const AiWidget = () => {
       const authors = (info.authors || []).join(', ') || 'Unknown author';
       const publisher = info.publisher || 'Unknown publisher';
       const publishedDate = info.publishedDate || 'Unknown date';
+      const categories = (info.categories || []).join(', ') || 'General';
+      const pageCount = info.pageCount || 'Unknown';
       const googleDesc = info.description;
 
-      if (googleDesc) {
-        if (type === 'short') {
-          const prompt = `Summarize the following book description in 2-3 short sentences:\n\nTitle: ${title}\nAuthors: ${authors}\nDescription: ${googleDesc}`;
-          const gen = await callHuggingFace(prompt);
-          setResponse(gen);
+      // For detailed view, show the full description from Google Books
+      if (type === 'description' && googleDesc) {
+        setResponse(googleDesc);
+        setLoading(false);
+        return;
+      }
+
+      // For short summary, try AI first, then fallback
+      if (type === 'short') {
+        if (googleDesc) {
+          // Try Hugging Face first
+          const prompt = `Summarize this book description in 2-3 sentences: ${googleDesc.slice(0, 500)}`;
+          const aiSummary = await callHuggingFace(prompt);
+          
+          if (aiSummary && aiSummary.trim()) {
+            setResponse(aiSummary);
+          } else {
+            // Fallback: use simple summarization
+            const fallbackSummary = simpleSummarize(googleDesc, 3);
+            setResponse(fallbackSummary || `"${title}" by ${authors}. ${categories}. ${pageCount} pages.`);
+          }
         } else {
-          setResponse(googleDesc);
+          // No description available, create basic info
+          setResponse(`"${title}" by ${authors}. Published by ${publisher} on ${publishedDate}. Category: ${categories}. ${pageCount !== 'Unknown' ? pageCount + ' pages.' : ''}`);
         }
         setLoading(false);
         return;
       }
 
-      const prompt = `Write a friendly, engaging ${type === 'short' ? 'short ' : ''}description for the book using the information below. Keep it natural and helpful.\n\nTitle: ${title}\nAuthors: ${authors}\nPublisher: ${publisher}\nPublished Date: ${publishedDate}\n\nUse the details to create a concise description.`;
-
-      const generated = await callHuggingFace(prompt);
-      setResponse(generated);
+      // Default: if no Google description, try to generate one
+      if (!googleDesc) {
+        const prompt = `Write a brief book description for: "${title}" by ${authors}, published by ${publisher} in ${publishedDate}. Category: ${categories}.`;
+        const generated = await callHuggingFace(prompt);
+        
+        if (generated && generated.trim()) {
+          setResponse(generated);
+        } else {
+          setResponse(`"${title}" by ${authors}. Published by ${publisher} on ${publishedDate}. Category: ${categories}. ${pageCount !== 'Unknown' ? pageCount + ' pages.' : ''}`);
+        }
+      } else {
+        setResponse(googleDesc);
+      }
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Something went wrong');
+      setError('Unable to fetch book information. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -148,9 +148,13 @@ const Book = () => {
         <h2>{category.replace(/([A-Z])/g, " $1").trim()}</h2>
         <div className="slideshow-container">
         
-            < FaChevronLeft  className="slide-button prev"
-            onClick={() => handleSlide(category, -1)}
-            disabled={books.length <= booksPerSlide}/>
+            <button 
+              className="slide-button prev"
+              onClick={() => handleSlide(category, -1)}
+              disabled={books.length <= booksPerSlide}
+            >
+              <FaChevronLeft />
+            </button>
       
           <div className="slide-items">
             {visibleBooks?.map((book) => (
@@ -176,11 +180,13 @@ const Book = () => {
               ))}
           </div>
         
-           <FaChevronRight 
-             className="slide-button next"
-            onClick={() => handleSlide(category, 1)}
-            disabled={books.length <= booksPerSlide}
-           />
+            <button 
+              className="slide-button next"
+              onClick={() => handleSlide(category, 1)}
+              disabled={books.length <= booksPerSlide}
+            >
+              <FaChevronRight />
+            </button>
         </div>
       </div>
     );

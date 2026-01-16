@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WishlistPage.css';
 import { toast } from 'react-toastify';
-import { FaArrowLeftLong, FaPlus } from "react-icons/fa6";
+import { FaArrowLeftLong, FaPlus, FaTrash } from "react-icons/fa6";
+import { MdGridView, MdViewList, MdSort } from "react-icons/md";
 import WishlistModal from './WishlistModal';
 import AddBookModal from './AddBookModal';
 import { createClient } from '@supabase/supabase-js';
@@ -17,6 +18,7 @@ const WishlistPage = () => {
   const [loading, setLoading] = useState(true);
   const [loanStatuses, setLoanStatuses] = useState({});
   const [requestingLoan, setRequestingLoan] = useState({});
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
 
   useEffect(() => {
     fetchWishlist();
@@ -43,6 +45,7 @@ const WishlistPage = () => {
         .from('wishlist')
         .select('*')
         .eq('user_id', user.id)
+        .order('position', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -112,10 +115,10 @@ const WishlistPage = () => {
       const bookIds = watchlist.map(book => book.id);
       const { data, error } = await supabase
         .from('loan_requests')
-        .select('book_id, status')
+        .select('book_id, status, notes')
         .eq('user_id', user.id)
         .in('book_id', bookIds)
-        .in('status', ['pending', 'approved']);
+        .in('status', ['pending', 'approved', 'rejected']);
 
       if (error) {
         console.error('Error checking loan statuses:', error);
@@ -124,7 +127,7 @@ const WishlistPage = () => {
 
       const statusMap = {};
       data?.forEach(loan => {
-        statusMap[loan.book_id] = loan.status;
+        statusMap[loan.book_id] = { status: loan.status, notes: loan.notes };
       });
       setLoanStatuses(statusMap);
     } catch (error) {
@@ -164,7 +167,7 @@ const WishlistPage = () => {
         return;
       }
 
-      setLoanStatuses(prev => ({ ...prev, [book.id]: 'pending' }));
+      setLoanStatuses(prev => ({ ...prev, [book.id]: { status: 'pending', notes: null } }));
       toast.success('Loan request submitted!');
     } catch (error) {
       console.error('Error requesting loan:', error);
@@ -185,95 +188,141 @@ const WishlistPage = () => {
       <h1>My Wishlist</h1>
 
       {watchlist?.length > 0 && (
-        <p style={{ textAlign: "center" }}>{watchlist.length} books wishlisted</p>
+        <p style={{ textAlign: "center", color: "#a5a5c0" }}>{watchlist.length} books wishlisted</p>
       )}
 
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <button 
-          className="add-book-btn"
-          onClick={() => setOpenAddModal(true)}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.3s'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#218838';
-            e.target.style.transform = 'translateY(-2px)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#28a745';
-            e.target.style.transform = 'translateY(0)';
-          }}
-        >
-          <FaPlus /> Add Book Manually
-        </button>
+      {/* Toolbar */}
+      <div className="wishlist-toolbar">
+        <div className="toolbar-left">
+          <button 
+            className="add-book-btn"
+            onClick={() => setOpenAddModal(true)}
+          >
+            <FaPlus /> Add Book
+          </button>
+          <button className="sort-wishlist-btn" onClick={() => setOpenModal(true)}>
+            <MdSort /> Sort
+          </button>
+        </div>
+        <div className="toolbar-right">
+          <input
+            type="text"
+            placeholder="Search books..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          <div className="view-toggle">
+            <button 
+              className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+              title="List View"
+            >
+              <MdViewList />
+            </button>
+            <button 
+              className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Grid View"
+            >
+              <MdGridView />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <input
-        type="text"
-        placeholder="Search the wishlisted book"
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-
-      <button className="sort-wishlist" onClick={() => setOpenModal(true)}>
-        Sort the wishlist
-      </button>
-
       {watchlist.length === 0 ? (
-        <p>Your wishlist is empty.</p>
+        <div className="empty-wishlist">
+          <span className="empty-icon">📚</span>
+          <p>Your wishlist is empty</p>
+          <button onClick={() => setOpenAddModal(true)} className="add-first-btn">
+            <FaPlus /> Add your first book
+          </button>
+        </div>
       ) : (
-        <div className="watchlist-container">
+        <div className={`watchlist-container ${viewMode}`}>
           {filteredBooks?.map((book) => (
-            <div key={book.id} className="watchlist-item">
-              <div className="watchlist-image">
-                <img
-                  onClick={() => handleBookClick(book)}
-                  src={book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image'}
-                  alt={book.title || 'No Title'}
-                />
-              </div>
-              <div className="watchlist-details">
-                <h3
-                  onClick={() => handleBookClick(book)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {book.title || 'Unknown Title'}
-                </h3>
-                <p
-                  className="author"
-                  onClick={() => book.authors?.[0] && navigate(`/authors/${book.authors[0]}`)}
-                  style={{ cursor: book.authors?.[0] ? 'pointer' : 'default' }}
-                >
-                  by {book.authors?.join(', ') || 'Unknown Author'}
-                </p>
-                <div className="wishlist-actions">
+            <div key={book.id} className={`watchlist-item ${viewMode}`}>
+              {viewMode === 'list' ? (
+                // List View
+                <>
+                  <div className="watchlist-image">
+                    <img
+                      onClick={() => handleBookClick(book)}
+                      src={book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image'}
+                      alt={book.title || 'No Title'}
+                    />
+                  </div>
+                  <div className="watchlist-details">
+                    <h3
+                      onClick={() => handleBookClick(book)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {book.title || 'Unknown Title'}
+                    </h3>
+                    <p
+                      className="author"
+                      onClick={() => book.authors?.[0] && navigate(`/authors/${book.authors[0]}`)}
+                      style={{ cursor: book.authors?.[0] ? 'pointer' : 'default' }}
+                    >
+                      by {book.authors?.join(', ') || 'Unknown Author'}
+                    </p>
+                    <div className="wishlist-actions">
+                      <button
+                        className={`loan-button ${loanStatuses[book.id]?.status === 'pending' ? 'pending' : ''} ${loanStatuses[book.id]?.status === 'approved' ? 'approved' : ''} ${loanStatuses[book.id]?.status === 'rejected' ? 'rejected' : ''}`}
+                        onClick={(e) => handleRequestLoan(e, book)}
+                        disabled={requestingLoan[book.id] || loanStatuses[book.id]?.status === 'pending' || loanStatuses[book.id]?.status === 'approved'}
+                      >
+                        {loanStatuses[book.id]?.status === 'pending' ? '⏳ Loan Pending' : 
+                         loanStatuses[book.id]?.status === 'approved' ? '✓ Loan Approved' : 
+                         loanStatuses[book.id]?.status === 'rejected' ? '❌ Loan Rejected' :
+                         requestingLoan[book.id] ? 'Requesting...' : '📚 Request Loan'}
+                      </button>
+                      <button
+                        className="remove-button"
+                        onClick={(e) => handleRemoveFromWatchlist(e, book)}
+                      >
+                        <FaTrash /> Remove
+                      </button>
+                    </div>
+                    {loanStatuses[book.id]?.status === 'rejected' && (
+                      <div className="rejection-message">
+                        <strong>Rejection reason:</strong> {loanStatuses[book.id]?.notes || 'No reason provided'}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                // Grid View
+                <div className="grid-card-content">
                   <button
-                    className={`loan-button ${loanStatuses[book.id] === 'pending' ? 'pending' : ''} ${loanStatuses[book.id] === 'approved' ? 'approved' : ''}`}
-                    onClick={(e) => handleRequestLoan(e, book)}
-                    disabled={requestingLoan[book.id] || loanStatuses[book.id] === 'pending' || loanStatuses[book.id] === 'approved'}
-                  >
-                    {loanStatuses[book.id] === 'pending' ? '⏳ Loan Pending' : 
-                     loanStatuses[book.id] === 'approved' ? '✓ Loan Approved' : 
-                     requestingLoan[book.id] ? 'Requesting...' : '📚 Request Loan'}
-                  </button>
-                  <button
-                    className="remove-button"
+                    className="grid-remove-btn"
                     onClick={(e) => handleRemoveFromWatchlist(e, book)}
+                    title="Remove from wishlist"
                   >
-                    Remove from Watchlist
+                    <FaTrash />
+                  </button>
+                  <img
+                    onClick={() => handleBookClick(book)}
+                    src={book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image'}
+                    alt={book.title || 'No Title'}
+                    className="grid-book-cover"
+                  />
+                  <div className="grid-book-info">
+                    <h4 onClick={() => handleBookClick(book)}>{book.title || 'Unknown Title'}</h4>
+                    <p>{book.authors?.[0] || 'Unknown Author'}</p>
+                  </div>
+                  <button
+                    className={`grid-loan-btn ${loanStatuses[book.id]?.status || ''}`}
+                    onClick={(e) => handleRequestLoan(e, book)}
+                    disabled={requestingLoan[book.id] || loanStatuses[book.id]?.status === 'pending' || loanStatuses[book.id]?.status === 'approved'}
+                  >
+                    {loanStatuses[book.id]?.status === 'pending' ? '⏳' : 
+                     loanStatuses[book.id]?.status === 'approved' ? '✓' : 
+                     loanStatuses[book.id]?.status === 'rejected' ? '❌' : '📚'}
                   </button>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
@@ -288,6 +337,7 @@ const WishlistPage = () => {
           watchlist={watchlist}
           setWatchlist={handleSortedWishlist}
           setOpenModal={setOpenModal}
+          refreshWishlist={fetchWishlist}
         />
       )}
 
