@@ -33,17 +33,23 @@
 }
 
 .back-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
   margin-bottom: 2rem;
-  font-size: 1.1rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
   color: #818cf8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
   transition: all 0.2s ease;
+  width: fit-content;
 }
 
 .back-link:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: #a5b4fc;
   transform: translateX(-3px);
 }
@@ -274,6 +280,8 @@
   padding: 0.5rem;
   border-radius: 12px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-tabs button {
@@ -292,16 +300,19 @@
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
 }
 
 .profile-tabs button:hover {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.2);
   color: #e0e0e0;
 }
 
 .profile-tabs button.active {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 /* Overview Section */
@@ -841,10 +852,32 @@
 
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 1rem;
   padding: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-footer .footer-right {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.reset-password-btn {
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reset-password-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .cancel-btn {

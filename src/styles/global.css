@@ -83,28 +83,178 @@
 }
 
 /* Light Theme Variables */
-[data-theme="light"], .light-mode {
-  --bg-primary: #f5f3f0;
-  --bg-secondary: #e8e4df;
-  --bg-tertiary: #d9d5d0;
+[data-theme="light"], .light-mode, body.light-mode, html[data-theme="light"] {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f2f5;
   --bg-card: #ffffff;
-  --bg-hover: #eeebe6;
+  --bg-hover: #f0f2f5;
   --bg-input: #ffffff;
   
   --text-primary: #1a1a2e;
-  --text-secondary: #555566;
-  --text-muted: #888899;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
   --text-accent: #6366f1;
   
-  --border-color: rgba(0, 0, 0, 0.08);
-  --border-light: rgba(0, 0, 0, 0.12);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --border-light: rgba(0, 0, 0, 0.15);
+  --border-accent: rgba(99, 102, 241, 0.4);
   
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
   
-  --gradient-dark: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-  --gradient-card: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+  --gradient-dark: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+/* Apply light mode to body */
+body.light-mode,
+html[data-theme="light"] body {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Light mode specific overrides */
+body.light-mode .nav,
+[data-theme="light"] .nav {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .nav a,
+[data-theme="light"] .nav a {
+  color: #4a5568 !important;
+}
+
+body.light-mode .nav a:hover,
+[data-theme="light"] .nav a:hover {
+  color: #6366f1 !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+}
+
+body.light-mode .book,
+body.light-mode .book-card,
+body.light-mode .card,
+body.light-mode .watchlist-item,
+body.light-mode .result-card,
+body.light-mode .stat-card,
+body.light-mode .profile-card,
+body.light-mode .quick-stats-card,
+body.light-mode .reading-goal-card,
+body.light-mode .avg-rating-card,
+body.light-mode .achievement-card,
+body.light-mode .author-book-item,
+body.light-mode .history-card,
+body.light-mode .metric-card,
+[data-theme="light"] .book,
+[data-theme="light"] .book-card,
+[data-theme="light"] .card,
+[data-theme="light"] .watchlist-item,
+[data-theme="light"] .result-card,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .profile-card,
+[data-theme="light"] .quick-stats-card,
+[data-theme="light"] .reading-goal-card,
+[data-theme="light"] .avg-rating-card,
+[data-theme="light"] .achievement-card,
+[data-theme="light"] .author-book-item,
+[data-theme="light"] .history-card,
+[data-theme="light"] .metric-card {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6,
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5,
+[data-theme="light"] h6 {
+  color: #1a1a2e !important;
+  -webkit-text-fill-color: #1a1a2e !important;
+  background: none !important;
+}
+
+body.light-mode p,
+body.light-mode span,
+body.light-mode .author,
+body.light-mode .description,
+body.light-mode label,
+[data-theme="light"] p,
+[data-theme="light"] span,
+[data-theme="light"] .author,
+[data-theme="light"] .description,
+[data-theme="light"] label {
+  color: #4a5568 !important;
+}
+
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea,
+body.light-mode .title-input,
+body.light-mode .search-input,
+body.light-mode .ai-input,
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+[data-theme="light"] .title-input,
+[data-theme="light"] .search-input,
+[data-theme="light"] .ai-input {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #1a1a2e !important;
+}
+
+body.light-mode .recommendations div,
+body.light-mode .slideshow,
+body.light-mode .book-container,
+body.light-mode .modal,
+body.light-mode .ai-modal-content,
+body.light-mode .filters-panel,
+body.light-mode .notification-dropdown,
+body.light-mode .nav-dropdown-menu,
+[data-theme="light"] .recommendations div,
+[data-theme="light"] .slideshow,
+[data-theme="light"] .book-container,
+[data-theme="light"] .modal,
+[data-theme="light"] .ai-modal-content,
+[data-theme="light"] .filters-panel,
+[data-theme="light"] .notification-dropdown,
+[data-theme="light"] .nav-dropdown-menu {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-mode .headerContainer,
+body.light-mode .categories-container,
+body.light-mode .discover-page,
+body.light-mode .advanced-search-page,
+body.light-mode .watchlist-page,
+body.light-mode .loaned-books-page,
+body.light-mode .profile-page,
+body.light-mode .author-detail,
+body.light-mode .book-page,
+body.light-mode .reading-stats-page,
+[data-theme="light"] .headerContainer,
+[data-theme="light"] .categories-container,
+[data-theme="light"] .discover-page,
+[data-theme="light"] .advanced-search-page,
+[data-theme="light"] .watchlist-page,
+[data-theme="light"] .loaned-books-page,
+[data-theme="light"] .profile-page,
+[data-theme="light"] .author-detail,
+[data-theme="light"] .book-page,
+[data-theme="light"] .reading-stats-page {
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%) !important;
 }
 
 /* Global Reset & Base */

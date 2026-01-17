@@ -1,32 +1,41 @@
 .book-notes-page {
   min-height: 100vh;
   padding: 2rem;
-  background: linear-gradient(135deg, #f5f3f0 0%, #e8e4df 100%);
+  margin-top: 70px;
+  background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+  color: #e0e0e0;
 }
 
 .book-notes-page .back-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 1rem;
-  color: #666;
+  color: #818cf8;
   cursor: pointer;
   margin-bottom: 2rem;
-  transition: color 0.2s;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.2s ease;
 }
 
 .book-notes-page .back-link:hover {
-  color: #333;
+  background: rgba(255, 255, 255, 0.1);
+  color: #a5b4fc;
+  transform: translateX(-4px);
 }
 
 .book-notes-page .not-logged-in {
   text-align: center;
   padding: 4rem 2rem;
-  background: white;
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   max-width: 400px;
   margin: 4rem auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .notes-header {
@@ -38,7 +47,7 @@
 
 .notes-header .header-content h1 {
   font-size: 2rem;
-  color: #333;
+  color: #fff;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -46,7 +55,7 @@
 }
 
 .notes-header .header-content p {
-  color: #666;
+  color: #a5a5c0;
   font-size: 1rem;
 }
 
@@ -55,18 +64,19 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
   border: none;
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .notes-header .add-note-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
 /* Search */
@@ -81,22 +91,28 @@
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #999;
+  color: #6b6b8a;
 }
 
 .notes-search input {
   width: 100%;
   padding: 0.875rem 1rem 0.875rem 2.75rem;
-  border: 2px solid #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   font-size: 1rem;
-  transition: border-color 0.2s;
-  background: white;
+  transition: all 0.2s;
+  background: #252542;
+  color: #fff;
 }
 
 .notes-search input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.notes-search input::placeholder {
+  color: #6b6b8a;
 }
 
 /* Stats */
@@ -107,10 +123,11 @@
 }
 
 .notes-stats .stat {
-  background: white;
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 1rem 2rem;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -119,12 +136,12 @@
 .notes-stats .stat-value {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #667eea;
+  color: #6366f1;
 }
 
 .notes-stats .stat-label {
   font-size: 0.85rem;
-  color: #666;
+  color: #a5a5c0;
 }
 
 /* Loading */
@@ -136,8 +153,8 @@
 .book-notes-page .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #667eea;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366f1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -151,26 +168,27 @@
 .book-notes-page .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: white;
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   max-width: 500px;
   margin: 2rem auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .book-notes-page .empty-icon {
   font-size: 4rem;
-  color: #ddd;
+  color: #6b6b8a;
   margin-bottom: 1rem;
 }
 
 .book-notes-page .empty-state h3 {
-  color: #333;
+  color: #fff;
   margin-bottom: 0.5rem;
 }
 
 .book-notes-page .empty-state p {
-  color: #666;
+  color: #a5a5c0;
   margin-bottom: 1.5rem;
 }
 
@@ -179,12 +197,13 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 /* Grouped Notes */
@@ -195,9 +214,10 @@
 }
 
 .book-group {
-  background: white;
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  overflow: hidden;
+  overflow: hidden;;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -206,25 +226,25 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 1px solid #e0e0e0;
+  background: rgba(99, 102, 241, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .book-group-header .book-icon {
-  color: #667eea;
+  color: #818cf8;
   font-size: 1.25rem;
 }
 
 .book-group-header h3 {
   font-size: 1.125rem;
-  color: #333;
+  color: #fff;
   flex: 1;
 }
 
 .book-group-header .note-count {
   font-size: 0.85rem;
-  color: #666;
-  background: #e0e0e0;
+  color: #a5a5c0;
+  background: rgba(99, 102, 241, 0.2);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
 }
@@ -240,14 +260,15 @@
   display: flex;
   gap: 1rem;
   padding: 1.25rem;
-  background: #f8f9fa;
+  background: rgba(37, 37, 66, 0.6);
   border-radius: 12px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #6366f1;
   transition: all 0.2s;
+  max-width: 800px;
 }
 
 .note-card:hover {
-  background: #f0f1f3;
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .note-content {
@@ -255,7 +276,7 @@
 }
 
 .note-text {
-  color: #333;
+  color: #e0e0e0;
   line-height: 1.6;
   margin-bottom: 0.75rem;
   white-space: pre-wrap;
@@ -266,7 +287,7 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   font-size: 0.8rem;
-  color: #666;
+  color: #a5a5c0;
   margin-bottom: 0.5rem;
 }
 
@@ -277,7 +298,7 @@
 }
 
 .note-meta .meta-item.date {
-  color: #999;
+  color: #6b6b8a;
 }
 
 .note-tags {
@@ -288,8 +309,8 @@
 
 .note-tags .tag {
   font-size: 0.75rem;
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.15);
   padding: 0.2rem 0.6rem;
   border-radius: 4px;
 }
@@ -313,22 +334,22 @@
 }
 
 .note-actions .edit-btn {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
 }
 
 .note-actions .edit-btn:hover {
-  background: #1976d2;
+  background: #6366f1;
   color: white;
 }
 
 .note-actions .delete-btn {
-  background: #ffebee;
-  color: #d32f2f;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
 
 .note-actions .delete-btn:hover {
-  background: #d32f2f;
+  background: #ef4444;
   color: white;
 }
 
@@ -339,7 +360,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -348,7 +370,8 @@
 }
 
 .book-notes-page .modal-content {
-  background: white;
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   width: 100%;
   max-width: 550px;
@@ -358,7 +381,7 @@
 }
 
 .book-notes-page .modal-content h2 {
-  color: #333;
+  color: #fff;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
 }
@@ -370,7 +393,7 @@
 .book-notes-page .form-group label {
   display: block;
   font-weight: 600;
-  color: #333;
+  color: #a5a5c0;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
@@ -379,17 +402,25 @@
 .book-notes-page .form-group textarea {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   font-size: 1rem;
   font-family: inherit;
   transition: border-color 0.2s;
+  background: #252542;
+  color: #fff;
 }
 
 .book-notes-page .form-group input:focus,
 .book-notes-page .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.book-notes-page .form-group input::placeholder,
+.book-notes-page .form-group textarea::placeholder {
+  color: #6b6b8a;
 }
 
 .book-notes-page .form-group textarea {
@@ -421,21 +452,23 @@
 }
 
 .book-notes-page .cancel-btn {
-  background: #f0f0f0;
-  color: #666;
+  background: rgba(107, 114, 128, 0.2);
+  border: 1px solid rgba(107, 114, 128, 0.3);
+  color: #9ca3af;
 }
 
 .book-notes-page .cancel-btn:hover {
-  background: #e0e0e0;
+  background: rgba(107, 114, 128, 0.3);
 }
 
 .book-notes-page .submit-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
 }
 
 .book-notes-page .submit-btn:hover {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
 }
 
 /* Responsive */

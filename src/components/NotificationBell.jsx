@@ -33,6 +33,10 @@ const NotificationBell = () => {
 
     if (isOpen) {
       document.addEventListener('click', handleClickOutside);
+      // Mark all as read when dropdown is opened
+      if (unreadCount > 0) {
+        markAllAsRead();
+      }
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [isOpen]);

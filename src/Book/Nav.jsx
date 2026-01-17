@@ -1,6 +1,6 @@
 import React from 'react'
 import "./Nav.css"
-import {Link, useNavigate} from "react-router-dom"
+import {Link, useNavigate, useLocation} from "react-router-dom"
 import CategoryBooks from './CategoryBooks';
 import {useState, useRef, useEffect} from "react"
 import { useAuth } from '../context/AuthContext';
@@ -12,8 +12,24 @@ const Nav = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { signOut, user } = useAuth();
   const dropdownRef = useRef(null);
+
+  // Helper to check if path is active
+  const isActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  // Check if any dropdown item is active
+  const isDropdownActive = () => {
+    return ['/discover', '/search', '/collections', '/history', '/stats', '/notes'].some(path => 
+      location.pathname.startsWith(path)
+    );
+  };
 
   const toggleMoreMenu = () => {
     setShowMoreMenu(!showMoreMenu);
@@ -53,9 +69,9 @@ const Nav = () => {
   return (
       <nav className="nav">
         <div className="nav-links">
-          <Link to="/">🏠 Home</Link>
-                <Link to="/wishlist" onClick={handleMenuItemClick}>💫 Wishlist</Link>
-                <Link to="/loaned-books" onClick={handleMenuItemClick}>📋 Loaned Books</Link>
+          <Link to="/" className={isActive('/') ? 'active' : ''}>🏠 Home</Link>
+          <Link to="/wishlist" className={isActive('/wishlist') ? 'active' : ''} onClick={handleMenuItemClick}>💫 Wishlist</Link>
+          <Link to="/loaned-books" className={isActive('/loaned-books') ? 'active' : ''} onClick={handleMenuItemClick}>📋 Loaned Books</Link>
 
           <div 
             className="category-wrapper"
@@ -73,22 +89,21 @@ const Nav = () => {
             </button>
             {showCategories && <CategoryBooks setShowCategories={setShowCategories} showCategories={showCategories}/>}
           </div>
-          <Link to="/authors">👨‍💼 Authors</Link>
+          <Link to="/authors" className={isActive('/authors') ? 'active' : ''}>👨‍💼 Authors</Link>
           <div className="nav-dropdown" ref={dropdownRef}>
-            <span className={`nav-dropdown-trigger ${showMoreMenu ? 'open' : ''}`} onClick={toggleMoreMenu}>My Library <span className="arrow">▾</span></span>
+            <span className={`nav-dropdown-trigger ${showMoreMenu ? 'open' : ''} ${isDropdownActive() ? 'active' : ''}`} onClick={toggleMoreMenu}>My Library <span className="arrow">▾</span></span>
             {showMoreMenu && (
               <div className="nav-dropdown-menu">
-          <Link to="/discover">✨ Discover</Link>
-          <Link to="/search">🔍 Search</Link>
-
-                <Link to="/collections" onClick={handleMenuItemClick}>📚 Collections</Link>
-                <Link to="/history" onClick={handleMenuItemClick}>📖 Reading History</Link>
-                <Link to="/stats" onClick={handleMenuItemClick}>📊 Statistics</Link>
-                <Link to="/notes" onClick={handleMenuItemClick}>📝 Book Notes</Link>
+                <Link to="/discover" className={isActive('/discover') ? 'active' : ''}>✨ Discover</Link>
+                <Link to="/search" className={isActive('/search') ? 'active' : ''}>🔍 Search</Link>
+                <Link to="/collections" className={isActive('/collections') ? 'active' : ''} onClick={handleMenuItemClick}>📚 Collections</Link>
+                <Link to="/history" className={isActive('/history') ? 'active' : ''} onClick={handleMenuItemClick}>📖 Reading History</Link>
+                <Link to="/stats" className={isActive('/stats') ? 'active' : ''} onClick={handleMenuItemClick}>📊 Statistics</Link>
+                <Link to="/notes" className={isActive('/notes') ? 'active' : ''} onClick={handleMenuItemClick}>📝 Book Notes</Link>
               </div>
             )}
           </div>
-          <Link to="/profile">👤 Profile</Link>
+          <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>👤 Profile</Link>
           <ThemeToggle />
           <NotificationBell />
           <button onClick={handleSignOut} className="sign-out-btn">🚪 Sign Out</button>

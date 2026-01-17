@@ -104,8 +104,10 @@ body {
 }
 
 .recommendations div:hover {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.65);
+  border-color: rgba(99, 102, 241, 0.8);
+  transform: translateX(5px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
 }
 
 .recommendations div img {
@@ -214,6 +216,12 @@ body {
 }
 
 /* Input Styles */
+.search-input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .title-input {
   width: 300px;
   height: 40px;
@@ -221,7 +229,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: #252542;
   color: #fff;
-  padding: 0 1rem;
+  padding: 0 2.5rem 0 1rem;
   font-size: 0.95rem;
   transition: all 0.2s ease;
 }
@@ -230,6 +238,49 @@ body {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #a5a5c0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+.clear-search-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fff;
+}
+
+.search-spinner {
+  position: absolute;
+  right: -35px;
+  top: 50%;
+  margin-top: -10px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .edit.disabled {

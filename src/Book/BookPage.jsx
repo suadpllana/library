@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "./BookPage.css";
 import { toast } from "react-toastify";
 import { FaArrowLeftLong, FaStar, FaRegStar, FaTrash } from "react-icons/fa6";
@@ -8,9 +8,10 @@ import AddToCollectionModal from './AddToCollectionModal';
 
 const BookPage = () => {
   const location = useLocation();
+  const { id: urlId } = useParams();
   const book = location.state?.book?.volumeInfo || {};
   const fullBook = location.state?.book; // Keep the full book object for modal
-  const id = location.state?.book?.id
+  const id = location.state?.book?.id || urlId; // Use URL param as fallback
   const navigate = useNavigate()
 
   const [isFullDescription, setIsFullDescription] = useState(false);
@@ -166,7 +167,8 @@ const BookPage = () => {
             title: book.title,
             authors: book.authors || [],
             image_url: book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image',
-            user_id: user.id
+            user_id: user.id,
+            status: 'wishlist'
           }], {
             onConflict: 'user_id,book_id',
             ignoreDuplicates: true

@@ -146,6 +146,69 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Search Container */
+.search-container {
+  margin-bottom: 1.25rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+  max-width: 400px;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b6b8a;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.75rem;
+  background: rgba(37, 37, 66, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.search-input::placeholder {
+  color: #6b6b8a;
+}
+
+.clear-search {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #9ca3af;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.clear-search:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
 /* No filtered data */
 .no-filtered-data {
   display: flex;
@@ -385,4 +448,60 @@
   .loaned-books-table td {
     padding: 0.85rem;
   }
+}
+/* Overdue Styles */
+.overdue-row {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.overdue-row:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.due-date .overdue {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.overdue-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Actions Cell */
+.actions-cell {
+  min-width: 100px;
+}
+
+.extend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.875rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.extend-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.extend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

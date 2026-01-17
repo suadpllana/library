@@ -23,7 +23,7 @@ const ReadingHistory = () => {
         .from('wishlist')
         .select('*')
         .eq('user_id', user.id)
-        .order('added_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -67,7 +67,15 @@ const ReadingHistory = () => {
         .eq('user_id', user.id)
         .eq('book_id', bookId);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42703') {
+          // Column doesn't exist - need to add status column to Supabase
+          console.error('Status column missing in wishlist table');
+          alert('Reading status feature requires database setup. Please contact the administrator to add the "status" column to the wishlist table in Supabase.');
+          return;
+        }
+        throw error;
+      }
 
       setWishlistBooks(prev =>
         prev.map(book =>

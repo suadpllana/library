@@ -265,8 +265,21 @@
 
 .quick-view {
   color: white;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+  background: rgba(99, 102, 241, 0.85);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-view:hover {
+  background: rgba(99, 102, 241, 1);
+  transform: scale(1.02);
 }
 
 .rating-badge {

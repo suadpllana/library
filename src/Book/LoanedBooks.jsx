@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { FaArrowLeftLong, FaFilter } from 'react-icons/fa6';
-import { MdFilterList, MdFilterListOff } from 'react-icons/md';
+import { FaArrowLeftLong, FaClockRotateLeft } from 'react-icons/fa6';
+import { MdFilterListOff } from 'react-icons/md';
 import './LoanedBooks.css';
 
 const LoanedBooks = () => {
@@ -13,6 +13,8 @@ const LoanedBooks = () => {
   const [loanedBooks, setLoanedBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [extendingLoan, setExtendingLoan] = useState(null);
 
   const filters = [
     { id: 'all', label: 'All', icon: '📚' },
@@ -66,10 +68,62 @@ const LoanedBooks = () => {
     return <span className={`status-badge ${statusClasses[status]}`}>{status}</span>;
   };
 
-  // Filter books based on active filter
-  const filteredBooks = activeFilter === 'all' 
-    ? loanedBooks 
-    : loanedBooks.filter(book => book.status === activeFilter);
+  // Check if loan is overdue
+  const isOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date();
+  };
+
+  // Request loan extension (adds 30 days)
+  const handleExtendLoan = async (loan) => {
+    if (!isOverdue(loan.due_date)) {
+      toast.info('You can only extend overdue loans');
+      return;
+    }
+
+    setExtendingLoan(loan.id);
+    try {
+      const currentDueDate = new Date(loan.due_date);
+      const newDueDate = new Date(currentDueDate);
+      newDueDate.setDate(newDueDate.getDate() + 30);
+
+      const { error } = await supabase
+        .from('loan_requests')
+        .update({ 
+          due_date: newDueDate.toISOString(),
+          notes: `Extended by 30 days on ${new Date().toLocaleDateString()}`
+        })
+        .eq('id', loan.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setLoanedBooks(prev => prev.map(b => 
+        b.id === loan.id ? { ...b, due_date: newDueDate.toISOString() } : b
+      ));
+      
+      toast.success('Loan extended by 30 days!');
+    } catch (error) {
+      console.error('Error extending loan:', error);
+      toast.error('Failed to extend loan');
+    } finally {
+      setExtendingLoan(null);
+    }
+  };
+
+  // Filter books based on active filter and search term
+  const filteredBooks = loanedBooks
+    .filter(book => activeFilter === 'all' || book.status === activeFilter)
+    .filter(book => {
+      if (!searchTerm.trim()) return true;
+      const search = searchTerm.toLowerCase();
+      const title = (book.book_title || '').toLowerCase();
+      const authors = Array.isArray(book.book_authors) 
+        ? book.book_authors.join(' ').toLowerCase()
+        : (book.book_authors || '').toLowerCase();
+      return title.includes(search) || authors.includes(search);
+    });
 
   // Count for each status
   const getStatusCount = (status) => {
@@ -115,6 +169,27 @@ const LoanedBooks = () => {
           </div>
         ) : (
           <>
+            {/* Search Bar */}
+            <div className="search-container">
+              <div className="search-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Search by title or author..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+                {searchTerm && (
+                  <button 
+                    className="clear-search"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Filter Tabs */}
             <div className="filter-tabs">
               {filters.map(filter => (
@@ -151,12 +226,13 @@ const LoanedBooks = () => {
                       <th>Requested Date</th>
                       <th>Status</th>
                       <th>Due Date</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredBooks.map((loan) => (
                       <React.Fragment key={loan.id}>
-                        <tr>
+                        <tr className={loan.status === 'approved' && isOverdue(loan.due_date) ? 'overdue-row' : ''}>
                           <td className="book-cell">
                             <img 
                               src={loan.book_image} 
@@ -173,12 +249,30 @@ const LoanedBooks = () => {
                           <td>{formatDate(loan.requested_at)}</td>
                           <td>{getStatusBadge(loan.status)}</td>
                           <td className="due-date">
-                            {loan.status === 'approved' ? formatDate(loan.due_date) : '—'}
+                            {loan.status === 'approved' ? (
+                              <span className={isOverdue(loan.due_date) ? 'overdue' : ''}>
+                                {formatDate(loan.due_date)}
+                                {isOverdue(loan.due_date) && <span className="overdue-badge">Overdue</span>}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td className="actions-cell">
+                            {loan.status === 'approved' && isOverdue(loan.due_date) && (
+                              <button
+                                className="extend-btn"
+                                onClick={() => handleExtendLoan(loan)}
+                                disabled={extendingLoan === loan.id}
+                                title="Extend loan by 30 days"
+                              >
+                                <FaClockRotateLeft />
+                                {extendingLoan === loan.id ? 'Extending...' : 'Extend'}
+                              </button>
+                            )}
                           </td>
                         </tr>
                         {loan.status === 'rejected' && (
                           <tr className="rejection-reason-row">
-                            <td colSpan="5">
+                            <td colSpan="6">
                               <strong>Rejection Reason:</strong> {loan.notes || 'No reason provided'}
                             </td>
                           </tr>

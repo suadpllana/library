@@ -145,9 +145,28 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 200px;
+  max-height: 280px;
   overflow-y: auto;
   margin-bottom: 1rem;
+  padding-right: 4px;
+}
+
+.collection-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.collection-options::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.collection-options::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 3px;
+}
+
+.collection-options::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
 }
 
 .collection-option {

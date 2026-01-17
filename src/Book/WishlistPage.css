@@ -147,34 +147,12 @@
   border-radius: 10px;
 }
 
-.wishlist-toolbar .view-btn {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 38px !important;
-  height: 38px !important;
-  min-width: 38px !important;
-  min-height: 38px !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #c0c0d0 !important;
-  font-size: 1.4rem !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-}
 
-.wishlist-toolbar .view-btn:hover {
-  color: #fff !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-}
 
 .wishlist-toolbar .view-btn.active {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
   color: white !important;
   border-color: transparent !important;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+  background-color: #059669;
 }
 
 /* Empty State */
@@ -288,7 +266,7 @@
   background: rgba(0, 0, 0, 0.6);
   color: #f87171;
   cursor: pointer;
-  opacity: 0;
+  opacity: 0.85;
   transition: all 0.2s ease;
   font-size: 0.75rem;
   z-index: 5;
@@ -296,6 +274,7 @@
 
 .watchlist-item.grid:hover .grid-remove-btn {
   opacity: 1;
+  background: rgba(239, 68, 68, 0.6);
 }
 
 .grid-remove-btn:hover {
