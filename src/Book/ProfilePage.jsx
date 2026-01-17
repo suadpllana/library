@@ -14,10 +14,7 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     first_name: '',
-    last_name: '',
-    bio: '',
-    favorite_genre: '',
-    reading_goal: 12
+    last_name: ''
   });
   const [stats, setStats] = useState({
     totalBooks: 0,
@@ -35,17 +32,22 @@ const ProfilePage = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [recentActivity, setRecentActivity] = useState([]);
 
-  const genres = [
-    'Fiction', 'Non-Fiction', 'Science Fiction', 'Fantasy', 'Mystery',
-    'Romance', 'Thriller', 'Biography', 'History', 'Science',
-    'Self-Help', 'Philosophy', 'Technology', 'Art', 'Poetry'
-  ];
-
   useEffect(() => {
-    fetchUserProfile();
-    fetchWishlistBooks();
-    fetchUserStats();
-    fetchRecentActivity();
+    const loadProfileData = async () => {
+      try {
+        await Promise.all([
+          fetchUserProfile(),
+          fetchWishlistBooks(),
+          fetchUserStats(),
+          fetchRecentActivity()
+        ]);
+      } catch (error) {
+        console.error('Error loading profile data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfileData();
   }, []);
 
   const fetchUserProfile = async () => {
@@ -79,9 +81,6 @@ const ProfilePage = () => {
         }),
         first_name: profileData?.first_name || user.user_metadata?.first_name || '',
         last_name: profileData?.last_name || user.user_metadata?.last_name || '',
-        bio: profileData?.bio || '',
-        favorite_genre: profileData?.favorite_genre || '',
-        reading_goal: profileData?.reading_goal || 12,
         avatar_url: profileData?.avatar_url || null
       };
 
@@ -89,10 +88,7 @@ const ProfilePage = () => {
       setAvatarUrl(profile.avatar_url);
       setEditForm({
         first_name: profile.first_name,
-        last_name: profile.last_name,
-        bio: profile.bio,
-        favorite_genre: profile.favorite_genre,
-        reading_goal: profile.reading_goal
+        last_name: profile.last_name
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -111,14 +107,10 @@ const ProfilePage = () => {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
 
-      // Fetch reading history stats
-      const { data: historyData } = await supabase
-        .from('wishlist')
-        .select('status')
-        .eq('user_id', user.id);
-
-      const booksRead = historyData?.filter(b => b.status === 'completed').length || 0;
-      const booksReading = historyData?.filter(b => b.status === 'reading').length || 0;
+      // Note: wishlist table doesn't have status tracking
+      // booksRead and booksReading would need a separate reading_history table
+      const booksRead = 0;
+      const booksReading = 0;
 
       // Fetch loan stats
       const { data: loanData } = await supabase
@@ -239,18 +231,22 @@ const ProfilePage = () => {
 
       const { data: wishlistItems, error } = await supabase
         .from('wishlist')
-        .select('title, authors, created_at, book_id, thumbnail, status')
+        .select('title, authors, created_at, book_id, image_url')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(6);
 
       if (error) throw error;
 
-      setWishlistBooks(wishlistItems || []);
+      // Map image_url to thumbnail for consistent usage in component
+      const formattedItems = (wishlistItems || []).map(item => ({
+        ...item,
+        thumbnail: item.image_url
+      }));
+
+      setWishlistBooks(formattedItems);
     } catch (error) {
       console.error('Error fetching wishlist:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -265,9 +261,6 @@ const ProfilePage = () => {
           id: user.id,
           first_name: editForm.first_name,
           last_name: editForm.last_name,
-          bio: editForm.bio,
-          favorite_genre: editForm.favorite_genre,
-          reading_goal: editForm.reading_goal,
           updated_at: new Date().toISOString()
         });
 
@@ -353,6 +346,21 @@ const ProfilePage = () => {
     });
   };
 
+  const handleResetPassword = async () => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(userProfile.email, {
+        redirectTo: 'https://suadpllana.github.io/library/#/auth',
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Password reset link sent! Check your email.');
+    } catch (error) {
+      console.error('Error sending reset email:', error);
+      toast.error('Failed to send password reset email');
+    }
+  };
+
   const getInitials = () => {
     const first = userProfile?.first_name?.[0] || '';
     const last = userProfile?.last_name?.[0] || '';
@@ -424,12 +432,6 @@ const ProfilePage = () => {
               <div className="profile-name-section">
                 <h2>{userProfile.first_name} {userProfile.last_name || ''}</h2>
                 <p className="user-email">{userProfile.email}</p>
-                {userProfile.bio && <p className="user-bio">{userProfile.bio}</p>}
-                {userProfile.favorite_genre && (
-                  <span className="favorite-genre-badge">
-                    {userProfile.favorite_genre} enthusiast
-                  </span>
-                )}
               </div>
             )}
 
@@ -790,50 +792,24 @@ const ProfilePage = () => {
                   />
                 </div>
               </div>
-
-              <div className="form-group">
-                <label>Bio</label>
-                <textarea
-                  value={editForm.bio}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about yourself..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Favorite Genre</label>
-                  <select
-                    value={editForm.favorite_genre}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, favorite_genre: e.target.value }))}
-                  >
-                    <option value="">Select a genre</option>
-                    {genres.map(genre => (
-                      <option key={genre} value={genre}>{genre}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Reading Goal (books/year)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={editForm.reading_goal}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, reading_goal: parseInt(e.target.value) || 12 }))}
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="modal-footer">
-              <button className="cancel-btn" onClick={() => setIsEditing(false)}>
-                Cancel
+              <button 
+                className="reset-password-btn" 
+                onClick={handleResetPassword}
+                type="button"
+              >
+                Reset Password
               </button>
-              <button className="save-btn" onClick={handleSaveProfile}>
-                <FaFloppyDisk /> Save Changes
-              </button>
+              <div className="footer-right">
+                <button className="cancel-btn" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </button>
+                <button className="save-btn" onClick={handleSaveProfile}>
+                  <FaFloppyDisk /> Save Changes
+                </button>
+              </div>
             </div>
           </div>
         </div>

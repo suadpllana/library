@@ -6,7 +6,6 @@ import kidsWithBook from "../assets/image.png";
 import { toast } from "react-toastify";
 import { FaChevronLeft } from "react-icons/fa";
 import { FaChevronRight } from "react-icons/fa";
-import AiWidget from '../components/AiWidget';
 import "react-toastify/dist/ReactToastify.css";
 
 const Book = () => {
@@ -50,9 +49,11 @@ const Book = () => {
     const fetchBooks = async () => {
       if (debouncedTitle.trim() === "") {
         setRecommendedBooks([]);
+        setSearching(false);
         return;
       }
 
+      setSearching(true);
       try {
         const response = await fetch(
           `https://www.googleapis.com/books/v1/volumes?q=${debouncedTitle}&maxResults=10`
@@ -63,6 +64,8 @@ const Book = () => {
       } catch (err) {
         console.error(err);
         toast.error("Failed to fetch books");
+      } finally {
+        setSearching(false);
       }
     };
 
@@ -126,8 +129,22 @@ const Book = () => {
   });
 };
 
+  const [searching, setSearching] = useState(false);
+
   const handleInputChange = (e) => {
     setTitle(e.target.value);
+    if (e.target.value.trim()) {
+      setSearching(true);
+    } else {
+      setSearching(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setTitle("");
+    setDebouncedTitle("");
+    setRecommendedBooks([]);
+    setSearching(false);
   };
 
   const handleBookClick = (book) => {
@@ -200,13 +217,21 @@ const Book = () => {
         </div>
         <div className="searchContainer">
           <h1>Search the book</h1>
-          <input
-            className="title-input"
-            placeholder="Enter a book's name"
-            value={title}
-            onChange={handleInputChange}
-            type="text"
-          />
+          <div className="search-input-wrapper">
+            <input
+              className="title-input"
+              placeholder="Enter a book's name"
+              value={title}
+              onChange={handleInputChange}
+              type="text"
+            />
+            {title && (
+              <button className="clear-search-btn" onClick={handleClearSearch} type="button">
+                ✕
+              </button>
+            )}
+            {searching && <div className="search-spinner"></div>}
+          </div>
           {recommendedBooks?.length > 0 && (
             <div className="recommendations">
               {recommendedBooks?.slice(0, 5)?.map((book) => (
@@ -247,7 +272,6 @@ const Book = () => {
         {!loading &&  <footer style={{textAlign: "center"}}>Created by @Suad Pllana </footer>}
        
       </div>
-            <AiWidget />
 
     </>
   );

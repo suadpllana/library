@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './AiWidget.css';
 
 const HF_MODEL = import.meta.env.VITE_HF_MODEL || 'google/flan-t5-base';
 const HF_KEY = import.meta.env.VITE_HF_API_KEY;
 
 const AiWidget = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentBook, setCurrentBook] = useState(null);
 
   const reset = () => {
     setQuery('');
     setResponse('');
     setError('');
+    setCurrentBook(null);
   };
 
   const fetchGoogleBook = async (q) => {
@@ -100,9 +104,13 @@ const AiWidget = () => {
       const bookItem = await fetchGoogleBook(query.trim());
       if (!bookItem) {
         setResponse('No books found for that query. Try a different search term.');
+        setCurrentBook(null);
         setLoading(false);
         return;
       }
+
+      // Store the book for navigation
+      setCurrentBook(bookItem);
 
       const info = bookItem.volumeInfo || {};
       const title = info.title || 'Unknown title';
@@ -112,8 +120,27 @@ const AiWidget = () => {
       const categories = (info.categories || []).join(', ') || 'General';
       const pageCount = info.pageCount || 'Unknown';
       const googleDesc = info.description;
+      const isbn = info.industryIdentifiers?.[0]?.identifier || 'N/A';
+      const language = info.language || 'en';
+      const averageRating = info.averageRating || 'N/A';
 
-      // For detailed view, show the full description from Google Books
+      // For detailed view, show comprehensive book info
+      if (type === 'detailed') {
+        const detailedInfo = `📚 **${title}**\n\n` +
+          `✍️ Author: ${authors}\n` +
+          `📖 Pages: ${pageCount}\n` +
+          `📅 Published: ${publishedDate}\n` +
+          `🏢 Publisher: ${publisher}\n` +
+          `🏷️ Categories: ${categories}\n` +
+          `⭐ Rating: ${averageRating}\n` +
+          `🔢 ISBN: ${isbn}\n` +
+          `🌐 Language: ${language.toUpperCase()}`;
+        setResponse(detailedInfo);
+        setLoading(false);
+        return;
+      }
+
+      // For description, show the full description from Google Books
       if (type === 'description' && googleDesc) {
         setResponse(googleDesc);
         setLoading(false);
@@ -194,9 +221,9 @@ const AiWidget = () => {
               />
 
               <div className="ai-buttons">
-                <button onClick={() => handleAsk('description')} disabled={loading}>Get description</button>
-                <button onClick={() => handleAsk('short')} disabled={loading}>Short summary</button>
-                <button onClick={() => handleAsk('description')} disabled={loading}>Detailed</button>
+                <button onClick={() => handleAsk('description')} disabled={loading}>Get Description</button>
+                <button onClick={() => handleAsk('short')} disabled={loading}>Short Summary</button>
+                <button onClick={() => handleAsk('detailed')} disabled={loading}>Book Details</button>
               </div>
 
               {loading && <div className="ai-loading">Thinking...</div>}
@@ -207,6 +234,17 @@ const AiWidget = () => {
                 <div className="ai-response">
                   <h4>Result</h4>
                   <div className="ai-response-text">{response}</div>
+                  {currentBook && (
+                    <button 
+                      className="ai-view-book-btn"
+                      onClick={() => {
+                        navigate(`/book/${currentBook.id}`, { state: { book: currentBook } });
+                        setOpen(false);
+                      }}
+                    >
+                      📖 View Book Details
+                    </button>
+                  )}
                 </div>
               )}
             </div>

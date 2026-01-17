@@ -269,9 +269,7 @@ const Discover = () => {
               >
                 <div className="book-image-wrapper">
                   <img src={getBookImage(book)} alt={book.volumeInfo?.title} />
-                  <div className="book-overlay">
-                    <span className="quick-view">Quick View</span>
-                  </div>
+             
                   {book.volumeInfo?.averageRating && (
                     <div className="rating-badge">
                       <FaStar /> {book.volumeInfo.averageRating}
