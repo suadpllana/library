@@ -164,7 +164,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://suadpllana.github.io/#/library',
+          redirectTo: 'https://suadpllana.github.io/library/',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
