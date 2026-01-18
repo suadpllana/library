@@ -396,6 +396,11 @@ const BookPage = () => {
               <p><strong>Publisher:</strong> {book.publisher || 'Unknown'}</p>
               <p><strong>Published Date:</strong> {book.publishedDate || 'Unknown'}</p>
               <p><strong>Categories:</strong> {book.categories?.join(', ') || 'None'}</p>
+              {averageRating > 0 && (
+                <p>
+                  <strong>Average Rating:</strong> {averageRating.toFixed(1)} / 5 <FaStar color='orange' /> ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                </p>
+              )}
             </div>
             
             <div className="button-container">

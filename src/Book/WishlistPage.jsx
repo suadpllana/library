@@ -67,9 +67,14 @@ const WishlistPage = () => {
     }
   };
 
-  const filteredBooks = watchlist?.filter(book =>
-    book?.title?.toLowerCase().includes(searchTerm?.toLowerCase())
-  );
+  const normalizedSearch = (searchTerm || '').toLowerCase().trim();
+  const filteredBooks = (watchlist || []).filter(book => {
+    if (!normalizedSearch) return true;
+    const title = (book?.title || '').toLowerCase();
+    const authors = (Array.isArray(book?.authors) ? book.authors.join(' ') : (book?.authors || '')).toLowerCase();
+    return title.includes(normalizedSearch) || authors.includes(normalizedSearch);
+  });
+
 
   const handleRemoveFromWatchlist = async (e, book) => {
     e.stopPropagation();
@@ -207,7 +212,7 @@ const WishlistPage = () => {
         <div className="toolbar-right">
           <input
             type="text"
-            placeholder="Search books..."
+            placeholder="Search books by title or author..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
