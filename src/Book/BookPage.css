@@ -156,6 +156,24 @@
   margin-bottom: 1.25rem;
 }
 
+.read-more {
+  color: #e74c3c;
+  cursor: pointer;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+/* Content rendered via dangerouslySetInnerHTML inside .description */
+.description-html {
+  color: #a5a5c0;
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+  display: block;
+  max-height: none;
+  overflow: visible;
+  white-space: pre-wrap;
+}
+
 .additional-info p,
 .publication-info p {
   font-size: 0.9rem;

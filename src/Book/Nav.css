@@ -21,6 +21,74 @@
   transition: all 0.3s ease;
 }
 
+.nav-inner {
+  width: 100%;
+  max-width: 1400px; /* Increased for the 3-column layout */
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center the middle section, left/right will be absolute */
+  position: relative;
+}
+
+.nav-left {
+  position: absolute;
+  left: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.nav-center {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centers the links */
+  gap: 0.5rem;
+}
+
+.nav-right {
+  position: absolute;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; /* Space between bell and sign out */
+}
+
+/* Ensure the links don't wrap awkwardly on medium screens */
+@media (max-width: 1100px) {
+  .nav-center {
+    gap: 0.1rem;
+  }
+  .nav a, .category-trigger, .nav-dropdown-trigger {
+    padding: 0.65rem 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 767px) {
+  .nav-inner {
+    justify-content: space-between;
+  }
+  .nav-center {
+    display: none; /* Usually, you'd want a hamburger menu here for mobile */
+  }
+  .logo-text {
+    display: none; /* Hide text on small mobile to save space */
+  }
+}
+
+.logo-img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.logo-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
 .nav::after {
   content: '';
   position: absolute;
@@ -115,6 +183,16 @@
 
   .nav-dropdown-menu {
     min-width: 160px;
+  }
+
+  .logo-link {
+    left: 0.75rem;
+  }
+  .nav-left {
+    left: 0.75rem;
+  }
+  .nav-right {
+    right: 0.75rem;
   }
 }
 
@@ -248,4 +326,51 @@
   color: #ffffff;
   background: rgba(99, 102, 241, 0.15);
   outline: none;
+}
+
+.category-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.category-trigger .arrow {
+  display: inline-flex;
+  transition: transform 0.25s ease;
+  margin-left: 6px;
+}
+
+.category-trigger.open .arrow {
+  transform: rotate(180deg);
+}
+
+/* Wishlist count badge */
+.wishlist-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  line-height: 1;
+}
+
+@media (max-width: 767px) {
+  .wishlist-badge {
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+    padding: 0 6px;
+  }
 }
