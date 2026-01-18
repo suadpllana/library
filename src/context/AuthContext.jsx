@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext({});
 
+const SESSION_TIMEOUT = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+const SESSION_TIMESTAMP_KEY = 'library_session_timestamp';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -100,6 +103,37 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
     let authSubscription = null;
+    let sessionTimeoutId = null;
+
+    const logoutUser = async () => {
+      if (mounted) {
+        console.log('Session expired after 12 hours. Logging out...');
+        await supabase.auth.signOut();
+        localStorage.removeItem(SESSION_TIMESTAMP_KEY);
+      }
+    };
+
+    const resetSessionTimer = () => {
+      // Clear existing timer
+      if (sessionTimeoutId) {
+        clearTimeout(sessionTimeoutId);
+      }
+      
+      // Set new timer for 12 hours
+      sessionTimeoutId = setTimeout(logoutUser, SESSION_TIMEOUT);
+    };
+
+    const checkSessionExpiry = () => {
+      const sessionTimestamp = localStorage.getItem(SESSION_TIMESTAMP_KEY);
+      if (sessionTimestamp) {
+        const elapsedTime = Date.now() - parseInt(sessionTimestamp);
+        if (elapsedTime > SESSION_TIMEOUT) {
+          logoutUser();
+          return true;
+        }
+      }
+      return false;
+    };
 
     const setupAuth = async () => {
       try {
@@ -114,11 +148,27 @@ export const AuthProvider = ({ children }) => {
               setUser(null);
               setUserRole(null);
               setLoading(false);
+              localStorage.removeItem(SESSION_TIMESTAMP_KEY);
+              if (sessionTimeoutId) {
+                clearTimeout(sessionTimeoutId);
+              }
               return;
             }
 
             if (session?.user) {
+              // Check if session has expired
+              if (checkSessionExpiry()) {
+                return;
+              }
+
               setUser(session.user);
+              // Store session timestamp when user logs in
+              if (!localStorage.getItem(SESSION_TIMESTAMP_KEY)) {
+                localStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now().toString());
+              }
+              // Reset the session timer
+              resetSessionTimer();
+
               // Use setTimeout to avoid Supabase deadlock on simultaneous requests
               setTimeout(async () => {
                 if (mounted) {
@@ -152,7 +202,19 @@ export const AuthProvider = ({ children }) => {
         if (!mounted) return;
 
         if (session?.user) {
+          // Check if session has expired
+          if (checkSessionExpiry()) {
+            return;
+          }
+
           setUser(session.user);
+          // Store session timestamp when user logs in
+          if (!localStorage.getItem(SESSION_TIMESTAMP_KEY)) {
+            localStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now().toString());
+          }
+          // Reset the session timer
+          resetSessionTimer();
+
           // Ensure profile exists for OAuth users before fetching role
           const role = await ensureProfile(session.user);
           if (mounted) {
@@ -179,6 +241,9 @@ export const AuthProvider = ({ children }) => {
       mounted = false;
       if (authSubscription) {
         authSubscription.unsubscribe();
+      }
+      if (sessionTimeoutId) {
+        clearTimeout(sessionTimeoutId);
       }
     };
   }, [ensureProfile]);
