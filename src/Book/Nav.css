@@ -23,18 +23,20 @@
 
 .nav-inner {
   width: 100%;
-  max-width: 1400px; /* Increased for the 3-column layout */
-  display: flex;
+  max-width: 1400px; /* three-column layout */
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: center; /* center the middle section, left/right will be absolute */
+  justify-items: center;
+  gap: 12px;
   position: relative;
 }
 
 .nav-left {
-  position: absolute;
-  left: 2rem;
   display: flex;
   align-items: center;
+  justify-self: start;
+  padding-left: 2rem;
 }
 
 .nav-center {
@@ -45,11 +47,51 @@
 }
 
 .nav-right {
-  position: absolute;
-  right: 2rem;
   display: flex;
   align-items: center;
+  justify-self: end;
+  padding-right: 2rem;
   gap: 1.5rem; /* Space between bell and sign out */
+}
+
+/* Language switch (segmented control) */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 4px;
+  border-radius: 999px;
+}
+
+.lang-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  color: #c7c7e6;
+  padding: 6px 9px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lang-btn:hover {
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.lang-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  box-shadow: 0 6px 18px rgba(99,102,241,0.25);
+}
+
+@media (max-width: 767px) {
+  .lang-switch { padding: 2px; }
+  .lang-btn { padding: 4px 6px; font-size: 0.8rem; }
 }
 
 /* Ensure the links don't wrap awkwardly on medium screens */
@@ -66,7 +108,7 @@
 /* Mobile adjustments */
 @media (max-width: 767px) {
   .nav-inner {
-    justify-content: space-between;
+    justify-items: start;
   }
   .nav-center {
     display: none; /* Usually, you'd want a hamburger menu here for mobile */
@@ -185,15 +227,8 @@
     min-width: 160px;
   }
 
-  .logo-link {
-    left: 0.75rem;
-  }
-  .nav-left {
-    left: 0.75rem;
-  }
-  .nav-right {
-    right: 0.75rem;
-  }
+  .nav-left { padding-left: 0.75rem; }
+  .nav-right { padding-right: 0.75rem; }
 }
 
 /* Navigation Dropdown */
@@ -220,6 +255,14 @@
 .nav-dropdown-trigger:hover,
 .nav-dropdown-trigger:active {
   color: #ffffff;
+  background: rgba(99, 102, 241, 0.15);
+}
+
+/* Active state for My Library trigger to match other active links */
+.nav-dropdown-trigger.active,
+.nav-dropdown-trigger.active:hover,
+.nav-dropdown-trigger.active:focus {
+  color: #818cf8;
   background: rgba(99, 102, 241, 0.15);
 }
 
@@ -362,6 +405,18 @@
   font-weight: 700;
   box-shadow: 0 4px 10px rgba(0,0,0,0.35);
   line-height: 1;
+}
+
+/* Make category trigger show same active styling as standard links */
+.category-trigger.active,
+.category-trigger.active:hover,
+.category-trigger.active:focus {
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.category-trigger.active .arrow {
+  color: #818cf8;
 }
 
 @media (max-width: 767px) {

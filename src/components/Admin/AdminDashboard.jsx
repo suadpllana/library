@@ -504,14 +504,23 @@ const AdminDashboard = () => {
 
   const handleDeleteReview = async (reviewId) => {
     if (!confirm('Are you sure you want to delete this review?')) return;
-    
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('book_reviews')
         .delete()
-        .eq('id', reviewId);
+        .eq('id', reviewId)
+        .select();
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('No review was deleted — it may not exist or you lack permissions');
+        // still refresh to be safe
+        fetchReviews();
+        fetchStats();
+        return;
+      }
 
       toast.success('Review deleted successfully');
       fetchReviews();

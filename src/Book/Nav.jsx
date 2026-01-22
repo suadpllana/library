@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import CategoryBooks from './CategoryBooks';
 import logo from '../assets/Gemini_Generated_Image_rnvudnrnvudnrnvu.png';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
 import NotificationBell from '../components/NotificationBell';
@@ -15,15 +16,23 @@ const Nav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const [wishlistCount, setWishlistCount] = useState(0);
   const dropdownRef = useRef(null);
   const categoryRef = useRef(null);
 
   const isActive = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
   const isDropdownActive = () => ['/discover', '/search', '/collections', '/history', '/stats', '/notes'].some(path => location.pathname.startsWith(path));
+  const isCategoryPage = () => location.pathname.startsWith('/category');
+  const currentCategoryName = location.state?.categoryName || null;
 
   const toggleMoreMenu = () => setShowMoreMenu(!showMoreMenu);
   const handleMenuItemClick = () => setShowMoreMenu(false);
+
+  // Close more menu when routing/navigation changes
+  useEffect(() => {
+    setShowMoreMenu(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -67,41 +76,54 @@ const Nav = () => {
         {/* 2. LINKS SECTION (Wishlist to Profile) */}
         <div className="nav-center">
           <Link to="/wishlist" className={isActive('/wishlist') ? 'active' : ''}>
-            💫 Wishlist {wishlistCount > 0 && <span className="wishlist-badge">{wishlistCount}</span>}
+            💫 {t('wishlist')} {wishlistCount > 0 && <span className="wishlist-badge">{wishlistCount}</span>}
           </Link>
-          <Link to="/loaned-books" className={isActive('/loaned-books') ? 'active' : ''}>📋 Loaned Books</Link>
+          <Link to="/loaned-books" className={isActive('/loaned-books') ? 'active' : ''}>📋 {t('loanedBooks')}</Link>
           
           <div className="category-wrapper" ref={categoryRef}>
-            <button className={`category-trigger ${showCategories ? 'open' : ''}`} onClick={() => setShowCategories(!showCategories)}>
-              📂 Category <span className="arrow">▾</span>
+            <button className={`category-trigger ${showCategories ? 'open' : ''} ${isCategoryPage() ? 'active' : ''}`} onClick={() => setShowCategories(!showCategories)}>
+              📂 {t('category')} <span className="arrow">▾</span>
             </button>
             {showCategories && <CategoryBooks setShowCategories={setShowCategories} showCategories={showCategories}/>}
           </div>
 
-          <Link to="/authors" className={isActive('/authors') ? 'active' : ''}>👨‍💼 Authors</Link>
+          <Link to="/authors" className={isActive('/authors') ? 'active' : ''}>👨‍💼 {t('authors')}</Link>
 
           <div className="nav-dropdown" ref={dropdownRef}>
             <span className={`nav-dropdown-trigger ${showMoreMenu ? 'open' : ''} ${isDropdownActive() ? 'active' : ''}`} onClick={toggleMoreMenu}>
-              My Library <span className="arrow">▾</span>
+              📚 {t('Library')} <span className="arrow">▾</span>
             </span>
             {showMoreMenu && (
               <div className="nav-dropdown-menu">
-                <Link to="/discover" onClick={handleMenuItemClick}>✨ Discover</Link>
-                <Link to="/search" onClick={handleMenuItemClick}>🔍 Search</Link>
-                <Link to="/collections" onClick={handleMenuItemClick}>📚 Collections</Link>
-                <Link to="/history" onClick={handleMenuItemClick}>📖 History</Link>
+                <Link to="/discover" onClick={handleMenuItemClick}>✨ {t('discover')}</Link>
+                <Link to="/search" onClick={handleMenuItemClick}>🔍 {t('search')}</Link>
+                <Link to="/collections" onClick={handleMenuItemClick}>📚 {t('collections')}</Link>
+                <Link to="/history" onClick={handleMenuItemClick}>📖 {t('history')}</Link>
               </div>
             )}
           </div>
 
-          <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>👤 Profile</Link>
+          <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>👤 {t('profile')}</Link>
         </div>
 
         {/* 3. NOTIF & SIGN OUT SECTION */}
         <div className="nav-right">
           <NotificationBell />
-          <button onClick={handleSignOut} className="sign-out-btn">🚪 Sign Out</button>
-          {/* <ThemeToggle /> */}
+          <div className="lang-switch" role="listbox" aria-label="Language selector">
+            <button
+              className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
+              aria-label="English"
+              onClick={() => setLang('en')}
+              title="English"
+            >🇬🇧 EN</button>
+            <button
+              className={`lang-btn ${lang === 'sq' ? 'active' : ''}`}
+              aria-label="Shqip"
+              onClick={() => setLang('sq')}
+              title="Shqip"
+            >🇦🇱 SQ</button>
+          </div>
+          <button onClick={handleSignOut} className="sign-out-btn">🚪 {t('signOut')}</button>
         </div>
       </div>
     </nav>

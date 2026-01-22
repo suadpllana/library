@@ -331,12 +331,19 @@ const BookPage = () => {
     if (!confirm('Are you sure you want to delete your review?')) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('book_reviews')
         .delete()
-        .eq('id', userReview.id);
+        .eq('id', userReview.id)
+        .select();
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('No review was deleted — it may not exist or you lack permissions');
+        fetchReviews();
+        return;
+      }
 
       toast.success('Review deleted');
       setUserReview(null);
@@ -399,13 +406,13 @@ const BookPage = () => {
               <p>
                 {isFullDescription ? description : shortDescription}
                 {description.length > 150 && (
-                  <span
-                    className="read-more"
+                  <button
+                    className="read-more-btn"
                     onClick={() => setIsFullDescription(!isFullDescription)}
-                    style={{ color: '#e74c3c', cursor: 'pointer', marginLeft: '5px' }}
+                    aria-expanded={isFullDescription}
                   >
-                    {isFullDescription ? ' Read Less' : ' Read More'}
-                  </span>
+                    {isFullDescription ? 'Read Less' : 'Read More'}
+                  </button>
                 )}
               </p>
             </div>
@@ -545,6 +552,7 @@ const BookPage = () => {
                   >
                     <FaTrash /> Delete
                   </button>
+                  
                 )}
                 <button 
                   className="submit-btn"

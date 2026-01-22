@@ -6,6 +6,7 @@ import kidsWithBook from "../assets/image.png";
 import { toast } from "react-toastify";
 import { FaChevronLeft } from "react-icons/fa";
 import { FaChevronRight } from "react-icons/fa";
+import { FaStar, FaEnvelope, FaUsers, FaCalendarAlt, FaQuoteLeft } from 'react-icons/fa'
 import "react-toastify/dist/ReactToastify.css";
 
 const Book = () => {
@@ -36,6 +37,13 @@ const Book = () => {
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [featuredOfWeek, setFeaturedOfWeek] = useState(null);
+  const [quote, setQuote] = useState(null);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [booksReadCount, setBooksReadCount] = useState(() => {
+    try { return Number(localStorage.getItem('booksRead') || 0); } catch { return 0; }
+  });
+  const [topAuthors, setTopAuthors] = useState([]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -73,15 +81,111 @@ const Book = () => {
   }, [debouncedTitle]);
 
   useEffect(() => {
-    const fetchCategoryBooks = async () => {
-      setLoading(true);
-      const categoryQueries = {
-        mostReadBooks: "bestseller&maxResults=8",
-        newReleases: "subject:fiction&orderBy=newest&maxResults=8",
-        hiddenGems: "subject:literary+fiction&maxResults=8",
-        bookClubFavorites: "subject:book+club&maxResults=8",
+    const quotes = [
+      "A room without books is like a body without a soul. — Cicero",
+      "So many books, so little time. — Frank Zappa",
+      "There is no friend as loyal as a book. — Ernest Hemingway",
+      "Books are a uniquely portable magic. — Stephen King",
+      "Read in order to live. — Gustave Flaubert"
+    ];
+    setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
 
-      };
+    const pickFeatured = () => {
+      const possible = [
+        ...(categories.bestOfTheYear || []),
+        ...(categories.mostReadBooks || []),
+        ...(categories.trendingNow || []),
+        ...(categories.hiddenGems || [])
+      ];
+      if (possible.length > 0) {
+        const found = possible.find(b => b?.volumeInfo?.imageLinks?.smallThumbnail) || possible[0];
+        setFeaturedOfWeek(found);
+      }
+    };
+
+    const computeTopAuthors = () => {
+      const map = {};
+      Object.values(categories).flat().forEach(book => {
+        const authors = book?.volumeInfo?.authors || [];
+        authors.forEach(a => { map[a] = (map[a] || 0) + 1; });
+      });
+      const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,6).map(([a]) => a);
+      setTopAuthors(sorted);
+    };
+
+    pickFeatured();
+    computeTopAuthors();
+  }, [categories]);
+
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      toast.error('Please provide a valid email');
+      return;
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem('newsletter') || '[]');
+      if (!saved.includes(newsletterEmail)) saved.unshift(newsletterEmail);
+      localStorage.setItem('newsletter', JSON.stringify(saved.slice(0, 50)));
+      setNewsletterEmail('');
+      toast.success('Thanks for subscribing!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not save subscription');
+    }
+  };
+
+  const markBookRead = useCallback(() => {
+    setBooksReadCount(c => {
+      const next = c + 1;
+      try { localStorage.setItem('booksRead', String(next)); } catch {}
+      return next;
+    });
+    toast.success('Nice! Progress saved');
+  }, []);
+
+  const categoryQuerySets = [
+    {
+      mostReadBooks: "bestseller&maxResults=8",
+      newReleases: "subject:fiction&orderBy=newest&maxResults=8",
+      criticallyAcclaimed: "subject:literature&maxResults=8",
+      hiddenGems: "subject:literary+fiction&maxResults=8",
+      trendingNow: "subject:trending&maxResults=8",
+      bookClubFavorites: "subject:book+club&maxResults=8",
+      bestOfTheYear: "subject:award+winners&maxResults=8",
+      readersChoice: "subject:popular&maxResults=8",
+    },
+    {
+      mostReadBooks: "subject:fantasy&maxResults=8",
+      newReleases: "subject:science&orderBy=newest&maxResults=8",
+      criticallyAcclaimed: "subject:nonfiction&maxResults=8",
+      hiddenGems: "subject:indie+authors&maxResults=8",
+      trendingNow: "subject:young+adult&maxResults=8",
+      bookClubFavorites: "subject:mystery&maxResults=8",
+      bestOfTheYear: "subject:historical+fiction&maxResults=8",
+      readersChoice: "subject:romance&maxResults=8",
+    },
+    {
+      mostReadBooks: "subject:children&maxResults=8",
+      newReleases: "subject:graphic+novel&orderBy=newest&maxResults=8",
+      criticallyAcclaimed: "subject:philosophy&maxResults=8",
+      hiddenGems: "subject:short+stories&maxResults=8",
+      trendingNow: "subject:science+fiction&maxResults=8",
+      bookClubFavorites: "subject:memoir&maxResults=8",
+      bestOfTheYear: "subject:poetry&maxResults=8",
+      readersChoice: "subject:cooking&maxResults=8",
+    }
+  ];
+
+  const [querySetIndex, setQuerySetIndex] = useState(0);
+
+  // Fetch categories for the currently selected query set
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchCategoryBooks = async (index) => {
+      setLoading(true);
+      const categoryQueries = categoryQuerySets[index] || categoryQuerySets[0];
 
       try {
         const results = {};
@@ -93,16 +197,28 @@ const Book = () => {
           const data = await response.json();
           results[category] = data.items || [];
         }
-        setCategories(results);
+        if (mounted) setCategories(results);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to fetch category books");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    fetchCategoryBooks();
+    fetchCategoryBooks(querySetIndex);
+
+    return () => {
+      mounted = false;
+    };
+  }, [querySetIndex]);
+
+  // Rotate to the next query set every 25 seconds to keep the homepage dynamic
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQuerySetIndex((i) => (i + 1) % categoryQuerySets.length);
+    }, 25000);
+
+    return () => clearInterval(interval);
   }, []);
 
   function getAuthorFromBook(e, author){
@@ -142,12 +258,10 @@ const Book = () => {
       setShowRecent(false);
     } else {
       setSearching(false);
-      // If the input is emptied, show recent searches again when focused
       setShowRecent(true);
     }
   };
 
-  // Load recent searches from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem('recentSearches');
@@ -320,7 +434,6 @@ const Book = () => {
               ))}
             </div>
           )}
-          {/* Recent searches dropdown shown when input is focused */}
           {showRecent && recentSearches?.length > 0 && (
             <div className="recent-searches">
               <div className="recent-header">
@@ -342,6 +455,62 @@ const Book = () => {
           <img className="kidsImage" src={kidsWithBook} alt="Kids with book" />
         </div>
       </div>
+      <div className="homepage-widgets">
+        <div className="widgets-top">
+          <div className="book-of-the-week">
+            {featuredOfWeek ? (
+              <div className="book-of-the-week-content">
+                <img className="book-of-the-week-image" src={featuredOfWeek?.volumeInfo?.imageLinks?.smallThumbnail || featuredOfWeek?.volumeInfo?.imageLinks?.thumbnail || 'https://placehold.co/220x320?text=No+Image'} alt={featuredOfWeek?.volumeInfo?.title} />
+                <div className="book-of-the-week-details">
+                  <h2>{featuredOfWeek?.volumeInfo?.title}</h2>
+                  <p className="author">by {featuredOfWeek?.volumeInfo?.authors?.join(', ') || 'Unknown'}</p>
+                  <p className="description">{featuredOfWeek?.volumeInfo?.description?.slice(0,300) || featuredOfWeek?.volumeInfo?.subtitle || 'A highlighted selection chosen for you this week.'}</p>
+                  <div className="book-of-the-week-actions">
+                    <button className="view-details-button" onClick={() => handleBookClick(featuredOfWeek)}>View Details</button>
+                    <button className="view-details-button secondary-btn" onClick={markBookRead}>Mark Read</button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="book-of-the-week loading">Loading featured selection…</div>
+            )}
+          </div>
+
+          <div className="widgets-right">
+            <div className="quote-widget">
+              <h3><FaQuoteLeft className="icon-inline"/>Quote of the Day</h3>
+              <p className="muted">{quote || 'Books open the way...'}</p>
+            </div>
+
+            <div className="challenge-widget">
+              <h4><FaCalendarAlt className="icon-inline"/>Reading Challenge</h4>
+              <p className="muted">Books read this month: <strong>{booksReadCount}</strong></p>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{width: `${Math.min(100, booksReadCount * 10)}%`}} />
+              </div>
+              <div className="challenge-actions">
+                <button className="view-details-button" onClick={markBookRead}>I finished a book</button>
+              </div>
+            </div>
+
+            <form onSubmit={handleNewsletterSubmit} className="newsletter-widget">
+              <FaEnvelope className="newsletter-icon" />
+              <input value={newsletterEmail} onChange={(e)=>setNewsletterEmail(e.target.value)} placeholder="Your email for updates" className="newsletter-input" />
+              <button className="view-details-button" type="submit">Subscribe</button>
+            </form>
+          </div>
+        </div>
+
+        <div className="authors-widget">
+          <h3><FaUsers className="icon-inline"/>Featured Authors</h3>
+          <div className="authors-list">
+            {topAuthors.length > 0 ? topAuthors.map((a, i) => (
+              <div key={i} className="author-chip" onClick={()=>navigate(`/authors/${encodeURIComponent(a)}`)}>{a}</div>
+            )) : <p className="muted">No authors to show yet.</p>}
+          </div>
+        </div>
+      </div>
+
       <hr />
       <div className="categories-container">
         {loading ? (

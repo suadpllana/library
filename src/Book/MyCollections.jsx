@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -29,7 +29,6 @@ const MyCollections = () => {
 
   const fetchCollections = async () => {
     try {
-      // Fetch collections with book count
       const { data, error } = await supabase
         .from('reading_collections')
         .select(`
@@ -207,7 +206,6 @@ const MyCollections = () => {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
