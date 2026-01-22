@@ -29,12 +29,9 @@ const Auth = () => {
     const refreshToken = hashParams.get('refresh_token');
     const type = hashParams.get('type');
 
-    // If this is a recovery flow, set the session from the URL tokens so
-    // `supabase.auth.updateUser` has an active session to work with.
     const handleRecoverySession = async () => {
       if (accessToken && type === 'recovery') {
         try {
-          // Try to set the session using tokens from the URL hash
           if (typeof supabase.auth.setSession === 'function') {
             await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
           } else if (typeof supabase.auth.getSessionFromUrl === 'function') {
@@ -150,6 +147,21 @@ const Auth = () => {
     
     try {
       if (isSignUp) {
+        // Validate passwords on signup
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          toast.error('Passwords do not match');
+          setLoading(false);
+          return;
+        }
+
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters');
+          toast.error('Password must be at least 6 characters');
+          setLoading(false);
+          return;
+        }
+
         const { error } = await signUp({
           email,
           password,
@@ -166,6 +178,7 @@ const Auth = () => {
         setError('Please check your email to confirm your account');
         setEmail('');
         setPassword('');
+        setConfirmPassword('');
         return;
       } else {
         const { error } = await signIn({
@@ -209,10 +222,23 @@ const Auth = () => {
     }
   };
 
+  const handleToggleAuth = () => {
+    setIsSignUp((prev) => !prev);
+    setIsForgotPassword(false);
+    setIsResetPassword(false);
+    setError(null);
+    setSuccessMessage(null);
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFirstName('');
+    setLastName('');
+    setRole('user');
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-box">
-        {/* Reset Password Form (when user clicks link from email) */}
         {isResetPassword ? (
           <>
             <h2>Reset Password</h2>
@@ -334,6 +360,17 @@ const Auth = () => {
                   required
                 />
               </div>
+              {isSignUp && (
+                <div className="form-group">
+                  <label>Confirm Password</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
               {!isSignUp && (
                 <div className="forgot-password-link">
                   <button
@@ -376,7 +413,7 @@ const Auth = () => {
               {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
               <button
                 className="switch-auth"
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={handleToggleAuth}
               >
                 {isSignUp ? 'Sign In' : 'Sign Up'}
               </button>

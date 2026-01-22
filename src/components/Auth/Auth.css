@@ -41,6 +41,10 @@
               0 0 100px rgba(99, 102, 241, 0.1);
   width: 100%;
   max-width: 420px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
   backdrop-filter: blur(20px);
 }
 
