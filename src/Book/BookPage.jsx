@@ -9,9 +9,10 @@ import AddToCollectionModal from './AddToCollectionModal';
 const BookPage = () => {
   const location = useLocation();
   const { id: urlId } = useParams();
-  const book = location.state?.book?.volumeInfo || {};
-  const fullBook = location.state?.book; // Keep the full book object for modal
-  const id = location.state?.book?.id || urlId; // Use URL param as fallback
+  // Use state so we can fetch book details when navigated directly via URL
+  const [fullBook, setFullBook] = useState(location.state?.book || null);
+  const [book, setBook] = useState(location.state?.book?.volumeInfo || {});
+  const id = fullBook?.id || urlId; // Use URL param as fallback
   const navigate = useNavigate()
 
   const [isFullDescription, setIsFullDescription] = useState(false);
@@ -37,6 +38,25 @@ const BookPage = () => {
       fetchReviews();
     }
   }, [id]);
+
+  // If we don't have fullBook (navigated directly via URL), fetch details from Google Books
+  useEffect(() => {
+    const fetchById = async () => {
+      if (!fullBook && urlId) {
+        try {
+          const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${urlId}`);
+          if (!res.ok) throw new Error('Failed to fetch book details');
+          const data = await res.json();
+          setFullBook(data);
+          setBook(data.volumeInfo || {});
+        } catch (err) {
+          console.error('Error fetching book by id:', err);
+        }
+      }
+    };
+
+    fetchById();
+  }, [fullBook, urlId]);
 
   const checkLoanStatus = async () => {
     try {

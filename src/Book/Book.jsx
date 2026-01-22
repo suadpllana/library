@@ -130,14 +130,64 @@ const Book = () => {
 };
 
   const [searching, setSearching] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [showRecent, setShowRecent] = useState(false);
 
   const handleInputChange = (e) => {
-    setTitle(e.target.value);
-    if (e.target.value.trim()) {
+    const val = e.target.value;
+    setTitle(val);
+    // Hide recent searches while the user is actively typing (but don't clear values)
+    if (val.trim()) {
       setSearching(true);
+      setShowRecent(false);
     } else {
       setSearching(false);
+      // If the input is emptied, show recent searches again when focused
+      setShowRecent(true);
     }
+  };
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('recentSearches');
+      if (raw) setRecentSearches(JSON.parse(raw).slice(0, 5));
+    } catch (err) {
+      console.error('Failed to load recent searches', err);
+    }
+  }, []);
+
+  const saveRecent = (term) => {
+    if (!term || !term.trim()) return;
+    setRecentSearches((prev) => {
+      const next = [term, ...prev.filter((t) => t !== term)].slice(0, 5);
+      try { localStorage.setItem('recentSearches', JSON.stringify(next)); } catch (err) {}
+      return next;
+    });
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (title.trim()) {
+        setDebouncedTitle(title);
+        saveRecent(title);
+        setShowRecent(false);
+      }
+    }
+  };
+
+  const handleSelectRecent = (term) => {
+    setTitle(term);
+    setDebouncedTitle(term);
+    saveRecent(term);
+    setShowRecent(false);
+    setSearching(true);
+  };
+
+  const clearRecent = () => {
+    setRecentSearches([]);
+    try { localStorage.removeItem('recentSearches'); } catch (err) {}
   };
 
   const handleClearSearch = () => {
@@ -148,6 +198,20 @@ const Book = () => {
   };
 
   const handleBookClick = (book) => {
+    // If this book comes from the current recommended results, save the
+    // active search term so it appears in recent searches when returning.
+    try {
+      const isRecommended = recommendedBooks?.some((b) => b?.id === book?.id);
+      const bookTitle = book?.volumeInfo?.title || '';
+      if (isRecommended) {
+        // prefer the active search query if present, otherwise save the book title
+        const termToSave = title?.trim() || bookTitle;
+        if (termToSave) saveRecent(termToSave);
+      }
+    } catch (err) {
+      // ignore
+    }
+
     navigate(`/book/${book.id}`, { state: { book , id: book.id } });
   };
 
@@ -223,6 +287,9 @@ const Book = () => {
               placeholder="Enter a book's name"
               value={title}
               onChange={handleInputChange}
+              onFocus={() => setShowRecent(true)}
+              onBlur={() => setTimeout(() => setShowRecent(false), 150)}
+              onKeyDown={handleKeyDown}
               type="text"
             />
             {title && (
@@ -249,6 +316,25 @@ const Book = () => {
                     alt={book?.volumeInfo?.title || "No Title"}
                   />
                   <p>{book?.volumeInfo?.title?.slice(0,50) || "Unknown Title"}{book?.volumeInfo?.authors?.[0] && ` - ${book.volumeInfo.authors[0]}`}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Recent searches dropdown shown when input is focused */}
+          {showRecent && recentSearches?.length > 0 && (
+            <div className="recent-searches">
+              <div className="recent-header">
+                <span>Recent searches</span>
+                <button className="clear-recent" onMouseDown={(e)=>{e.preventDefault(); clearRecent();}}>Clear</button>
+              </div>
+              {recentSearches.map((s, i) => (
+                <div
+                  key={i}
+                  className="recent-item"
+                  onMouseDown={() => handleSelectRecent(s)}
+                  onClick={() => handleSelectRecent(s)}
+                >
+                  <p>{s}</p>
                 </div>
               ))}
             </div>

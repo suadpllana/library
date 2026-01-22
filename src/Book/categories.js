@@ -7,11 +7,10 @@ export const categories = [
   { name: "Biography", emoji: "👤" },
   { name: "Science", emoji: "🔬" },
     { name: "Universe", emoji: "🌌" },
-   { name: "Anthropology ", emoji: "🗿" },
+   { name: "Society ", emoji: "🧑‍🤝‍🧑" },
      { name: "Genetics ", emoji: "🧬" },
-  { name: "Neuroscience", emoji: "🧪" },
+  { name: "Humans", emoji: "🧍" },
   { name: "Fantasy", emoji: "🧙‍♂️" },
-
   { name: "Technology", emoji: "💻" },
   { name: "Mythology", emoji: "🐉" },
   {name: "Animals" , emoji:"🫎"},
