@@ -1113,3 +1113,81 @@ body {
   background: rgba(99,102,241,0.12);
   color: #fff;
 }
+
+/* Homepage widgets layout */
+.homepage-widgets {
+  width: 85%;
+  margin: 1.5rem auto;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.widgets-top {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.widgets-right {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.book-of-the-week .book-of-the-week-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.secondary-btn {
+  background: rgba(107,114,128,0.2) !important;
+}
+
+.quote-widget,
+.challenge-widget,
+.newsletter-widget,
+.authors-widget {
+  background: linear-gradient(145deg, #252542 0%, #1e1e35 100%);
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.icon-inline { margin-right: 8px; vertical-align: middle; }
+.muted { color: #a5a5c0; }
+
+.progress-bar {
+  height: 10px;
+  background: #15152a;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress-fill { height: 100%; background: #6366f1; transition: width 0.4s ease; }
+
+.newsletter-widget { display: flex; gap: 0.5rem; align-items: center; }
+.newsletter-icon { color: #818cf8; }
+.newsletter-input { flex: 1; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: #0f0f1a; color: #e0e0e0; }
+
+.authors-list { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 8px; }
+.author-chip { background: #1a1a2e; padding: 0.5rem 0.75rem; border-radius: 8px; color: #e0e0e0; cursor: pointer; transition: all 0.15s ease; flex: 0 0 auto; }
+.author-chip:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+
+/* Prevent authors widget from growing too tall */
+.authors-widget {
+  max-height: 240px;
+  overflow: hidden;
+}
+.authors-list {
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 6px; /* room for scrollbar */
+}
+.authors-list::-webkit-scrollbar { width: 8px; height: 8px; }
+.authors-list::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.2); border-radius: 8px; }
+
+@media (max-width: 900px) {
+  .widgets-top { grid-template-columns: 1fr; }
+  .homepage-widgets { width: 95%; }
+  .book-of-the-week-image { width: 160px; height: 240px; }
+}

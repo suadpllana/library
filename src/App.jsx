@@ -10,6 +10,7 @@ import Authors from "./Book/Authors";
 import AuthorPage from "./Book/AuthorPage";
 import Auth from './components/Auth/Auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ProfilePage from './Book/ProfilePage';
 import LoanedBooks from './Book/LoanedBooks';
@@ -85,7 +86,8 @@ const AdminRoute = ({ children }) => {
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
         <ErrorBoundary>
           <Router>
             <Routes>
@@ -145,6 +147,7 @@ function App() {
         />
         </ErrorBoundary>
       </AuthProvider>
+    </LanguageProvider>
     </ThemeProvider>
   );
 }

@@ -15,6 +15,17 @@ const CategoryPage = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [startIndex, setStartIndex] = useState(25);
 
+  // When location.state changes (e.g., user selected a new category while
+  // already on /category), update local lists so the UI reflects the new selection.
+  useEffect(() => {
+    if (location.state && location.state.categoryBooks) {
+      const newBooks = location.state.categoryBooks || [];
+      setAllBooks(newBooks);
+      setFilteredBooks(newBooks);
+      setStartIndex(25);
+    }
+  }, [location.state]);
+
 
   useEffect(() => {
     if (!allBooks) return;
