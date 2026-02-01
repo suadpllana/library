@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -41,6 +41,15 @@ const AdminDashboard = () => {
     role: 'user'
   });
   const [inviting, setInviting] = useState(false);
+
+  // Chat state
+  const [chatConversations, setChatConversations] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [adminReply, setAdminReply] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [unreadChats, setUnreadChats] = useState(0);
+  const chatMessagesEndRef = useRef(null);
 
   // Export functions
   const exportToCSV = (data, filename) => {
@@ -148,6 +157,8 @@ const AdminDashboard = () => {
       await fetchReviews();
     } else if (activeTab === 'activity') {
       await fetchRecentActivity();
+    } else if (activeTab === 'chat') {
+      await fetchChatConversations();
     }
     setLoading(false);
   };
@@ -283,6 +294,166 @@ const AdminDashboard = () => {
       console.error('Error fetching reviews:', error);
     }
   };
+
+  // Chat Functions
+  const fetchChatConversations = async () => {
+    try {
+      // Get all unique user conversations with their latest message
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Group by user_id and get latest message + unread count
+      const conversationsMap = {};
+      (data || []).forEach(msg => {
+        if (!conversationsMap[msg.user_id]) {
+          conversationsMap[msg.user_id] = {
+            user_id: msg.user_id,
+            user_name: msg.user_name,
+            user_email: msg.user_email,
+            latest_message: msg.message,
+            latest_time: msg.created_at,
+            unread_count: 0,
+            messages: []
+          };
+        }
+        conversationsMap[msg.user_id].messages.push(msg);
+        if (msg.sender_type === 'user' && !msg.is_read) {
+          conversationsMap[msg.user_id].unread_count++;
+        }
+      });
+
+      const conversations = Object.values(conversationsMap).sort(
+        (a, b) => new Date(b.latest_time) - new Date(a.latest_time)
+      );
+
+      setChatConversations(conversations);
+      
+      // Calculate total unread
+      const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
+      setUnreadChats(totalUnread);
+
+      // If a chat is selected, update its messages
+      if (selectedChat) {
+        const updatedChat = conversations.find(c => c.user_id === selectedChat.user_id);
+        if (updatedChat) {
+          setSelectedChat(updatedChat);
+          setChatMessages(updatedChat.messages.sort((a, b) => 
+            new Date(a.created_at) - new Date(b.created_at)
+          ));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching chat conversations:', error);
+    }
+  };
+
+  const selectConversation = async (conversation) => {
+    setSelectedChat(conversation);
+    setChatMessages(conversation.messages.sort((a, b) => 
+      new Date(a.created_at) - new Date(b.created_at)
+    ));
+
+    // Mark messages as read
+    try {
+      await supabase
+        .from('chat_messages')
+        .update({ is_read: true })
+        .eq('user_id', conversation.user_id)
+        .eq('sender_type', 'user')
+        .eq('is_read', false);
+
+      // Refresh conversations to update unread count
+      fetchChatConversations();
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
+  const sendAdminReply = async (e) => {
+    e.preventDefault();
+    if (!adminReply.trim() || !selectedChat || sendingReply) return;
+
+    setSendingReply(true);
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          user_id: selectedChat.user_id,
+          user_name: selectedChat.user_name,
+          user_email: selectedChat.user_email,
+          message: adminReply.trim(),
+          sender_type: 'admin',
+          is_read: false
+        });
+
+      if (error) throw error;
+
+      setAdminReply('');
+      fetchChatConversations();
+      toast.success('Reply sent!');
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast.error('Failed to send reply');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  // Set up real-time subscription for chat
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin_chat_messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        () => {
+          if (activeTab === 'chat') {
+            fetchChatConversations();
+          } else {
+            // Just update unread count
+            fetchUnreadChatCount();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTab, selectedChat]);
+
+  const fetchUnreadChatCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('sender_type', 'user')
+        .eq('is_read', false);
+
+      if (error) throw error;
+      setUnreadChats(count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  // Fetch unread chat count on mount
+  useEffect(() => {
+    fetchUnreadChatCount();
+  }, []);
+
+  // Scroll to bottom when chat messages change
+  useEffect(() => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   const fetchLoanRequests = async () => {
     try {
@@ -618,6 +789,12 @@ const AdminDashboard = () => {
           onClick={() => setActiveTab('activity')}
         >
           📋 Activity
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chat')}
+        >
+          💬 Chat {unreadChats > 0 && <span className="badge">{unreadChats}</span>}
         </button>
       </nav>
       
@@ -1053,6 +1230,103 @@ const AdminDashboard = () => {
                 ))}
               </div>
             )}
+          </div>
+        ) : activeTab === 'chat' ? (
+          /* CHAT TAB */
+          <div className="chat-section">
+            <div className="section-header">
+              <h2>💬 User Messages</h2>
+              <span className="chat-subtitle">Respond to user inquiries</span>
+            </div>
+            
+            <div className="chat-container">
+              {/* Conversations List */}
+              <div className="conversations-list">
+                <h3>Conversations</h3>
+                {chatConversations.length === 0 ? (
+                  <p className="no-conversations">No conversations yet</p>
+                ) : (
+                  chatConversations.map((conv) => (
+                    <div 
+                      key={conv.user_id}
+                      className={`conversation-item ${selectedChat?.user_id === conv.user_id ? 'active' : ''} ${conv.unread_count > 0 ? 'has-unread' : ''}`}
+                      onClick={() => selectConversation(conv)}
+                    >
+                      <div className="conv-avatar">
+                        {conv.user_name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="conv-info">
+                        <div className="conv-header">
+                          <span className="conv-name">{conv.user_name || 'Unknown User'}</span>
+                          {conv.unread_count > 0 && (
+                            <span className="conv-unread">{conv.unread_count}</span>
+                          )}
+                        </div>
+                        <p className="conv-preview">{conv.latest_message?.slice(0, 40)}...</p>
+                        <span className="conv-time">{formatDate(conv.latest_time)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Chat Messages */}
+              <div className="chat-messages-panel">
+                {selectedChat ? (
+                  <>
+                    <div className="chat-panel-header">
+                      <div className="chat-user-info">
+                        <div className="chat-user-avatar">
+                          {selectedChat.user_name?.charAt(0)?.toUpperCase() || 'U'}
+                        </div>
+                        <div>
+                          <h4>{selectedChat.user_name}</h4>
+                          <span>{selectedChat.user_email}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="chat-messages-list">
+                      {chatMessages.map((msg) => (
+                        <div 
+                          key={msg.id} 
+                          className={`admin-chat-message ${msg.sender_type === 'admin' ? 'sent' : 'received'}`}
+                        >
+                          <div className="admin-msg-content">
+                            <p>{msg.message}</p>
+                            <span className="admin-msg-time">
+                              {new Date(msg.created_at).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={chatMessagesEndRef} />
+                    </div>
+
+                    <form className="admin-reply-form" onSubmit={sendAdminReply}>
+                      <input
+                        type="text"
+                        value={adminReply}
+                        onChange={(e) => setAdminReply(e.target.value)}
+                        placeholder="Type your reply..."
+                        disabled={sendingReply}
+                      />
+                      <button type="submit" disabled={!adminReply.trim() || sendingReply}>
+                        {sendingReply ? 'Sending...' : 'Send'}
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="no-chat-selected">
+                    <div className="no-chat-icon">💬</div>
+                    <p>Select a conversation to view messages</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         ) : null}
       </main>

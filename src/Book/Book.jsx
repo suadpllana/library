@@ -8,32 +8,26 @@ import { FaChevronLeft } from "react-icons/fa";
 import { FaChevronRight } from "react-icons/fa";
 import { FaStar, FaEnvelope, FaUsers, FaCalendarAlt, FaQuoteLeft } from 'react-icons/fa'
 import "react-toastify/dist/ReactToastify.css";
+import { useLanguage } from "../context/LanguageContext";
+import translations from "../i18n/translations";
 
 const Book = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [title, setTitle] = useState("");
   const [debouncedTitle, setDebouncedTitle] = useState("");
   const [recommendedBooks, setRecommendedBooks] = useState([]);
   const [categories, setCategories] = useState({
     mostReadBooks: [],
     newReleases: [],
-    criticallyAcclaimed: [],
-    hiddenGems: [],
     trendingNow: [],
-    bookClubFavorites: [],
     bestOfTheYear: [],
-    readersChoice: [],
-
   });
   const [currentSlides, setCurrentSlides] = useState({
     mostReadBooks: 0,
     newReleases: 0,
-    criticallyAcclaimed: 0,
-    hiddenGems: 0,
     trendingNow: 0,
-    bookClubFavorites: 0,
     bestOfTheYear: 0,
-    readersChoice: 0,
-
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -95,7 +89,7 @@ const Book = () => {
         ...(categories.bestOfTheYear || []),
         ...(categories.mostReadBooks || []),
         ...(categories.trendingNow || []),
-        ...(categories.hiddenGems || [])
+        ...(categories.newReleases || [])
       ];
       if (possible.length > 0) {
         const found = possible.find(b => b?.volumeInfo?.imageLinks?.smallThumbnail) || possible[0];
@@ -120,7 +114,7 @@ const Book = () => {
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
     if (!newsletterEmail || !newsletterEmail.includes('@')) {
-      toast.error('Please provide a valid email');
+      toast.error(t.pleaseProvideValidEmail);
       return;
     }
     try {
@@ -128,10 +122,10 @@ const Book = () => {
       if (!saved.includes(newsletterEmail)) saved.unshift(newsletterEmail);
       localStorage.setItem('newsletter', JSON.stringify(saved.slice(0, 50)));
       setNewsletterEmail('');
-      toast.success('Thanks for subscribing!');
+      toast.success(t.thanksForSubscribing);
     } catch (err) {
       console.error(err);
-      toast.error('Could not save subscription');
+      toast.error(t.couldNotSaveSubscription);
     }
   };
 
@@ -141,63 +135,75 @@ const Book = () => {
       try { localStorage.setItem('booksRead', String(next)); } catch {}
       return next;
     });
-    toast.success('Nice! Progress saved');
-  }, []);
+    toast.success(t.niceProgressSaved);
+  }, [t]);
 
-  const categoryQuerySets = [
-    {
-      mostReadBooks: "bestseller&maxResults=8",
-      newReleases: "subject:fiction&orderBy=newest&maxResults=8",
-      criticallyAcclaimed: "subject:literature&maxResults=8",
-      hiddenGems: "subject:literary+fiction&maxResults=8",
-      trendingNow: "subject:trending&maxResults=8",
-      bookClubFavorites: "subject:book+club&maxResults=8",
-      bestOfTheYear: "subject:award+winners&maxResults=8",
-      readersChoice: "subject:popular&maxResults=8",
-    },
-    {
-      mostReadBooks: "subject:fantasy&maxResults=8",
-      newReleases: "subject:science&orderBy=newest&maxResults=8",
-      criticallyAcclaimed: "subject:nonfiction&maxResults=8",
-      hiddenGems: "subject:indie+authors&maxResults=8",
-      trendingNow: "subject:young+adult&maxResults=8",
-      bookClubFavorites: "subject:mystery&maxResults=8",
-      bestOfTheYear: "subject:historical+fiction&maxResults=8",
-      readersChoice: "subject:romance&maxResults=8",
-    },
-    {
-      mostReadBooks: "subject:children&maxResults=8",
-      newReleases: "subject:graphic+novel&orderBy=newest&maxResults=8",
-      criticallyAcclaimed: "subject:philosophy&maxResults=8",
-      hiddenGems: "subject:short+stories&maxResults=8",
-      trendingNow: "subject:science+fiction&maxResults=8",
-      bookClubFavorites: "subject:memoir&maxResults=8",
-      bestOfTheYear: "subject:poetry&maxResults=8",
-      readersChoice: "subject:cooking&maxResults=8",
-    }
-  ];
+  // Single query set with 4 categories to reduce API calls
+  const categoryQueries = {
+    mostReadBooks: "bestseller&maxResults=6",
+    newReleases: "subject:fiction&orderBy=newest&maxResults=6",
+    trendingNow: "subject:popular+fiction&maxResults=6",
+    bestOfTheYear: "subject:award+winners&maxResults=6",
+  };
 
-  const [querySetIndex, setQuerySetIndex] = useState(0);
+  // Cache key for sessionStorage
+  const CACHE_KEY = 'homepage_books_cache';
+  const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-  // Fetch categories for the currently selected query set
+  // Fetch categories with caching to reduce API calls
   useEffect(() => {
     let mounted = true;
 
-    const fetchCategoryBooks = async (index) => {
+    const fetchCategoryBooks = async () => {
+      // Check cache first
+      try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < CACHE_DURATION) {
+            setCategories(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Cache read error:', e);
+      }
+
       setLoading(true);
-      const categoryQueries = categoryQuerySets[index] || categoryQuerySets[0];
 
       try {
         const results = {};
-        for (const [category, query] of Object.entries(categoryQueries)) {
-          const response = await fetch(
-            `https://www.googleapis.com/books/v1/volumes?q=${query}`
-          );
-          if (!response.ok) throw new Error(`Failed to fetch ${category}`);
-          const data = await response.json();
-          results[category] = data.items || [];
+        // Fetch all categories in parallel
+        const entries = Object.entries(categoryQueries);
+        const responses = await Promise.all(
+          entries.map(([_, query]) =>
+            fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`)
+          )
+        );
+
+        for (let i = 0; i < entries.length; i++) {
+          const [category] = entries[i];
+          if (responses[i].ok) {
+            const data = await responses[i].json();
+            results[category] = data.items || [];
+          } else {
+            results[category] = [];
+          }
         }
-        if (mounted) setCategories(results);
+
+        if (mounted) {
+          setCategories(results);
+          // Save to cache
+          try {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+              data: results,
+              timestamp: Date.now()
+            }));
+          } catch (e) {
+            console.error('Cache write error:', e);
+          }
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -205,20 +211,11 @@ const Book = () => {
       }
     };
 
-    fetchCategoryBooks(querySetIndex);
+    fetchCategoryBooks();
 
     return () => {
       mounted = false;
     };
-  }, [querySetIndex]);
-
-  // Rotate to the next query set every 25 seconds to keep the homepage dynamic
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setQuerySetIndex((i) => (i + 1) % categoryQuerySets.length);
-    }, 25000);
-
-    return () => clearInterval(interval);
   }, []);
 
   function getAuthorFromBook(e, author){
@@ -330,8 +327,15 @@ const Book = () => {
   };
 
   const renderSlideshow = (category, books) => {
+    const categoryNames = {
+      mostReadBooks: t.mostReadBooks,
+      newReleases: t.newReleases,
+      trendingNow: t.trendingNow,
+      bestOfTheYear: t.bestOfTheYear,
+    };
+    
     if (!books || books.length === 0) {
-      return <p>No books available in {category.replace(/([A-Z])/g, " $1").trim()}</p>;
+      return <p>{t.noResults}</p>;
     }
 
     const currentIndex = currentSlides[category];
@@ -340,7 +344,7 @@ const Book = () => {
 
     return (
       <div className="slideshow">
-        <h2>{category.replace(/([A-Z])/g, " $1").trim()}</h2>
+        <h2>{categoryNames[category] || category.replace(/([A-Z])/g, " $1").trim()}</h2>
         <div className="slideshow-container">
         
             <button 
@@ -360,17 +364,17 @@ const Book = () => {
               >
                 <img
                   src={book?.volumeInfo?.imageLinks?.smallThumbnail || "https://placehold.co/128x192?text=No+Image"}
-                  alt={book?.volumeInfo?.title || "No Title"}
+                  alt={book?.volumeInfo?.title || t.unknownTitle}
                 />
-                <p>{book?.volumeInfo?.title?.slice(0,100) || "Unknown Title"}</p>
-                <p className="author" onClick={(e) => getAuthorFromBook(e,book?.volumeInfo?.authors[0])}>by {book?.volumeInfo?.authors?.join(", ") || "Unknown Author"}</p>
+                <p>{book?.volumeInfo?.title?.slice(0,100) || t.unknownTitle}</p>
+                <p className="author" onClick={(e) => getAuthorFromBook(e,book?.volumeInfo?.authors[0])}>{t.by} {book?.volumeInfo?.authors?.join(", ") || t.unknownAuthor}</p>
               </div>
             ))}
             {visibleBooks?.length < booksPerSlide &&
               Array?.from({ length: booksPerSlide - visibleBooks.length })?.map((_, index) => (
                 <div key={`placeholder-${index}`} className="slide-item placeholder">
                   <div className="placeholder-image"></div>
-                  <p>No Book Available</p>
+                  <p>{t.noBookAvailable}</p>
                 </div>
               ))}
           </div>
@@ -394,11 +398,11 @@ const Book = () => {
           <img src={booksImage} alt="Books" />
         </div>
         <div className="searchContainer">
-          <h1>Search the book</h1>
+          <h1>{t.searchTheBook}</h1>
           <div className="search-input-wrapper">
             <input
               className="title-input"
-              placeholder="Enter a book's name"
+              placeholder={t.enterBookName}
               value={title}
               onChange={handleInputChange}
               onFocus={() => setShowRecent(true)}
@@ -427,9 +431,9 @@ const Book = () => {
                       book?.volumeInfo?.imageLinks?.thumbnail ||
                       "https://placehold.co/128x192?text=No+Image"
                     }
-                    alt={book?.volumeInfo?.title || "No Title"}
+                    alt={book?.volumeInfo?.title || t.unknownTitle}
                   />
-                  <p>{book?.volumeInfo?.title?.slice(0,50) || "Unknown Title"}{book?.volumeInfo?.authors?.[0] && ` - ${book.volumeInfo.authors[0]}`}</p>
+                  <p>{book?.volumeInfo?.title?.slice(0,50) || t.unknownTitle}{book?.volumeInfo?.authors?.[0] && ` - ${book.volumeInfo.authors[0]}`}</p>
                 </div>
               ))}
             </div>
@@ -437,8 +441,8 @@ const Book = () => {
           {showRecent && recentSearches?.length > 0 && (
             <div className="recent-searches">
               <div className="recent-header">
-                <span>Recent searches</span>
-                <button className="clear-recent" onMouseDown={(e)=>{e.preventDefault(); clearRecent();}}>Clear</button>
+                <span>{t.recentSearches}</span>
+                <button className="clear-recent" onMouseDown={(e)=>{e.preventDefault(); clearRecent();}}>{t.clear}</button>
               </div>
               {recentSearches.map((s, i) => (
                 <div
@@ -463,50 +467,53 @@ const Book = () => {
                 <img className="book-of-the-week-image" src={featuredOfWeek?.volumeInfo?.imageLinks?.smallThumbnail || featuredOfWeek?.volumeInfo?.imageLinks?.thumbnail || 'https://placehold.co/220x320?text=No+Image'} alt={featuredOfWeek?.volumeInfo?.title} />
                 <div className="book-of-the-week-details">
                   <h2>{featuredOfWeek?.volumeInfo?.title}</h2>
-                  <p className="author">by {featuredOfWeek?.volumeInfo?.authors?.join(', ') || 'Unknown'}</p>
-                  <p className="description">{featuredOfWeek?.volumeInfo?.description?.slice(0,300) || featuredOfWeek?.volumeInfo?.subtitle || 'A highlighted selection chosen for you this week.'}</p>
+                  <p className="author">{t.by} {featuredOfWeek?.volumeInfo?.authors?.join(', ') || t.unknownAuthor}</p>
+                  <p className="description">{featuredOfWeek?.volumeInfo?.description?.slice(0,300) || featuredOfWeek?.volumeInfo?.subtitle || t.noDescription}</p>
                   <div className="book-of-the-week-actions">
-                    <button className="view-details-button" onClick={() => handleBookClick(featuredOfWeek)}>View Details</button>
-                    <button className="view-details-button secondary-btn" onClick={markBookRead}>Mark Read</button>
+                    <button className="view-details-button" onClick={() => handleBookClick(featuredOfWeek)}>{t.viewDetails}</button>
+                    <button className="view-details-button secondary-btn" onClick={markBookRead}>{t.markRead}</button>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="book-of-the-week loading">Loading featured selection…</div>
+              <div className="book-of-the-week loading">
+                <div className="spinner"></div>
+                <span style={{marginLeft: '12px'}}>{t.loadingFeatured}</span>
+              </div>
             )}
           </div>
 
           <div className="widgets-right">
             <div className="quote-widget">
-              <h3><FaQuoteLeft className="icon-inline"/>Quote of the Day</h3>
-              <p className="muted">{quote || 'Books open the way...'}</p>
+              <h3><FaQuoteLeft className="icon-inline"/>{t.quoteOfTheDay}</h3>
+              <p className="muted">{quote || t.booksOpenTheWay}</p>
             </div>
 
             <div className="challenge-widget">
-              <h4><FaCalendarAlt className="icon-inline"/>Reading Challenge</h4>
-              <p className="muted">Books read this month: <strong>{booksReadCount}</strong></p>
+              <h4><FaCalendarAlt className="icon-inline"/>{t.readingChallenge}</h4>
+              <p className="muted">{t.booksReadThisMonth}: <strong>{booksReadCount}</strong></p>
               <div className="progress-bar">
                 <div className="progress-fill" style={{width: `${Math.min(100, booksReadCount * 10)}%`}} />
               </div>
               <div className="challenge-actions">
-                <button className="view-details-button" onClick={markBookRead}>I finished a book</button>
+                <button className="view-details-button" onClick={markBookRead}>{t.iFinishedABook}</button>
               </div>
             </div>
 
             <form onSubmit={handleNewsletterSubmit} className="newsletter-widget">
               <FaEnvelope className="newsletter-icon" />
-              <input value={newsletterEmail} onChange={(e)=>setNewsletterEmail(e.target.value)} placeholder="Your email for updates" className="newsletter-input" />
-              <button className="view-details-button" type="submit">Subscribe</button>
+              <input value={newsletterEmail} onChange={(e)=>setNewsletterEmail(e.target.value)} placeholder={t.yourEmailForUpdates} className="newsletter-input" />
+              <button className="view-details-button" type="submit">{t.subscribe}</button>
             </form>
           </div>
         </div>
 
         <div className="authors-widget">
-          <h3><FaUsers className="icon-inline"/>Featured Authors</h3>
+          <h3><FaUsers className="icon-inline"/>{t.featuredAuthors}</h3>
           <div className="authors-list">
             {topAuthors.length > 0 ? topAuthors.map((a, i) => (
               <div key={i} className="author-chip" onClick={()=>navigate(`/authors/${encodeURIComponent(a)}`)}>{a}</div>
-            )) : <p className="muted">No authors to show yet.</p>}
+            )) : <p className="muted">{t.noAuthorsToShow}</p>}
           </div>
         </div>
       </div>
@@ -524,7 +531,7 @@ const Book = () => {
             </div>
           ))
         )}
-        {!loading &&  <footer style={{textAlign: "center"}}>Created by @Suad Pllana </footer>}
+        {!loading &&  <footer style={{textAlign: "center"}}>{t.createdBy} @Suad Pllana </footer>}
        
       </div>
 

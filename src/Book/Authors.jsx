@@ -2,24 +2,28 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Authors.css';
 import { authors, categories } from './authorsNames';
-import { FaArrowLeftLong } from "react-icons/fa6";
+import { FaArrowLeftLong, FaMagnifyingGlass } from "react-icons/fa6";
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
+
 const Authors = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Show all');
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE =50;
+  const ITEMS_PER_PAGE = 60;
 
-  
-const filteredAuthors = useMemo(() => {
-  return authors.filter((author) => {
-    const matchesName = author.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = searchTerm
-      ? true 
-      : selectedCategory === 'Show all' || author.genres.includes(selectedCategory);
-    return matchesName && matchesCategory;
-  });
-}, [searchTerm, selectedCategory]);
+  const filteredAuthors = useMemo(() => {
+    return authors.filter((author) => {
+      const matchesName = author.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = searchTerm
+        ? true 
+        : selectedCategory === 'Show all' || author.genres.includes(selectedCategory);
+      return matchesName && matchesCategory;
+    });
+  }, [searchTerm, selectedCategory]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -58,84 +62,97 @@ const filteredAuthors = useMemo(() => {
   };
 
   return (
-    <div className="authors-list">
-          <h3 style={{textAlign: "left", marginTop: "3rem",  cursor: "pointer", color: "white"}}
-            onClick={() => navigate(-1)}
-        ><FaArrowLeftLong /> Go Back</h3>
-      <h2 style={{textAlign: "center"}}>Our {authors.length} Authors</h2>
-      <div className="filters-container">
-        <input
-          type="text"
-          placeholder="Search by author name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-          aria-label="Search authors by name"
-        />
-        <br />
-        <label style={{color: "white"}}>Filter by genre: </label>
-        <select
-
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="category-select"
-          aria-label="Filter authors by category"
-        >
-          {categories?.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div>
+    <div className="authors-page">
       <div className="authors-container">
+        {/* Header */}
+        <div className="authors-header">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <FaArrowLeftLong /> {t.goBack}
+          </button>
+          <div className="header-title">
+            <h1>📚 {t.allAuthors}</h1>
+            <p>{t.browse || 'Browse'} {authors.length} {t.authors} • {filteredAuthors.length} {t.shown || 'shown'}</p>
+          </div>
+        </div>
+
+        {/* Filters Row */}
+        <div className="filters-row">
+          <div className="search-box">
+            <FaMagnifyingGlass />
+            <input
+              type="text"
+              placeholder={t.searchAuthors}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button className="clear-search" onClick={() => setSearchTerm('')}>×</button>
+            )}
+          </div>
+          
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="genre-filter"
+          >
+            {categories?.map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Authors List */}
         {paginatedAuthors.length === 0 ? (
-          <p style={{color: "white"}}>No authors found matching your criteria.</p>
+          <div className="no-results">
+            <p>{t.noAuthorsFound} "{searchTerm}"</p>
+            <button onClick={() => { setSearchTerm(''); setSelectedCategory('Show all'); }}>
+              {t.clear} {t.filter || 'filters'}
+            </button>
+          </div>
         ) : (
-          paginatedAuthors?.map((author) => (
-            <div
-              key={author.name}
-              className="author-item"
-              onClick={() => handleAuthorClick(author.name)}
+          <div className="authors-grid">
+            {paginatedAuthors.map((author) => (
+              <div
+                key={author.name}
+                className="author-chip"
+                onClick={() => handleAuthorClick(author.name)}
+              >
+                <span className="author-initial">{author.name.charAt(0)}</span>
+                <span className="author-name">{author.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
             >
-              <p>{author.name}</p>
-            </div>
-          ))
+              ← {t.previous || 'Prev'}
+            </button>
+            
+            {getPageNumbers().map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={page === currentPage ? 'active' : ''}
+              >
+                {page}
+              </button>
+            ))}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              {t.next || 'Next'} →
+            </button>
+          </div>
         )}
       </div>
-      {totalPages > 1 && (
-        <div className="pagination-container" role="navigation" aria-label="Pagination">
-         
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="pagination-button"
-            aria-label="Previous page"
-          >
-            Previous
-          </button>
-          {getPageNumbers()?.map((page) => (
-            <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`pagination-button ${page === currentPage ? 'active' : ''}`}
-              aria-label={`Page ${page}`}
-              aria-current={page === currentPage ? 'page' : undefined}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="pagination-button"
-            aria-label="Next page"
-          >
-            Next
-          </button>
-       
-        </div>
-      )}
     </div>
   );
 };

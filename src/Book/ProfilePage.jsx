@@ -4,9 +4,13 @@ import { toast } from 'react-toastify';
 import { FaArrowLeftLong, FaCamera, FaPen, FaFloppyDisk, FaXmark, FaBook, FaHeart, FaClock, FaStar, FaChartLine, FaTrophy, FaCalendarDays, FaCircleCheck, FaBookOpen, FaMedal, FaFire } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
 import './ProfilePage.css';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = translations[language];
   const fileInputRef = useRef(null);
   const [userProfile, setUserProfile] = useState(null);
   const [wishlistBooks, setWishlistBooks] = useState([]);
@@ -55,7 +59,7 @@ const ProfilePage = () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        toast.error('Please sign in to view your profile');
+        toast.error(t.pleaseSignIn);
         navigate('/');
         return;
       }
@@ -74,7 +78,7 @@ const ProfilePage = () => {
       const profile = {
         id: user.id,
         email: user.email,
-        created_at: new Date(user.created_at).toLocaleDateString('en-US', { 
+        created_at: new Date(user.created_at).toLocaleDateString(language === 'sq' ? 'sq-AL' : 'en-US', { 
           year: 'numeric', 
           month: 'long', 
           day: 'numeric' 
@@ -271,10 +275,10 @@ const ProfilePage = () => {
         ...editForm
       }));
       setIsEditing(false);
-      toast.success('Profile updated successfully!');
+      toast.success(t.profileUpdated);
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(t.failedUpdateProfile);
     }
   };
 
@@ -288,13 +292,13 @@ const ProfilePage = () => {
 
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image size must be less than 2MB');
+      toast.error(t.imageSizeTooLarge);
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+      toast.error(t.pleaseUploadImage);
       return;
     }
 
@@ -319,18 +323,18 @@ const ProfilePage = () => {
 
         if (updateError) {
           console.error('Error updating avatar:', updateError);
-          toast.error('Failed to upload avatar');
+          toast.error(t.failedUploadAvatar);
           return;
         }
 
         setAvatarUrl(base64);
-        toast.success('Avatar updated!');
+        toast.success(t.avatarUpdated);
         setUploadingAvatar(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast.error('Failed to upload avatar');
+      toast.error(t.failedUploadAvatar);
       setUploadingAvatar(false);
     }
   };
@@ -354,10 +358,10 @@ const ProfilePage = () => {
       
       if (error) throw error;
       
-      toast.success('Password reset link sent! Check your email.');
+      toast.success(t.passwordResetSent);
     } catch (error) {
       console.error('Error sending reset email:', error);
-      toast.error('Failed to send password reset email');
+      toast.error(t.failedResetPassword);
     }
   };
 
@@ -385,7 +389,7 @@ const ProfilePage = () => {
       <div className="profile-page">
         <div className="profile-loading">
           <div className="loading-spinner"></div>
-          <p>Loading your profile...</p>
+          <p>{t.loadingProfile}</p>
         </div>
       </div>
     );
@@ -397,7 +401,7 @@ const ProfilePage = () => {
         className="back-link"
         onClick={() => navigate(-1)}
       >
-        <FaArrowLeftLong /> Go Back
+        <FaArrowLeftLong /> {t.goBack}
       </h3>
 
       <div className="profile-layout">
@@ -437,36 +441,36 @@ const ProfilePage = () => {
 
             <div className="member-info">
               <FaCalendarDays />
-              <span>Member since {userProfile?.created_at}</span>
+              <span>{t.memberSince} {userProfile?.created_at}</span>
             </div>
 
             <button 
               className="edit-profile-btn"
               onClick={() => setIsEditing(true)}
             >
-              <FaPen /> Edit Profile
+              <FaPen /> {t.editProfile}
             </button>
           </div>
 
           {/* Quick Stats */}
           <div className="quick-stats-card">
-            <h3>📊 Quick Stats</h3>
+            <h3>📊 {t.quickStats}</h3>
             <div className="quick-stats-grid">
               <div className="quick-stat">
                 <span className="stat-number">{stats.totalBooks}</span>
-                <span className="stat-label">Saved</span>
+                <span className="stat-label">{t.saved}</span>
               </div>
               <div className="quick-stat">
                 <span className="stat-number">{stats.booksRead}</span>
-                <span className="stat-label">Read</span>
+                <span className="stat-label">{t.read}</span>
               </div>
               <div className="quick-stat">
                 <span className="stat-number">{stats.reviewsWritten}</span>
-                <span className="stat-label">Reviews</span>
+                <span className="stat-label">{t.reviews}</span>
               </div>
               <div className="quick-stat">
                 <span className="stat-number">{stats.collectionsCount}</span>
-                <span className="stat-label">Collections</span>
+                <span className="stat-label">{t.collections}</span>
               </div>
             </div>
           </div>
@@ -480,25 +484,25 @@ const ProfilePage = () => {
               className={activeSection === 'overview' ? 'active' : ''}
               onClick={() => setActiveSection('overview')}
             >
-              <FaChartLine /> Overview
+              <FaChartLine /> {t.overview}
             </button>
             <button 
               className={activeSection === 'activity' ? 'active' : ''}
               onClick={() => setActiveSection('activity')}
             >
-              <FaClock /> Activity
+              <FaClock /> {t.activity}
             </button>
             <button 
               className={activeSection === 'achievements' ? 'active' : ''}
               onClick={() => setActiveSection('achievements')}
             >
-              <FaTrophy /> Achievements
+              <FaTrophy /> {t.achievements}
             </button>
             <button 
               className={activeSection === 'books' ? 'active' : ''}
               onClick={() => setActiveSection('books')}
             >
-              <FaBook /> My Books
+              <FaBook /> {t.myBooks || 'My Books'}
             </button>
           </div>
 
@@ -508,8 +512,8 @@ const ProfilePage = () => {
               {/* Reading Goal Progress */}
               <div className="reading-goal-card">
                 <div className="goal-header">
-                  <h3><FaBookOpen /> Reading Goal {new Date().getFullYear()}</h3>
-                  <span className="goal-text">{stats.booksRead} / {userProfile?.reading_goal || 12} books</span>
+                  <h3><FaBookOpen /> {t.readingGoal} {new Date().getFullYear()}</h3>
+                  <span className="goal-text">{stats.booksRead} / {userProfile?.reading_goal || 12} {t.booksReadGoal}</span>
                 </div>
                 <div className="progress-bar-container">
                   <div 
@@ -519,8 +523,8 @@ const ProfilePage = () => {
                 </div>
                 <p className="goal-message">
                   {getReadingProgress() >= 100 
-                    ? '🎉 Congratulations! You\'ve reached your goal!'
-                    : `${(userProfile?.reading_goal || 12) - stats.booksRead} more books to reach your goal`
+                    ? `🎉 ${t.goalReached}`
+                    : `${(userProfile?.reading_goal || 12) - stats.booksRead} ${t.moreBooksToGoal}`
                   }
                 </p>
               </div>
@@ -533,7 +537,7 @@ const ProfilePage = () => {
                   </div>
                   <div className="stat-content">
                     <span className="stat-value">{stats.totalBooks}</span>
-                    <span className="stat-title">Books Saved</span>
+                    <span className="stat-title">{t.booksSaved}</span>
                   </div>
                 </div>
 
@@ -543,7 +547,7 @@ const ProfilePage = () => {
                   </div>
                   <div className="stat-content">
                     <span className="stat-value">{stats.booksRead}</span>
-                    <span className="stat-title">Books Completed</span>
+                    <span className="stat-title">{t.booksCompleted}</span>
                   </div>
                 </div>
 
@@ -553,7 +557,7 @@ const ProfilePage = () => {
                   </div>
                   <div className="stat-content">
                     <span className="stat-value">{stats.booksReading}</span>
-                    <span className="stat-title">Currently Reading</span>
+                    <span className="stat-title">{t.currentlyReadingBooks}</span>
                   </div>
                 </div>
 
@@ -563,7 +567,7 @@ const ProfilePage = () => {
                   </div>
                   <div className="stat-content">
                     <span className="stat-value">{stats.loansApproved}</span>
-                    <span className="stat-title">Books Borrowed</span>
+                    <span className="stat-title">{t.booksBorrowed}</span>
                   </div>
                 </div>
 
@@ -573,7 +577,7 @@ const ProfilePage = () => {
                   </div>
                   <div className="stat-content">
                     <span className="stat-value">{stats.reviewsWritten}</span>
-                    <span className="stat-title">Reviews Written</span>
+                    <span className="stat-title">{t.reviewsWrittenLabel}</span>
                   </div>
                 </div>
 
@@ -583,7 +587,7 @@ const ProfilePage = () => {
                   </div>
                   <div className="stat-content">
                     <span className="stat-value">{stats.readingStreak}</span>
-                    <span className="stat-title">Day Streak</span>
+                    <span className="stat-title">{t.dayStreak}</span>
                   </div>
                 </div>
               </div>
@@ -591,7 +595,7 @@ const ProfilePage = () => {
               {/* Average Rating Given */}
               {stats.reviewsWritten > 0 && (
                 <div className="avg-rating-card">
-                  <h3>Your Average Rating</h3>
+                  <h3>{t.yourAverageRating}</h3>
                   <div className="avg-rating-display">
                     <span className="avg-rating-number">{stats.averageRating}</span>
                     <div className="avg-rating-stars">
@@ -603,7 +607,7 @@ const ProfilePage = () => {
                       ))}
                     </div>
                   </div>
-                  <p>Based on {stats.reviewsWritten} reviews</p>
+                  <p>{t.basedOnReviews} {stats.reviewsWritten} {t.reviews}</p>
                 </div>
               )}
             </div>
@@ -612,10 +616,10 @@ const ProfilePage = () => {
           {/* Activity Section */}
           {activeSection === 'activity' && (
             <div className="activity-section">
-              <h3><FaClock /> Recent Activity</h3>
+              <h3><FaClock /> {t.recentActivity}</h3>
               {recentActivity.length === 0 ? (
                 <div className="empty-activity">
-                  <p>No recent activity. Start by adding books to your wishlist!</p>
+                  <p>{t.noRecentActivity}</p>
                 </div>
               ) : (
                 <div className="activity-timeline">
@@ -636,13 +640,13 @@ const ProfilePage = () => {
           {/* Achievements Section */}
           {activeSection === 'achievements' && (
             <div className="achievements-section">
-              <h3><FaTrophy /> Achievements</h3>
+              <h3><FaTrophy /> {t.achievements}</h3>
               <div className="achievements-grid">
                 <div className={`achievement-card ${stats.totalBooks >= 1 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">📖</div>
                   <div className="achievement-info">
-                    <h4>First Steps</h4>
-                    <p>Add your first book</p>
+                    <h4>{t.firstSteps}</h4>
+                    <p>{t.addFirstBook}</p>
                   </div>
                   {stats.totalBooks >= 1 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -650,8 +654,8 @@ const ProfilePage = () => {
                 <div className={`achievement-card ${stats.totalBooks >= 10 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">📚</div>
                   <div className="achievement-info">
-                    <h4>Book Collector</h4>
-                    <p>Save 10 books</p>
+                    <h4>{t.bookCollector}</h4>
+                    <p>{t.save10Books}</p>
                   </div>
                   {stats.totalBooks >= 10 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -659,8 +663,8 @@ const ProfilePage = () => {
                 <div className={`achievement-card ${stats.booksRead >= 5 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">🎯</div>
                   <div className="achievement-info">
-                    <h4>Dedicated Reader</h4>
-                    <p>Complete 5 books</p>
+                    <h4>{t.dedicatedReader}</h4>
+                    <p>{t.complete5Books}</p>
                   </div>
                   {stats.booksRead >= 5 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -668,8 +672,8 @@ const ProfilePage = () => {
                 <div className={`achievement-card ${stats.reviewsWritten >= 3 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">⭐</div>
                   <div className="achievement-info">
-                    <h4>Critic</h4>
-                    <p>Write 3 reviews</p>
+                    <h4>{t.critic}</h4>
+                    <p>{t.write3Reviews}</p>
                   </div>
                   {stats.reviewsWritten >= 3 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -677,8 +681,8 @@ const ProfilePage = () => {
                 <div className={`achievement-card ${stats.collectionsCount >= 3 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">🗂️</div>
                   <div className="achievement-info">
-                    <h4>Organizer</h4>
-                    <p>Create 3 collections</p>
+                    <h4>{t.organizer}</h4>
+                    <p>{t.create3Collections}</p>
                   </div>
                   {stats.collectionsCount >= 3 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -686,8 +690,8 @@ const ProfilePage = () => {
                 <div className={`achievement-card ${stats.loansApproved >= 1 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">📖</div>
                   <div className="achievement-info">
-                    <h4>Borrower</h4>
-                    <p>Get a loan approved</p>
+                    <h4>{t.borrower}</h4>
+                    <p>{t.getLoanApproved}</p>
                   </div>
                   {stats.loansApproved >= 1 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -695,8 +699,8 @@ const ProfilePage = () => {
                 <div className={`achievement-card ${stats.totalBooks >= 50 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">🏆</div>
                   <div className="achievement-info">
-                    <h4>Bookworm</h4>
-                    <p>Save 50 books</p>
+                    <h4>{t.bookworm}</h4>
+                    <p>{t.save50Books}</p>
                   </div>
                   {stats.totalBooks >= 50 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -704,8 +708,8 @@ const ProfilePage = () => {
                 <div className={`achievement-card ${getReadingProgress() >= 100 ? 'unlocked' : 'locked'}`}>
                   <div className="achievement-icon">🎉</div>
                   <div className="achievement-info">
-                    <h4>Goal Crusher</h4>
-                    <p>Complete reading goal</p>
+                    <h4>{t.goalCrusher}</h4>
+                    <p>{t.completeReadingGoal}</p>
                   </div>
                   {getReadingProgress() >= 100 && <FaCircleCheck className="achievement-check" />}
                 </div>
@@ -717,16 +721,16 @@ const ProfilePage = () => {
           {activeSection === 'books' && (
             <div className="books-section">
               <div className="section-header">
-                <h3><FaHeart /> Recently Saved Books</h3>
+                <h3><FaHeart /> {t.recentlySavedBooks}</h3>
                 <button className="see-all-btn" onClick={() => navigate('/wishlist')}>
-                  See All
+                  {t.seeAll}
                 </button>
               </div>
               
               {wishlistBooks.length === 0 ? (
                 <div className="empty-books">
-                  <p>No books saved yet. Start exploring and add some!</p>
-                  <button onClick={() => navigate('/')}>Discover Books</button>
+                  <p>{t.noBooksYet}</p>
+                  <button onClick={() => navigate('/')}>{t.discoverBooks}</button>
                 </div>
               ) : (
                 <div className="saved-books-grid">
@@ -749,7 +753,7 @@ const ProfilePage = () => {
                       </div>
                       <div className="book-info">
                         <h4>{book.title}</h4>
-                        <p>{book.authors?.join(', ') || 'Unknown Author'}</p>
+                        <p>{book.authors?.join(', ') || t.unknownAuthor}</p>
                       </div>
                     </div>
                   ))}
@@ -765,7 +769,7 @@ const ProfilePage = () => {
         <div className="modal-overlay" onClick={() => setIsEditing(false)}>
           <div className="edit-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Edit Profile</h2>
+              <h2>{t.editProfile}</h2>
               <button className="close-btn" onClick={() => setIsEditing(false)}>
                 <FaXmark />
               </button>
@@ -774,21 +778,21 @@ const ProfilePage = () => {
             <div className="modal-body">
               <div className="form-row">
                 <div className="form-group">
-                  <label>First Name</label>
+                  <label>{t.firstName}</label>
                   <input
                     type="text"
                     value={editForm.first_name}
                     onChange={(e) => setEditForm(prev => ({ ...prev, first_name: e.target.value }))}
-                    placeholder="Enter your first name"
+                    placeholder={t.enterFirstName}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Last Name</label>
+                  <label>{t.lastName}</label>
                   <input
                     type="text"
                     value={editForm.last_name}
                     onChange={(e) => setEditForm(prev => ({ ...prev, last_name: e.target.value }))}
-                    placeholder="Enter your last name"
+                    placeholder={t.enterLastName}
                   />
                 </div>
               </div>
@@ -800,14 +804,14 @@ const ProfilePage = () => {
                 onClick={handleResetPassword}
                 type="button"
               >
-                Reset Password
+                {t.resetPassword}
               </button>
               <div className="footer-right">
                 <button className="cancel-btn" onClick={() => setIsEditing(false)}>
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button className="save-btn" onClick={handleSaveProfile}>
-                  <FaFloppyDisk /> Save Changes
+                  <FaFloppyDisk /> {t.saveChanges}
                 </button>
               </div>
             </div>

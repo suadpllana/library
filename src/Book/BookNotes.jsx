@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaArrowLeftLong, FaPlus, FaMagnifyingGlass, FaPen, FaTrash, FaBook, FaNoteSticky } from "react-icons/fa6";
+import { useNavigate, Link } from 'react-router-dom';
+import { FaArrowLeftLong, FaPlus, FaMagnifyingGlass, FaPen, FaTrash, FaBook, FaNoteSticky, FaQuoteLeft, FaHashtag, FaBookmark } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
@@ -165,8 +165,10 @@ const BookNotes = () => {
     return (
       <div className="book-notes-page">
         <div className="not-logged-in">
-          <h2>📝 Book Notes</h2>
+          <FaNoteSticky className="not-logged-icon" />
+          <h2>Book Notes</h2>
           <p>Please log in to manage your book notes.</p>
+          <Link to="/auth" className="login-btn">Log In</Link>
         </div>
       </div>
     );
@@ -174,102 +176,141 @@ const BookNotes = () => {
 
   return (
     <div className="book-notes-page">
-      <h3 className="back-link" onClick={() => navigate(-1)}>
-        <FaArrowLeftLong /> Go Back
-      </h3>
-
-      <div className="notes-header">
-        <div className="header-content">
-          <h1><FaNoteSticky /> My Book Notes</h1>
-          <p>Keep track of your thoughts, quotes, and highlights</p>
+      <div className="notes-container">
+        {/* Header */}
+        <div className="notes-header">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <FaArrowLeftLong /> Back
+          </button>
+          <div className="header-info">
+            <h1>📝 My Book Notes</h1>
+            <p>Capture your thoughts, quotes, and insights</p>
+          </div>
+          <button className="add-note-btn" onClick={() => setShowAddModal(true)}>
+            <FaPlus /> New Note
+          </button>
         </div>
-        <button className="add-note-btn" onClick={() => setShowAddModal(true)}>
-          <FaPlus /> Add Note
-        </button>
-      </div>
 
-      {/* Search Bar */}
-      <div className="notes-search">
-        <FaMagnifyingGlass className="search-icon" />
-        <input
-          type="text"
-          placeholder="Search notes by book, content, or tags..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+        {/* Stats Row */}
+        <div className="notes-stats">
+          <div className="stat-card">
+            <div className="stat-icon notes"><FaNoteSticky /></div>
+            <div className="stat-data">
+              <span className="stat-num">{notes.length}</span>
+              <span className="stat-text">Notes</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon books"><FaBook /></div>
+            <div className="stat-data">
+              <span className="stat-num">{Object.keys(groupedNotes).length}</span>
+              <span className="stat-text">Books</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon tags"><FaHashtag /></div>
+            <div className="stat-data">
+              <span className="stat-num">
+                {[...new Set(notes.flatMap(n => n.tags || []))].length}
+              </span>
+              <span className="stat-text">Tags</span>
+            </div>
+          </div>
+        </div>
 
-      {/* Stats */}
-      <div className="notes-stats">
-        <div className="stat">
-          <span className="stat-value">{notes.length}</span>
-          <span className="stat-label">Total Notes</span>
-        </div>
-        <div className="stat">
-          <span className="stat-value">{Object.keys(groupedNotes).length}</span>
-          <span className="stat-label">Books</span>
-        </div>
-      </div>
-
-      {/* Notes List */}
-      {loading ? (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading notes...</p>
-        </div>
-      ) : filteredNotes.length === 0 ? (
-        <div className="empty-state">
-          <FaNoteSticky className="empty-icon" />
-          <h3>{searchQuery ? 'No notes found' : 'No notes yet'}</h3>
-          <p>{searchQuery ? 'Try a different search term' : 'Start adding notes to track your reading insights!'}</p>
-          {!searchQuery && (
-            <button onClick={() => setShowAddModal(true)}>
-              <FaPlus /> Add Your First Note
-            </button>
+        {/* Search */}
+        <div className="search-bar">
+          <FaMagnifyingGlass />
+          <input
+            type="text"
+            placeholder="Search notes, books, or tags..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="clear-search" onClick={() => setSearchQuery('')}>×</button>
           )}
         </div>
-      ) : (
-        <div className="notes-grouped">
-          {Object.entries(groupedNotes).map(([bookTitle, bookNotes]) => (
-            <div key={bookTitle} className="book-group">
-              <div className="book-group-header">
-                <FaBook className="book-icon" />
-                <h3>{bookTitle}</h3>
-                <span className="note-count">{bookNotes.length} note{bookNotes.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="notes-list">
-                {bookNotes.map(note => (
-                  <div key={note.id} className="note-card">
-                    <div className="note-content">
-                      <p className="note-text">{note.note_text}</p>
-                      <div className="note-meta">
-                        {note.chapter && <span className="meta-item">📖 {note.chapter}</span>}
-                        {note.page_number && <span className="meta-item">Page {note.page_number}</span>}
-                        <span className="meta-item date">{formatDate(note.updated_at)}</span>
-                      </div>
-                      {note.tags?.length > 0 && (
-                        <div className="note-tags">
-                          {note.tags.map((tag, i) => (
-                            <span key={i} className="tag">#{tag}</span>
-                          ))}
+
+        {/* Content */}
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading your notes...</p>
+          </div>
+        ) : filteredNotes.length === 0 ? (
+          <div className="empty-state">
+            <FaNoteSticky className="empty-icon" />
+            <h3>{searchQuery ? 'No notes found' : 'No notes yet'}</h3>
+            <p>{searchQuery ? 'Try a different search term' : 'Start capturing your reading insights!'}</p>
+            {!searchQuery && (
+              <button className="add-first-btn" onClick={() => setShowAddModal(true)}>
+                <FaPlus /> Add Your First Note
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="notes-grid">
+            {Object.entries(groupedNotes).map(([bookTitle, bookNotes]) => (
+              <div key={bookTitle} className="book-section">
+                <div className="book-section-header">
+                  <FaBook className="book-icon" />
+                  <h3>{bookTitle}</h3>
+                  <span className="note-badge">{bookNotes.length}</span>
+                </div>
+                
+                <div className="notes-cards">
+                  {bookNotes.map(note => (
+                    <div key={note.id} className="note-card">
+                      <div className="note-body">
+                        {note.note_text.startsWith('"') && (
+                          <FaQuoteLeft className="quote-icon" />
+                        )}
+                        <p className="note-text">{note.note_text}</p>
+                        
+                        <div className="note-footer">
+                          <div className="note-meta">
+                            {note.chapter && (
+                              <span className="meta-chip">
+                                <FaBookmark /> {note.chapter}
+                              </span>
+                            )}
+                            {note.page_number && (
+                              <span className="meta-chip">p.{note.page_number}</span>
+                            )}
+                          </div>
+                          
+                          {note.tags?.length > 0 && (
+                            <div className="note-tags">
+                              {note.tags.slice(0, 3).map((tag, i) => (
+                                <span key={i} className="tag">#{tag}</span>
+                              ))}
+                              {note.tags.length > 3 && (
+                                <span className="tag more">+{note.tags.length - 3}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        
+                        <span className="note-date">{formatDate(note.updated_at)}</span>
+                      </div>
+                      
+                      <div className="note-actions">
+                        <button className="edit-btn" onClick={() => handleEdit(note)} title="Edit">
+                          <FaPen />
+                        </button>
+                        <button className="delete-btn" onClick={() => handleDelete(note.id)} title="Delete">
+                          <FaTrash />
+                        </button>
+                      </div>
                     </div>
-                    <div className="note-actions">
-                      <button className="edit-btn" onClick={() => handleEdit(note)}>
-                        <FaPen />
-                      </button>
-                      <button className="delete-btn" onClick={() => handleDelete(note.id)}>
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Add/Edit Modal */}
       {showAddModal && (

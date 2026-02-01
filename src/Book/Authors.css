@@ -1,210 +1,285 @@
-/* ========================================
-   AUTHORS LIST - Modern Premium Style
-   ======================================== */
+/* Authors Page - Clean Modern Design */
 
-.authors-list {
-  padding: 2rem;
-  min-height: calc(100vh - 70px);
+.authors-page {
+  min-height: 100vh;
   background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
-  margin-top: 70px;
-  color: #e0e0e0;
-}
-
-.authors-list h2 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-align: center;
-}
-
-.filters-container {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-input {
-  padding: 0.875rem 1.25rem;
-  font-size: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-radius: 12px;
-  width: 80%;
-  max-width: 600px;
-  margin: 0 auto;
-  outline: none;
-  background: #252542;
-  transition: all 0.2s ease;
-}
-
-.search-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-}
-
-.search-input::placeholder {
-  color: #6b6b8a;
-}
-
-.category-select {
-  padding: 0.875rem 1.25rem;
-  font-size: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-radius: 12px;
-  background: #252542;
-  cursor: pointer;
-  outline: none;
-  min-width: 150px;
-  transition: all 0.2s ease;
-}
-
-.category-select:focus {
-  border-color: #6366f1;
+  padding: 100px 2rem 2rem;
 }
 
 .authors-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-.author-item {
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(145deg, #252542 0%, #1e1e35 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+/* Header */
+.authors-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #a5a5c0;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
-.author-item:hover {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.3);
-  transform: translateY(-2px);
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
-.author-item p {
+.header-title h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.25rem;
+}
+
+.header-title p {
+  color: #818cf8;
   margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #e0e0e0;
+  font-size: 0.9rem;
 }
 
-/* Pagination */
-.pagination-container {
+/* Filters */
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #1e1e35;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #6366f1;
+}
+
+.search-box svg {
+  color: #6b6b8a;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.search-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.search-box input::placeholder {
+  color: #6b6b8a;
+}
+
+.clear-search {
+  background: none;
+  border: none;
+  color: #6b6b8a;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.clear-search:hover {
+  color: #fff;
+}
+
+.genre-filter {
+  padding: 0.75rem 1rem;
+  background: #1e1e35;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.genre-filter option {
+  background: #1e1e35;
+}
+
+/* Authors Grid */
+.authors-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 3rem auto 2rem;
-  padding: 0 20px;
-  max-width: 600px;
-  justify-content: center;
+  gap: 0.75rem;
 }
 
-.pagination-button {
-  min-width: 42px;
-  height: 38px;
-  padding: 0 10px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  background: #252542;
-  color: #a5a5c0;
+.author-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(145deg, #252542, #1e1e35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 50px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.pagination-button.first,
-.pagination-button.last {
-  min-width: 75px;
-}
-
-.pagination-button:hover:not(:disabled) {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.3);
-  color: #fff;
+.author-chip:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
   transform: translateY(-2px);
 }
 
-.pagination-button:disabled {
-  background: rgba(37, 37, 66, 0.5);
-  color: #4b5563;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.pagination-button.active {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: #fff;
-  border-color: transparent;
+.author-initial {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 50%;
+  font-size: 0.8rem;
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+  color: white;
 }
 
-@media (max-width: 767px) {
-  .authors-list {
-    padding: 1.5rem 1rem;
-    margin-top: 60px;
+.author-name {
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* No Results */
+.no-results {
+  text-align: center;
+  padding: 3rem;
+  color: #a5a5c0;
+}
+
+.no-results p {
+  margin-bottom: 1rem;
+}
+
+.no-results button {
+  padding: 0.6rem 1.25rem;
+  background: #6366f1;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.no-results button:hover {
+  background: #4f46e5;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination button {
+  padding: 0.6rem 1rem;
+  background: #1e1e35;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #a5a5c0;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #fff;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination button.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .authors-page {
+    padding: 80px 1rem 1.5rem;
   }
 
-  .authors-list h2 {
-    font-size: 1.5rem;
-  }
-
-  .filters-container {
+  .authors-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 1rem;
   }
 
-  .search-input,
-  .category-select {
-    width: 100%;
-    margin-left: 0;
+  .header-title h1 {
+    font-size: 1.4rem;
   }
 
-  .authors-container {
+  .filters-row {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .author-item {
+  .search-box {
+    min-width: 100%;
+  }
+
+  .genre-filter {
     width: 100%;
-    text-align: center;
   }
 
-  .pagination-container {
-    gap: 6px;
-    padding: 0 10px;
+  .authors-grid {
+    gap: 0.5rem;
   }
 
-  .pagination-button {
-    min-width: 36px;
-    height: 34px;
-    padding: 0 8px;
+  .author-chip {
+    padding: 0.5rem 0.85rem;
+  }
+
+  .author-initial {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+  }
+
+  .author-name {
     font-size: 0.85rem;
   }
 
-  .pagination-button.first,
-  .pagination-button.last {
-    min-width: 60px;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1217px) {
-  .authors-list {
-    min-height: calc(100vh - 70px);
+  .pagination button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
   }
 }

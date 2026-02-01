@@ -4,10 +4,12 @@
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 15vh;
   z-index: 2000;
-  padding: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
   animation: fadeIn 0.2s ease;
 }
 
