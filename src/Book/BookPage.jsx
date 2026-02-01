@@ -30,6 +30,7 @@ const BookPage = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [averageRating, setAverageRating] = useState(0);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -239,9 +240,11 @@ const BookPage = () => {
 
         const reviewsWithProfiles = (data || []).map(review => ({
           ...review,
-          user_name: profilesMap[review.user_id] 
-            ? `${profilesMap[review.user_id].first_name} ${profilesMap[review.user_id].last_name || ''}`
-            : 'Anonymous'
+          user_name: review.is_anonymous 
+            ? 'Anonymous' 
+            : (profilesMap[review.user_id] 
+                ? `${profilesMap[review.user_id].first_name} ${profilesMap[review.user_id].last_name || ''}`.trim()
+                : 'Anonymous')
         }));
 
         setReviews(reviewsWithProfiles);
@@ -259,6 +262,7 @@ const BookPage = () => {
             setUserReview(myReview);
             setReviewRating(myReview.rating);
             setReviewText(myReview.review_text || '');
+            setIsAnonymous(myReview.is_anonymous || false);
           }
         }
       } else {
@@ -289,7 +293,8 @@ const BookPage = () => {
         book_title: book.title || 'Unknown Title',
         user_id: user.id,
         rating: reviewRating,
-        review_text: reviewText.trim()
+        review_text: reviewText.trim(),
+        is_anonymous: isAnonymous
       };
 
       if (userReview) {
@@ -299,6 +304,7 @@ const BookPage = () => {
           .update({
             rating: reviewRating,
             review_text: reviewText.trim(),
+            is_anonymous: isAnonymous,
             updated_at: new Date().toISOString()
           })
           .eq('id', userReview.id);
@@ -529,6 +535,22 @@ const BookPage = () => {
                 />
               </div>
 
+              <div className="anonymous-toggle">
+                <label className="anonymous-label">
+                  <input
+                    type="checkbox"
+                    checked={isAnonymous}
+                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                  />
+                  <span>Post as Anonymous</span>
+                  <small className="anonymous-hint">
+                    {isAnonymous 
+                      ? 'Your name will be hidden from other users' 
+                      : 'Your name will be visible to other users'}
+                  </small>
+                </label>
+              </div>
+
               <div className="review-form-actions">
                 <button 
                   className="cancel-btn"
@@ -537,9 +559,11 @@ const BookPage = () => {
                     if (userReview) {
                       setReviewRating(userReview.rating);
                       setReviewText(userReview.review_text || '');
+                      setIsAnonymous(userReview.is_anonymous || false);
                     } else {
                       setReviewRating(0);
                       setReviewText('');
+                      setIsAnonymous(false);
                     }
                   }}
                 >

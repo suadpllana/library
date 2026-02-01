@@ -4,11 +4,15 @@ import { FaFire, FaStar, FaClock, FaAward, FaBookOpen, FaArrowRight, FaUser, FaH
 import { HiSparkles } from 'react-icons/hi';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import './Discover.css';
 
 const Discover = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [activeTab, setActiveTab] = useState('trending');
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,13 +22,17 @@ const Discover = () => {
   const [loadingPersonalized, setLoadingPersonalized] = useState(false);
   const [randomPick, setRandomPick] = useState(null);
 
+  // Cache for API responses
+  const DISCOVER_CACHE_KEY = 'discover_books_cache';
+  const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
   const tabs = [
-    { id: 'trending', label: 'Trending Now', icon: <FaFire />, query: 'subject:fiction&orderBy=relevance' },
-    { id: 'forYou', label: 'For You', icon: <FaUser />, query: null },
-    { id: 'new', label: 'New Arrivals', icon: <HiSparkles />, query: 'subject:fiction&orderBy=newest' },
-    { id: 'topRated', label: 'Top Rated', icon: <FaStar />, query: 'bestseller+2024' },
-    { id: 'classics', label: 'Classics', icon: <FaAward />, query: 'subject:classics' },
-    { id: 'recommended', label: 'Staff Picks', icon: <FaBookOpen />, query: 'award+winning+fiction' },
+    { id: 'trending', label: t.trendingNowTab, icon: <FaFire />, query: 'subject:fiction&orderBy=relevance' },
+    { id: 'forYou', label: t.forYou, icon: <FaUser />, query: null },
+    { id: 'new', label: t.newArrivals, icon: <HiSparkles />, query: 'subject:fiction&orderBy=newest' },
+    { id: 'topRated', label: t.topRated, icon: <FaStar />, query: 'bestseller+2024' },
+    { id: 'classics', label: t.classics, icon: <FaAward />, query: 'subject:classics' },
+    { id: 'recommended', label: t.staffPicks, icon: <FaBookOpen />, query: 'award+winning+fiction' },
   ];
 
   useEffect(() => {
@@ -83,30 +91,54 @@ const Discover = () => {
   };
 
   const fetchPersonalizedRecommendations = async () => {
+    const cacheKey = `${DISCOVER_CACHE_KEY}_personalized`;
+    
+    // Check cache first
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          setBooks(data.books);
+          setFeaturedBook(data.featured);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Cache read error:', e);
+    }
+
     setLoadingPersonalized(true);
     setLoading(true);
     
     try {
       const categoriesToUse = userCategories.length > 0 ? userCategories : ['fiction', 'mystery', 'science'];
-      const allBooks = [];
-
-      // Fetch books from user's preferred categories
-      for (const category of categoriesToUse.slice(0, 3)) {
-        const response = await fetch(
-          `https://www.googleapis.com/books/v1/volumes?q=subject:${encodeURIComponent(category)}&maxResults=10&orderBy=relevance`
-        );
-        const data = await response.json();
-        if (data.items) {
-          allBooks.push(...data.items.map(book => ({ ...book, recommendedCategory: category })));
-        }
-      }
-
-      // Shuffle and remove duplicates
-      const uniqueBooks = Array.from(new Map(allBooks.map(b => [b.id, b])).values());
-      const shuffled = uniqueBooks.sort(() => Math.random() - 0.5);
+      // Use single query with combined subjects to reduce API calls
+      const combinedQuery = categoriesToUse.slice(0, 2).map(c => `subject:${c}`).join('+OR+');
       
-      setBooks(shuffled.slice(0, 20));
-      setFeaturedBook(shuffled.find(b => b.volumeInfo?.imageLinks?.thumbnail));
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(combinedQuery)}&maxResults=20&orderBy=relevance`
+      );
+      const data = await response.json();
+      const allBooks = data.items || [];
+
+      // Shuffle books
+      const shuffled = allBooks.sort(() => Math.random() - 0.5);
+      
+      setBooks(shuffled.slice(0, 16));
+      const featured = shuffled.find(b => b.volumeInfo?.imageLinks?.thumbnail);
+      setFeaturedBook(featured);
+
+      // Save to cache
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          data: { books: shuffled.slice(0, 16), featured },
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error('Cache write error:', e);
+      }
     } catch (error) {
       console.error('Error fetching personalized books:', error);
     } finally {
@@ -122,7 +154,7 @@ const Discover = () => {
     
     try {
       const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=subject:${randomCategory}&maxResults=40`
+        `https://www.googleapis.com/books/v1/volumes?q=subject:${randomCategory}&maxResults=20`
       );
       const data = await response.json();
       if (data.items?.length > 0) {
@@ -135,12 +167,30 @@ const Discover = () => {
   };
 
   const fetchBooks = async () => {
-    setLoading(true);
     const currentTab = tabs.find(t => t.id === activeTab);
+    const cacheKey = `${DISCOVER_CACHE_KEY}_${activeTab}`;
+    
+    // Check cache first
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          setBooks(data.books);
+          setFeaturedBook(data.featured);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Cache read error:', e);
+    }
+
+    setLoading(true);
     
     try {
       const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${currentTab.query}&maxResults=20`
+        `https://www.googleapis.com/books/v1/volumes?q=${currentTab.query}&maxResults=12`
       );
       const data = await response.json();
       const fetchedBooks = data.items || [];
@@ -149,6 +199,16 @@ const Discover = () => {
       // Set featured book (first book with good image)
       const featured = fetchedBooks.find(b => b.volumeInfo?.imageLinks?.thumbnail);
       setFeaturedBook(featured);
+
+      // Save to cache
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          data: { books: fetchedBooks, featured },
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error('Cache write error:', e);
+      }
     } catch (error) {
       console.error('Error fetching books:', error);
     } finally {
@@ -171,21 +231,21 @@ const Discover = () => {
       {/* Hero Section */}
       <div className="discover-hero">
         <div className="hero-content">
-          <h1>Discover Your Next <span className="gradient-text">Great Read</span></h1>
-          <p>Explore curated collections, trending titles, and hidden gems</p>
+          <h1>{t.discoverNextRead} <span className="gradient-text">{t.greatRead}</span></h1>
+          <p>{t.exploreCurated}</p>
         </div>
         
         {featuredBook && (
           <div className="featured-book" onClick={() => handleBookClick(featuredBook)}>
             <div className="featured-badge">
-              <HiSparkles /> Featured
+              <HiSparkles /> {t.featured}
             </div>
             <img src={getBookImage(featuredBook)} alt={featuredBook.volumeInfo?.title} />
             <div className="featured-info">
               <h3>{featuredBook.volumeInfo?.title}</h3>
               <p>{featuredBook.volumeInfo?.authors?.[0]}</p>
               <button className="view-btn">
-                View Details <FaArrowRight />
+                {t.viewDetails} <FaArrowRight />
               </button>
             </div>
           </div>
@@ -198,11 +258,11 @@ const Discover = () => {
           <div className="personalized-header">
             <FaLightbulb className="bulb-icon" />
             <div>
-              <h3>Based on Your Interests</h3>
-              <p>You seem to enjoy: {userCategories.join(', ')}</p>
+              <h3>{t.basedOnInterests}</h3>
+              <p>{t.youSeemToEnjoy}: {userCategories.join(', ')}</p>
             </div>
             <button className="see-more-btn" onClick={() => setActiveTab('forYou')}>
-              See Recommendations <FaArrowRight />
+              {t.seeRecommendations} <FaArrowRight />
             </button>
           </div>
         </div>
@@ -211,13 +271,13 @@ const Discover = () => {
       {/* Random Pick Section */}
       <div className="random-pick-section">
         <button className="random-btn" onClick={getRandomPick}>
-          <FaRandom /> Surprise Me!
+          <FaRandom /> {t.surpriseMe}
         </button>
         {randomPick && (
           <div className="random-result" onClick={() => handleBookClick(randomPick)}>
             <img src={getBookImage(randomPick)} alt={randomPick.volumeInfo?.title} />
             <div className="random-info">
-              <span className="random-label">Your Random Pick:</span>
+              <span className="random-label">{t.yourRandomPick}:</span>
               <h4>{randomPick.volumeInfo?.title}</h4>
               <p>{randomPick.volumeInfo?.authors?.[0]}</p>
               <span className="random-category">{randomPick.volumeInfo?.categories?.[0] || 'General'}</span>
@@ -245,8 +305,8 @@ const Discover = () => {
         <div className="for-you-banner">
           <FaHeart className="banner-icon" />
           <div>
-            <h4>Personalized For You</h4>
-            <p>Books based on your reading history and wishlist preferences ({userCategories.join(', ')})</p>
+            <h4>{t.personalizedForYou}</h4>
+            <p>{t.booksBasedOnHistory} ({userCategories.join(', ')})</p>
           </div>
         </div>
       )}
@@ -256,7 +316,7 @@ const Discover = () => {
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>{activeTab === 'forYou' ? 'Finding books just for you...' : 'Loading amazing books...'}</p>
+            <p>{activeTab === 'forYou' ? t.findingBooksForYou : t.loadingAmazingBooks}</p>
           </div>
         ) : (
           <div className="books-grid">
@@ -283,7 +343,7 @@ const Discover = () => {
                 </div>
                 <div className="book-info">
                   <h4>{book.volumeInfo?.title?.slice(0, 50)}{book.volumeInfo?.title?.length > 50 ? '...' : ''}</h4>
-                  <p className="author">{book.volumeInfo?.authors?.[0] || 'Unknown Author'}</p>
+                  <p className="author">{book.volumeInfo?.authors?.[0] || t.unknownAuthor}</p>
                   {book.volumeInfo?.categories && (
                     <span className="category-tag">{book.volumeInfo.categories[0]}</span>
                   )}
@@ -300,21 +360,21 @@ const Discover = () => {
           <FaBookOpen className="stat-icon" />
           <div>
             <h3>10,000+</h3>
-            <p>Books Available</p>
+            <p>{t.booksAvailable}</p>
           </div>
         </div>
         <div className="stat-card">
           <FaStar className="stat-icon" />
           <div>
             <h3>4.5</h3>
-            <p>Average Rating</p>
+            <p>{t.averageRating}</p>
           </div>
         </div>
         <div className="stat-card">
           <FaFire className="stat-icon" />
           <div>
             <h3>500+</h3>
-            <p>New This Month</p>
+            <p>{t.newThisMonth}</p>
           </div>
         </div>
       </div>

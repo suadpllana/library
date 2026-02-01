@@ -8,8 +8,12 @@ import WishlistModal from './WishlistModal';
 import AddBookModal from './AddBookModal';
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 
 const WishlistPage = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [watchlist, setWatchlist] = useState([]);
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,7 +40,7 @@ const WishlistPage = () => {
       
       if (authError || !user) {
         console.error('Authentication error:', authError);
-        toast.error('Please sign in to view your wishlist');
+        toast.error(t.pleaseSignIn);
         setLoading(false);
         return;
       }
@@ -61,7 +65,7 @@ const WishlistPage = () => {
       localStorage.setItem("wishlist_order", JSON.stringify(formatted));
     } catch (error) {
       console.error('Error fetching wishlist:', error);
-      toast.error('Failed to load wishlist');
+      toast.error(t.somethingWentWrong);
     } finally {
       setLoading(false);
     }
@@ -89,10 +93,10 @@ const WishlistPage = () => {
       const updatedWatchlist = watchlist.filter(item => item.id !== book.id);
       setWatchlist(updatedWatchlist);
       localStorage.setItem("wishlist_order", JSON.stringify(updatedWatchlist)); // ✅ update localStorage
-      toast.success("Book removed from wishlist");
+      toast.success(t.removedFromWishlist);
     } catch (error) {
       console.error('Error removing book from wishlist:', error);
-      toast.error("Failed to remove book from wishlist");
+      toast.error(t.somethingWentWrong);
     }
   };
 
@@ -148,7 +152,7 @@ const WishlistPage = () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        toast.error('Please sign in to request a loan');
+        toast.error(t.pleaseSignIn);
         return;
       }
 
@@ -157,7 +161,7 @@ const WishlistPage = () => {
         .insert({
           user_id: user.id,
           book_id: book.id,
-          book_title: book.title || 'Unknown Title',
+          book_title: book.title || t.unknownTitle,
           book_authors: book.authors || [],
           book_image: book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image',
           status: 'pending'
@@ -165,18 +169,18 @@ const WishlistPage = () => {
 
       if (error) {
         if (error.code === '23505') {
-          toast.error('You already have an active request for this book');
+          toast.error(t.alreadyRequested || 'You already have an active request for this book');
         } else {
-          toast.error('Failed to request loan: ' + error.message);
+          toast.error(t.somethingWentWrong);
         }
         return;
       }
 
       setLoanStatuses(prev => ({ ...prev, [book.id]: { status: 'pending', notes: null } }));
-      toast.success('Loan request submitted!');
+      toast.success(t.loanRequestSubmitted || 'Loan request submitted!');
     } catch (error) {
       console.error('Error requesting loan:', error);
-      toast.error('Failed to request loan');
+      toast.error(t.somethingWentWrong);
     } finally {
       setRequestingLoan(prev => ({ ...prev, [book.id]: false }));
     }
@@ -188,12 +192,12 @@ const WishlistPage = () => {
         style={{ textAlign: "left", marginTop: "3rem", cursor: "pointer" }}
         onClick={() => navigate(-1)}
       >
-        <FaArrowLeftLong /> Go Back
+        <FaArrowLeftLong /> {t.goBack}
       </h3>
-      <h1>My Wishlist</h1>
+      <h1>{t.myWishlist}</h1>
 
       {watchlist?.length > 0 && (
-        <p style={{ textAlign: "center", color: "#a5a5c0" }}>{watchlist.length} books wishlisted</p>
+        <p style={{ textAlign: "center", color: "#a5a5c0" }}>{watchlist.length} {t.booksWishlisted || 'books wishlisted'}</p>
       )}
 
       {/* Toolbar */}
@@ -203,16 +207,16 @@ const WishlistPage = () => {
             className="add-book-btn"
             onClick={() => setOpenAddModal(true)}
           >
-            <FaPlus /> Add Book
+            <FaPlus /> {t.addBook || 'Add Book'}
           </button>
           <button className="sort-wishlist-btn" onClick={() => setOpenModal(true)}>
-            <MdSort /> Sort
+            <MdSort /> {t.sort || 'Sort'}
           </button>
         </div>
         <div className="toolbar-right">
           <input
             type="text"
-            placeholder="Search books by title or author..."
+            placeholder={t.searchBooksByTitleAuthor || 'Search books by title or author...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -221,14 +225,14 @@ const WishlistPage = () => {
             <button 
               className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
               onClick={() => setViewMode('list')}
-              title="List View"
+              title={t.listView}
             >
               <MdViewList />
             </button>
             <button 
               className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
               onClick={() => setViewMode('grid')}
-              title="Grid View"
+              title={t.gridView}
             >
               <MdGridView />
             </button>
@@ -239,9 +243,9 @@ const WishlistPage = () => {
       {watchlist.length === 0 ? (
         <div className="empty-wishlist">
           <span className="empty-icon">📚</span>
-          <p>Your wishlist is empty</p>
+          <p>{t.emptyWishlist}</p>
           <button onClick={() => setOpenAddModal(true)} className="add-first-btn">
-            <FaPlus /> Add your first book
+            <FaPlus /> {t.addFirstBook || 'Add your first book'}
           </button>
         </div>
       ) : (
@@ -263,14 +267,14 @@ const WishlistPage = () => {
                       onClick={() => handleBookClick(book)}
                       style={{ cursor: 'pointer' }}
                     >
-                      {book.title || 'Unknown Title'}
+                      {book.title || t.unknownTitle}
                     </h3>
                     <p
                       className="author"
                       onClick={() => book.authors?.[0] && navigate(`/authors/${book.authors[0]}`)}
                       style={{ cursor: book.authors?.[0] ? 'pointer' : 'default' }}
                     >
-                      by {book.authors?.join(', ') || 'Unknown Author'}
+                      {t.by} {book.authors?.join(', ') || t.unknownAuthor}
                     </p>
                     <div className="wishlist-actions">
                       <button
@@ -278,21 +282,21 @@ const WishlistPage = () => {
                         onClick={(e) => handleRequestLoan(e, book)}
                         disabled={requestingLoan[book.id] || loanStatuses[book.id]?.status === 'pending' || loanStatuses[book.id]?.status === 'approved'}
                       >
-                        {loanStatuses[book.id]?.status === 'pending' ? '⏳ Loan Pending' : 
-                         loanStatuses[book.id]?.status === 'approved' ? '✓ Loan Approved' : 
-                         loanStatuses[book.id]?.status === 'rejected' ? '❌ Loan Rejected' :
-                         requestingLoan[book.id] ? 'Requesting...' : '📚 Request Loan'}
+                        {loanStatuses[book.id]?.status === 'pending' ? `⏳ ${t.loanPending || 'Loan Pending'}` : 
+                         loanStatuses[book.id]?.status === 'approved' ? `✓ ${t.loanApproved || 'Loan Approved'}` : 
+                         loanStatuses[book.id]?.status === 'rejected' ? `❌ ${t.loanRejected || 'Loan Rejected'}` :
+                         requestingLoan[book.id] ? `${t.requesting || 'Requesting'}...` : `📚 ${t.requestLoan}`}
                       </button>
                       <button
                         className="remove-button"
                         onClick={(e) => handleRemoveFromWatchlist(e, book)}
                       >
-                        <FaTrash /> Remove
+                        <FaTrash /> {t.remove || 'Remove'}
                       </button>
                     </div>
                     {loanStatuses[book.id]?.status === 'rejected' && (
                       <div className="rejection-message">
-                        <strong>Rejection reason:</strong> {loanStatuses[book.id]?.notes || 'No reason provided'}
+                        <strong>{t.rejectionReason || 'Rejection reason'}:</strong> {loanStatuses[book.id]?.notes || t.noReasonProvided || 'No reason provided'}
                       </div>
                     )}
                   </div>
@@ -314,8 +318,8 @@ const WishlistPage = () => {
                     className="grid-book-cover"
                   />
                   <div className="grid-book-info">
-                    <h4 onClick={() => handleBookClick(book)}>{book.title || 'Unknown Title'}</h4>
-                    <p>{book.authors?.[0] || 'Unknown Author'}</p>
+                    <h4 onClick={() => handleBookClick(book)}>{book.title || t.unknownTitle}</h4>
+                    <p>{book.authors?.[0] || t.unknownAuthor}</p>
                   </div>
                   <button
                     className={`grid-loan-btn ${loanStatuses[book.id]?.status || ''}`}
@@ -334,7 +338,7 @@ const WishlistPage = () => {
       )}
 
       {watchlist.length !== 0 && filteredBooks.length === 0 && (
-        <p>No book matched the search</p>
+        <p>{t.noBookMatchedSearch || 'No book matched the search'}</p>
       )}
 
       {openModal && (

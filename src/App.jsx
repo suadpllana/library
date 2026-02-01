@@ -17,6 +17,7 @@ import LoanedBooks from './Book/LoanedBooks';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import AiWidget from './components/AiWidget';
+import ChatSupport from './components/ChatSupport';
 // New feature imports
 import Discover from './Book/Discover';
 import AdvancedSearch from './Book/AdvancedSearch';
@@ -127,6 +128,7 @@ function App() {
                       <Route path="/notes" element={<BookNotes />} />
                     </Routes>
                     <AiWidget />
+                    <ChatSupport />
                   </>
                 </UserRoute>
               }

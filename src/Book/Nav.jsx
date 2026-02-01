@@ -8,11 +8,13 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
 import NotificationBell from '../components/NotificationBell';
 import ThemeToggle from '../components/ThemeToggle';
+import ConfirmDialog from '../components/ConfirmDialog';
 import "./Nav.css";
 
 const Nav = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
@@ -55,10 +57,10 @@ const Nav = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast.success('Successfully signed out');
+      toast.success(t('signOutSuccess'));
       navigate('/auth');
     } catch (error) {
-      toast.error('Failed to sign out');
+      toast.error(t('somethingWentWrong'));
     }
   };
 
@@ -99,6 +101,8 @@ const Nav = () => {
                 <Link to="/search" onClick={handleMenuItemClick}>🔍 {t('search')}</Link>
                 <Link to="/collections" onClick={handleMenuItemClick}>📚 {t('collections')}</Link>
                 <Link to="/history" onClick={handleMenuItemClick}>📖 {t('history')}</Link>
+                <Link to="/notes" onClick={handleMenuItemClick}>📝 {t('Notes') || 'Notes'}</Link>
+                <Link to="/stats" onClick={handleMenuItemClick}>📊 {t('Stats') || 'Statistics'}</Link>
               </div>
             )}
           </div>
@@ -123,9 +127,21 @@ const Nav = () => {
               title="Shqip"
             >🇦🇱 SQ</button>
           </div>
-          <button onClick={handleSignOut} className="sign-out-btn">🚪 {t('signOut')}</button>
+          <button onClick={() => setShowSignOutConfirm(true)} className="sign-out-btn">🚪 {t('signOut')}</button>
         </div>
       </div>
+
+      {/* Sign Out Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={showSignOutConfirm}
+        onClose={() => setShowSignOutConfirm(false)}
+        onConfirm={handleSignOut}
+        title={`${t('leavingSoSoon')} 👋`}
+        message={t('confirmSignOut')}
+        confirmLabel={t('signOut')}
+        cancelLabel={t('stayLoggedIn')}
+        type="question"
+      />
     </nav>
   );
 };
