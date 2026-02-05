@@ -43,9 +43,9 @@ const CategoryBooks = ({ setShowCategories, showCategories }) => {
     <div className="book-category">
       <div className="book-category-inner">
         {categories?.map(category => (
-          <div key={category.name} className="category-item" onClick={() => bookInfo(category.name)}>
+          <button key={category.name} className="category-item" onClick={() => bookInfo(category.name)}>
             <p>{category.emoji} {category.name}</p>
-          </div>
+          </button>
         ))}
       </div>
     </div>

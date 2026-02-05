@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { FaArrowLeftLong, FaBook, FaBookOpen, FaCircleCheck, FaHeart, FaStar, FaEye } from 'react-icons/fa6';
+import { FaArrowLeftLong, FaBook, FaBookOpen, FaCircleCheck, FaHeart, FaStar, FaEye } from 'react-icons/fa6'
+import { toast } from 'react-toastify';
 import './ReadingHistory.css';
 
 // Cache for book details
@@ -18,9 +19,13 @@ const ReadingHistory = () => {
   const [stats, setStats] = useState({ total: 0, reading: 0, completed: 0 });
 
   useEffect(() => {
+    let mounted = true;
+
     if (user) {
-      fetchHistory();
+      fetchHistory(mounted);
     }
+
+    return () => { mounted = false; };
   }, [user]);
 
   const fetchBookDetails = async (bookId) => {
@@ -45,7 +50,7 @@ const ReadingHistory = () => {
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (mounted = true) => {
     try {
       const { data, error } = await supabase
         .from('wishlist')
@@ -54,6 +59,7 @@ const ReadingHistory = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      if (!mounted) return;
 
       // First, set books with stored data (no API calls needed)
       // The wishlist already stores title, authors, image_url
@@ -92,11 +98,15 @@ const ReadingHistory = () => {
         // Fetch in small batches with delay to avoid rate limiting
         const batchSize = 3;
         for (let i = 0; i < booksNeedingDetails.length; i += batchSize) {
+          if (!mounted) return; // Stop if unmounted
+
           const batch = booksNeedingDetails.slice(i, i + batchSize);
           const details = await Promise.all(
             batch.map(item => fetchBookDetails(item.book_id))
           );
           
+          if (!mounted) return; // Stop if unmounted
+
           setWishlistBooks(prev => 
             prev.map(book => {
               const detailIndex = batch.findIndex(b => b.book_id === book.book_id);
@@ -115,7 +125,7 @@ const ReadingHistory = () => {
       }
     } catch (error) {
       console.error('Error fetching history:', error);
-      setLoading(false);
+      if (mounted) setLoading(false);
     }
   };
 
@@ -137,21 +147,19 @@ const ReadingHistory = () => {
         throw error;
       }
 
-      setWishlistBooks(prev =>
-        prev.map(book =>
+      setWishlistBooks(prev => {
+        const updatedBooks = prev.map(book =>
           book.book_id === bookId ? { ...book, status: newStatus } : book
-        )
-      );
-
-      // Update stats
-      const updatedBooks = wishlistBooks.map(book =>
-        book.book_id === bookId ? { ...book, status: newStatus } : book
-      );
-      const completed = updatedBooks.filter(b => b.status === 'completed').length;
-      const reading = updatedBooks.filter(b => b.status === 'reading').length;
-      setStats({ total: updatedBooks.length, reading, completed });
+        );
+        // Update stats from the new state
+        const completed = updatedBooks.filter(b => b.status === 'completed').length;
+        const reading = updatedBooks.filter(b => b.status === 'reading').length;
+        setStats({ total: updatedBooks.length, reading, completed });
+        return updatedBooks;
+      });
     } catch (error) {
       console.error('Error updating status:', error);
+      toast.error('Failed to update reading status');
     }
   };
 

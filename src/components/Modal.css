@@ -1,0 +1,90 @@
+.accessible-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+  animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.accessible-modal-content {
+  background: var(--bg-primary, #fff);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.2s ease;
+  outline: none;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.accessible-modal-small {
+  width: min(400px, 95vw);
+}
+
+.accessible-modal-medium {
+  width: min(560px, 95vw);
+}
+
+.accessible-modal-large {
+  width: min(800px, 95vw);
+}
+
+.accessible-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.accessible-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.accessible-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.accessible-modal-close:hover {
+  background: var(--bg-secondary, #f0f0f0);
+  color: var(--text-primary, #1a1a2e);
+}
+
+.accessible-modal-body {
+  padding: 1.5rem;
+}
+
+/* Dark theme support */
+[data-theme="dark"] .accessible-modal-content {
+  background: var(--bg-primary, #1a1a2e);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .accessible-modal-header {
+  border-bottom-color: var(--border-color, #2a2a4a);
+}

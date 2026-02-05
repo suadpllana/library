@@ -14,7 +14,6 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState('user');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -79,8 +78,9 @@ const Auth = () => {
     setSuccessMessage(null);
 
     try {
+      const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/') || 'https://suadpllana.github.io/library';
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://suadpllana.github.io/library/#/auth',
+        redirectTo: `${siteUrl}/#/auth`,
       });
       
       if (error) throw error;
@@ -221,8 +221,7 @@ const Auth = () => {
           options: {
             data: {
               first_name: trimmedFirstName,
-              last_name: trimmedLastName,
-              role: role
+              last_name: trimmedLastName
             }
           }
         });
@@ -255,10 +254,11 @@ const Auth = () => {
       setLoading(true);
       setError(null);
 
+      const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/') || 'https://suadpllana.github.io/library';
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://suadpllana.github.io/library/',
+          redirectTo: `${siteUrl}/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -286,7 +286,6 @@ const Auth = () => {
     setConfirmPassword('');
     setFirstName('');
     setLastName('');
-    setRole('user');
   };
 
   return (

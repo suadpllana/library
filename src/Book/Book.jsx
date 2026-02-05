@@ -512,7 +512,7 @@ const Book = () => {
           <h3><FaUsers className="icon-inline"/>{t.featuredAuthors}</h3>
           <div className="authors-list">
             {topAuthors.length > 0 ? topAuthors.map((a, i) => (
-              <div key={i} className="author-chip" onClick={()=>navigate(`/authors/${encodeURIComponent(a)}`)}>{a}</div>
+              <button key={i} className="author-chip" onClick={()=>navigate(`/authors/${encodeURIComponent(a)}`)}>{a}</button>
             )) : <p className="muted">{t.noAuthorsToShow}</p>}
           </div>
         </div>

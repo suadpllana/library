@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -22,13 +22,13 @@ const LoanedBooks = () => {
   const [returningLoan, setReturningLoan] = useState(null);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
 
-  const filters = [
+  const filters = useMemo(() => [
     { id: 'all', label: t.allBooks, icon: <FaBook /> },
     { id: 'pending', label: t.pending, icon: <FaHourglass /> },
     { id: 'approved', label: t.active || 'Active', icon: <FaCircleCheck /> },
     { id: 'rejected', label: t.rejected, icon: <FaCircleXmark /> },
     { id: 'returned', label: t.returned, icon: <FaBoxArchive /> }
-  ];
+  ], [t]);
 
   useEffect(() => {
     if (user?.id) {
@@ -89,19 +89,29 @@ const LoanedBooks = () => {
     return new Date(dueDate) < new Date();
   };
 
-  // Request loan extension (adds 14 days)
+  // Request loan extension (adds 14 days, max 2 extensions)
   const handleExtendLoan = async (loan) => {
+    // Check extension limit
+    const extensionCount = (loan.notes?.match(/\[Extended/g) || []).length;
+    if (extensionCount >= 2) {
+      toast.error(t.maxExtensionsReached || 'Maximum extensions reached (2 allowed)');
+      return;
+    }
+
     setExtendingLoan(loan.id);
     try {
       const currentDueDate = new Date(loan.due_date);
       const newDueDate = new Date(currentDueDate);
       newDueDate.setDate(newDueDate.getDate() + 14);
 
+      const existingNotes = loan.notes || '';
+      const extensionNote = `${existingNotes ? existingNotes + '\n' : ''}[Extended +14 days on ${new Date().toLocaleDateString()}]`;
+
       const { error } = await supabase
         .from('loan_requests')
         .update({ 
           due_date: newDueDate.toISOString(),
-          notes: `Extended by 14 days on ${new Date().toLocaleDateString()}`
+          notes: extensionNote
         })
         .eq('id', loan.id)
         .eq('user_id', user.id);
@@ -150,7 +160,7 @@ const LoanedBooks = () => {
   };
 
   // Filter books based on active filter and search term
-  const filteredBooks = loanedBooks
+  const filteredBooks = useMemo(() => loanedBooks
     .filter(book => activeFilter === 'all' || book.status === activeFilter)
     .filter(book => {
       if (!searchTerm.trim()) return true;
@@ -160,21 +170,26 @@ const LoanedBooks = () => {
         ? book.book_authors.join(' ').toLowerCase()
         : (book.book_authors || '').toLowerCase();
       return title.includes(search) || authors.includes(search);
-    });
+    }), [loanedBooks, activeFilter, searchTerm]);
 
   // Count for each status
-  const getStatusCount = (status) => {
-    if (status === 'all') return loanedBooks.length;
-    return loanedBooks.filter(book => book.status === status).length;
-  };
+  const statusCounts = useMemo(() => {
+    const counts = { all: loanedBooks.length };
+    for (const book of loanedBooks) {
+      counts[book.status] = (counts[book.status] || 0) + 1;
+    }
+    return counts;
+  }, [loanedBooks]);
+
+  const getStatusCount = (status) => statusCounts[status] || 0;
 
   // Stats summary
-  const stats = {
+  const stats = useMemo(() => ({
     total: loanedBooks.length,
     active: loanedBooks.filter(b => b.status === 'approved').length,
     overdue: loanedBooks.filter(b => b.status === 'approved' && isOverdue(b.due_date)).length,
     pending: loanedBooks.filter(b => b.status === 'pending').length
-  };
+  }), [loanedBooks]);
 
   const renderLoanCard = (loan) => {
     const statusInfo = getStatusInfo(loan.status);

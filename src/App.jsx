@@ -1,32 +1,39 @@
-import Book from "./Book/Book"
+import React, { Suspense, lazy } from 'react';
 import Nav from "./Book/Nav"
 import {HashRouter as Router, Routes, Route, Navigate} from "react-router-dom";
-import CategoryBooks from "./Book/CategoryBooks";
-import CategoryPage from "./Book/CategoryPage";
 import {ToastContainer} from "react-toastify"
-import BookPage from "./Book/BookPage";
-import WishlistPage from './Book/WishlistPage';
-import Authors from "./Book/Authors";
-import AuthorPage from "./Book/AuthorPage";
 import Auth from './components/Auth/Auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
-import ProfilePage from './Book/ProfilePage';
-import LoanedBooks from './Book/LoanedBooks';
-import AdminDashboard from './components/Admin/AdminDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
-import AiWidget from './components/AiWidget';
-import ChatSupport from './components/ChatSupport';
-// New feature imports
-import Discover from './Book/Discover';
-import AdvancedSearch from './Book/AdvancedSearch';
-import MyCollections from './Book/MyCollections';
-import CollectionDetail from './Book/CollectionDetail';
-import ReadingHistory from './Book/ReadingHistory';
-import ReadingStats from './Book/ReadingStats';
-import BookNotes from './Book/BookNotes';
-import Community from './Book/Community';
+
+// Lazy-loaded route components for code splitting
+const Book = lazy(() => import("./Book/Book"));
+const CategoryPage = lazy(() => import("./Book/CategoryPage"));
+const BookPage = lazy(() => import("./Book/BookPage"));
+const WishlistPage = lazy(() => import('./Book/WishlistPage'));
+const Authors = lazy(() => import("./Book/Authors"));
+const AuthorPage = lazy(() => import("./Book/AuthorPage"));
+const ProfilePage = lazy(() => import('./Book/ProfilePage'));
+const LoanedBooks = lazy(() => import('./Book/LoanedBooks'));
+const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard'));
+const AiWidget = lazy(() => import('./components/AiWidget'));
+const ChatSupport = lazy(() => import('./components/ChatSupport'));
+const Discover = lazy(() => import('./Book/Discover'));
+const AdvancedSearch = lazy(() => import('./Book/AdvancedSearch'));
+const MyCollections = lazy(() => import('./Book/MyCollections'));
+const CollectionDetail = lazy(() => import('./Book/CollectionDetail'));
+const ReadingHistory = lazy(() => import('./Book/ReadingHistory'));
+const ReadingStats = lazy(() => import('./Book/ReadingStats'));
+const BookNotes = lazy(() => import('./Book/BookNotes'));
+const Community = lazy(() => import('./Book/Community'));
+
+const LoadingFallback = () => (
+  <div className="loading-screen" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+    <div className="spinner"></div>
+  </div>
+);
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -92,6 +99,7 @@ function App() {
         <AuthProvider>
         <ErrorBoundary>
           <Router>
+            <Suspense fallback={<LoadingFallback />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route
@@ -136,6 +144,7 @@ function App() {
               }
             />
           </Routes>
+          </Suspense>
         </Router>
         <ToastContainer
           position="bottom-right"

@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeftLong, FaBook, FaChartBar, FaCalendarDays, FaTrophy, FaClock, FaStar, FaFire, FaBookOpen } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import './ReadingStats.css';
 
 const ReadingStats = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalBooks: 0,
@@ -25,29 +27,25 @@ const ReadingStats = () => {
   const [timeRange, setTimeRange] = useState('year');
 
   useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
     fetchAllStats();
-  }, []);
+  }, [user]);
 
   const fetchAllStats = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
+      // Parallelize all queries
+      const [profileResult, wishlistResult, loanResult, reviewsResult] = await Promise.all([
+        supabase.from('profiles').select('reading_goal, favorite_genre').eq('id', user.id).single(),
+        supabase.from('wishlist').select('status, created_at, categories').eq('user_id', user.id),
+        supabase.from('loan_requests').select('status').eq('user_id', user.id),
+        supabase.from('book_reviews').select('rating').eq('user_id', user.id)
+      ]);
 
-      // Fetch profile for reading goal
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('reading_goal, favorite_genre')
-        .eq('id', user.id)
-        .single();
-
-      // Fetch all wishlist items with status
-      const { data: wishlistData } = await supabase
-        .from('wishlist')
-        .select('status, created_at, categories')
-        .eq('user_id', user.id);
+      const profile = profileResult.data;
+      const wishlistData = wishlistResult.data;
 
       const totalBooks = wishlistData?.length || 0;
       const booksRead = wishlistData?.filter(b => b.status === 'completed').length || 0;
@@ -79,18 +77,12 @@ const ReadingStats = () => {
         .slice(0, 6);
 
       // Fetch loan stats
-      const { data: loanData } = await supabase
-        .from('loan_requests')
-        .select('status')
-        .eq('user_id', user.id);
+      const loanData = loanResult.data;
 
       const loansApproved = loanData?.filter(l => l.status === 'approved' || l.status === 'returned').length || 0;
 
       // Fetch review stats
-      const { data: reviewsData } = await supabase
-        .from('book_reviews')
-        .select('rating')
-        .eq('user_id', user.id);
+      const reviewsData = reviewsResult.data;
 
       const reviewsWritten = reviewsData?.length || 0;
       const avgRating = reviewsWritten > 0 
@@ -125,18 +117,14 @@ const ReadingStats = () => {
     }
   };
 
-  const getMaxMonthlyValue = () => {
-    return Math.max(...stats.monthlyReading, 1);
-  };
-
-  const getMaxGenreValue = () => {
+  const maxMonthlyValue = useMemo(() => Math.max(...stats.monthlyReading, 1), [stats.monthlyReading]);
+  const maxGenreValue = useMemo(() => {
     if (stats.genreDistribution.length === 0) return 1;
     return Math.max(...stats.genreDistribution.map(g => g.count), 1);
-  };
-
-  const getReadingGoalProgress = () => {
+  }, [stats.genreDistribution]);
+  const readingGoalProgress = useMemo(() => {
     return Math.min((stats.booksRead / stats.readingGoal) * 100, 100);
-  };
+  }, [stats.booksRead, stats.readingGoal]);
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -273,7 +261,7 @@ const ReadingStats = () => {
                   r="45"
                   fill="none"
                   strokeWidth="8"
-                  strokeDasharray={`${getReadingGoalProgress() * 2.83} 283`}
+                  strokeDasharray={`${readingGoalProgress * 2.83} 283`}
                   transform="rotate(-90 50 50)"
                 />
               </svg>
@@ -283,7 +271,7 @@ const ReadingStats = () => {
               </div>
             </div>
             <div className="goal-info">
-              <p className="goal-percentage">{Math.round(getReadingGoalProgress())}% Complete</p>
+              <p className="goal-percentage">{Math.round(readingGoalProgress)}% Complete</p>
               <p className="goal-remaining">
                 {stats.booksRead >= stats.readingGoal 
                   ? '🎉 Goal achieved!' 
@@ -302,7 +290,7 @@ const ReadingStats = () => {
                 <div className="bar-wrapper">
                   <div 
                     className="bar"
-                    style={{ height: `${(stats.monthlyReading[index] / getMaxMonthlyValue()) * 100}%` }}
+                    style={{ height: `${(stats.monthlyReading[index] / maxMonthlyValue) * 100}%` }}
                   >
                     {stats.monthlyReading[index] > 0 && (
                       <span className="bar-value">{stats.monthlyReading[index]}</span>
@@ -335,7 +323,7 @@ const ReadingStats = () => {
                     <div 
                       className="genre-bar"
                       style={{ 
-                        width: `${(genre.count / getMaxGenreValue()) * 100}%`,
+                        width: `${(genre.count / maxGenreValue) * 100}%`,
                         animationDelay: `${index * 0.1}s`
                       }}
                     ></div>

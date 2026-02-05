@@ -236,7 +236,7 @@ const Discover = () => {
         </div>
         
         {featuredBook && (
-          <div className="featured-book" onClick={() => handleBookClick(featuredBook)}>
+          <button className="featured-book" onClick={() => handleBookClick(featuredBook)}>
             <div className="featured-badge">
               <HiSparkles /> {t.featured}
             </div>
@@ -244,11 +244,11 @@ const Discover = () => {
             <div className="featured-info">
               <h3>{featuredBook.volumeInfo?.title}</h3>
               <p>{featuredBook.volumeInfo?.authors?.[0]}</p>
-              <button className="view-btn">
+              <span className="view-btn">
                 {t.viewDetails} <FaArrowRight />
-              </button>
+              </span>
             </div>
-          </div>
+          </button>
         )}
       </div>
 
@@ -274,7 +274,7 @@ const Discover = () => {
           <FaRandom /> {t.surpriseMe}
         </button>
         {randomPick && (
-          <div className="random-result" onClick={() => handleBookClick(randomPick)}>
+          <button className="random-result" onClick={() => handleBookClick(randomPick)}>
             <img src={getBookImage(randomPick)} alt={randomPick.volumeInfo?.title} />
             <div className="random-info">
               <span className="random-label">{t.yourRandomPick}:</span>
@@ -282,7 +282,7 @@ const Discover = () => {
               <p>{randomPick.volumeInfo?.authors?.[0]}</p>
               <span className="random-category">{randomPick.volumeInfo?.categories?.[0] || 'General'}</span>
             </div>
-          </div>
+          </button>
         )}
       </div>
 

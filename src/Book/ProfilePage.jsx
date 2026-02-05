@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FaArrowLeftLong, FaCamera, FaPen, FaFloppyDisk, FaXmark, FaBook, FaHeart, FaClock, FaStar, FaChartLine, FaTrophy, FaCalendarDays, FaCircleCheck, FaBookOpen, FaMedal, FaFire } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import './ProfilePage.css';
 import { useLanguage } from '../context/LanguageContext';
 import translations from '../i18n/translations';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const { language } = useLanguage();
   const t = translations[language];
   const fileInputRef = useRef(null);
@@ -37,6 +39,12 @@ const ProfilePage = () => {
   const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
+    if (!authUser) {
+      toast.error(t.pleaseSignIn);
+      navigate('/');
+      return;
+    }
+
     const loadProfileData = async () => {
       try {
         await Promise.all([
@@ -52,23 +60,17 @@ const ProfilePage = () => {
       }
     };
     loadProfileData();
-  }, []);
+  }, [authUser]);
 
   const fetchUserProfile = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        toast.error(t.pleaseSignIn);
-        navigate('/');
-        return;
-      }
+      if (!authUser) return;
 
       // Fetch from profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', authUser.id)
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
@@ -76,15 +78,15 @@ const ProfilePage = () => {
       }
 
       const profile = {
-        id: user.id,
-        email: user.email,
-        created_at: new Date(user.created_at).toLocaleDateString(language === 'sq' ? 'sq-AL' : 'en-US', { 
+        id: authUser.id,
+        email: authUser.email,
+        created_at: new Date(authUser.created_at).toLocaleDateString(language === 'sq' ? 'sq-AL' : 'en-US', { 
           year: 'numeric', 
           month: 'long', 
           day: 'numeric' 
         }),
-        first_name: profileData?.first_name || user.user_metadata?.first_name || '',
-        last_name: profileData?.last_name || user.user_metadata?.last_name || '',
+        first_name: profileData?.first_name || authUser.user_metadata?.first_name || '',
+        last_name: profileData?.last_name || authUser.user_metadata?.last_name || '',
         avatar_url: profileData?.avatar_url || null
       };
 
@@ -102,25 +104,23 @@ const ProfilePage = () => {
 
   const fetchUserStats = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authUser) return;
 
-      // Fetch wishlist count (total saved books)
-      const { count: wishlistCount } = await supabase
+      // Fetch wishlist count and status data
+      const { data: wishlistData } = await supabase
         .from('wishlist')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .select('status')
+        .eq('user_id', authUser.id);
 
-      // Note: wishlist table doesn't have status tracking
-      // booksRead and booksReading would need a separate reading_history table
-      const booksRead = 0;
-      const booksReading = 0;
+      const totalBooks = wishlistData?.length || 0;
+      const booksRead = wishlistData?.filter(b => b.status === 'completed').length || 0;
+      const booksReading = wishlistData?.filter(b => b.status === 'reading').length || 0;
 
       // Fetch loan stats
       const { data: loanData } = await supabase
         .from('loan_requests')
         .select('status')
-        .eq('user_id', user.id);
+        .eq('user_id', authUser.id);
 
       const loansRequested = loanData?.length || 0;
       const loansApproved = loanData?.filter(l => l.status === 'approved' || l.status === 'returned').length || 0;
@@ -129,7 +129,7 @@ const ProfilePage = () => {
       const { data: reviewsData } = await supabase
         .from('book_reviews')
         .select('rating')
-        .eq('user_id', user.id);
+        .eq('user_id', authUser.id);
 
       const reviewsWritten = reviewsData?.length || 0;
       const averageRating = reviewsWritten > 0 
@@ -140,13 +140,13 @@ const ProfilePage = () => {
       const { count: collectionsCount } = await supabase
         .from('reading_collections')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .eq('user_id', authUser.id);
 
-      // Calculate reading streak (simplified - based on recent activity)
+      // Calculate reading streak based on completed books
       const readingStreak = booksRead > 0 ? Math.min(booksRead * 2, 30) : 0;
 
       setStats({
-        totalBooks: wishlistCount || 0,
+        totalBooks,
         booksRead,
         booksReading,
         loansRequested,
@@ -163,8 +163,7 @@ const ProfilePage = () => {
 
   const fetchRecentActivity = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authUser) return;
 
       const activities = [];
 
@@ -172,7 +171,7 @@ const ProfilePage = () => {
       const { data: recentWishlist } = await supabase
         .from('wishlist')
         .select('title, created_at')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .order('created_at', { ascending: false })
         .limit(3);
 
@@ -189,7 +188,7 @@ const ProfilePage = () => {
       const { data: recentLoans } = await supabase
         .from('loan_requests')
         .select('book_title, status, requested_at')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .order('requested_at', { ascending: false })
         .limit(3);
 
@@ -206,7 +205,7 @@ const ProfilePage = () => {
       const { data: recentReviews } = await supabase
         .from('book_reviews')
         .select('book_title, rating, created_at')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .order('created_at', { ascending: false })
         .limit(2);
 
@@ -229,14 +228,12 @@ const ProfilePage = () => {
 
   const fetchWishlistBooks = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) return;
+      if (!authUser) return;
 
       const { data: wishlistItems, error } = await supabase
         .from('wishlist')
         .select('title, authors, created_at, book_id, image_url')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .order('created_at', { ascending: false })
         .limit(6);
 
@@ -256,13 +253,12 @@ const ProfilePage = () => {
 
   const handleSaveProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authUser) return;
 
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          id: authUser.id,
           first_name: editForm.first_name,
           last_name: editForm.last_name,
           updated_at: new Date().toISOString()
@@ -305,8 +301,7 @@ const ProfilePage = () => {
     setUploadingAvatar(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authUser) return;
 
       // Use base64 encoding for avatar
       const reader = new FileReader();
@@ -316,7 +311,7 @@ const ProfilePage = () => {
         const { error: updateError } = await supabase
           .from('profiles')
           .upsert({
-            id: user.id,
+            id: authUser.id,
             avatar_url: base64,
             updated_at: new Date().toISOString()
           });
@@ -352,8 +347,9 @@ const ProfilePage = () => {
 
   const handleResetPassword = async () => {
     try {
+      const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/') || 'https://suadpllana.github.io/library';
       const { error } = await supabase.auth.resetPasswordForEmail(userProfile.email, {
-        redirectTo: 'https://suadpllana.github.io/library/#/auth',
+        redirectTo: `${siteUrl}/#/auth`,
       });
       
       if (error) throw error;

@@ -20,7 +20,8 @@ class ErrorBoundary extends Component {
 
   handleReset = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
-    window.location.href = '/';
+    window.location.hash = '/';
+    window.location.reload();
   };
 
   render() {

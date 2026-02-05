@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WishlistPage.css';
 import { toast } from 'react-toastify';
@@ -6,7 +6,6 @@ import { FaArrowLeftLong, FaPlus, FaTrash } from "react-icons/fa6";
 import { MdGridView, MdViewList, MdSort } from "react-icons/md";
 import WishlistModal from './WishlistModal';
 import AddBookModal from './AddBookModal';
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../context/LanguageContext';
 import translations from '../i18n/translations';
@@ -72,12 +71,12 @@ const WishlistPage = () => {
   };
 
   const normalizedSearch = (searchTerm || '').toLowerCase().trim();
-  const filteredBooks = (watchlist || []).filter(book => {
+  const filteredBooks = useMemo(() => (watchlist || []).filter(book => {
     if (!normalizedSearch) return true;
     const title = (book?.title || '').toLowerCase();
     const authors = (Array.isArray(book?.authors) ? book.authors.join(' ') : (book?.authors || '')).toLowerCase();
     return title.includes(normalizedSearch) || authors.includes(normalizedSearch);
-  });
+  }), [watchlist, normalizedSearch]);
 
 
   const handleRemoveFromWatchlist = async (e, book) => {
@@ -245,7 +244,7 @@ const WishlistPage = () => {
           <span className="empty-icon">📚</span>
           <p>{t.emptyWishlist}</p>
           <button onClick={() => setOpenAddModal(true)} className="add-first-btn">
-            <FaPlus /> {t.addFirstBook || 'Add your first book'}
+            <FaPlus /> {t.addFirstWishlistBook || 'Add your first book'}
           </button>
         </div>
       ) : (

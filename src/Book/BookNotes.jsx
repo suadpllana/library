@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaArrowLeftLong, FaPlus, FaMagnifyingGlass, FaPen, FaTrash, FaBook, FaNoteSticky, FaQuoteLeft, FaHashtag, FaBookmark } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
@@ -135,7 +135,7 @@ const BookNotes = () => {
     });
   };
 
-  const filteredNotes = notes.filter(note => {
+  const filteredNotes = useMemo(() => notes.filter(note => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -144,14 +144,14 @@ const BookNotes = () => {
       note.chapter?.toLowerCase().includes(query) ||
       note.tags?.some(tag => tag.toLowerCase().includes(query))
     );
-  });
+  }), [notes, searchQuery]);
 
-  const groupedNotes = filteredNotes.reduce((acc, note) => {
+  const groupedNotes = useMemo(() => filteredNotes.reduce((acc, note) => {
     const title = note.book_title;
     if (!acc[title]) acc[title] = [];
     acc[title].push(note);
     return acc;
-  }, {});
+  }, {}), [filteredNotes]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {

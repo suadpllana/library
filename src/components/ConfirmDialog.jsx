@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaTriangleExclamation, FaCircleQuestion, FaCircleInfo } from 'react-icons/fa6';
+import Modal from './Modal';
 import './ConfirmDialog.css';
 
 const icons = {
@@ -19,8 +20,6 @@ const ConfirmDialog = ({
   type = 'warning', // 'warning', 'question', 'info'
   dangerous = false
 }) => {
-  if (!isOpen) return null;
-
   const IconComponent = icons[type] || icons.warning;
 
   const handleConfirm = () => {
@@ -29,28 +28,25 @@ const ConfirmDialog = ({
   };
 
   return (
-    <div className="confirm-dialog-overlay" onClick={onClose}>
-      <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
-        <div className={`confirm-icon-wrapper ${type}`}>
-          <IconComponent className="confirm-icon" />
-        </div>
-        
-        <h3 className="confirm-title">{title}</h3>
-        <p className="confirm-message">{message}</p>
-        
-        <div className="confirm-actions">
-          <button className="confirm-btn cancel" onClick={onClose}>
-            {cancelLabel}
-          </button>
-          <button 
-            className={`confirm-btn confirm ${dangerous ? 'dangerous' : ''}`}
-            onClick={handleConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="small" className="confirm-dialog-modal">
+      <div className={`confirm-icon-wrapper ${type}`}>
+        <IconComponent className="confirm-icon" />
       </div>
-    </div>
+      
+      <p className="confirm-message">{message}</p>
+      
+      <div className="confirm-actions">
+        <button className="confirm-btn cancel" onClick={onClose}>
+          {cancelLabel}
+        </button>
+        <button 
+          className={`confirm-btn confirm ${dangerous ? 'dangerous' : ''}`}
+          onClick={handleConfirm}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </Modal>
   );
 };
 

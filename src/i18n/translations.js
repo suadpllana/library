@@ -190,7 +190,7 @@ const translations = {
     addBook: 'Add Book',
     sort: 'Sort',
     searchBooksByTitleAuthor: 'Search books by title or author...',
-    addFirstBook: 'Add your first book',
+    addFirstWishlistBook: 'Add your first book',
     loanPending: 'Loan Pending',
     loanApproved: 'Loan Approved',
     loanRejected: 'Loan Rejected',
@@ -257,7 +257,7 @@ const translations = {
     pagesRead: 'Pages Read',
     averagePerMonth: 'Average per Month',
     favoriteGenre: 'Favorite Genre',
-    readingGoal: 'Reading Goal',
+    readingGoalStats: 'Reading Goal',
     goalProgress: 'Goal Progress',
     
     // Authors
@@ -576,7 +576,7 @@ const translations = {
     addBook: 'Shto Libër',
     sort: 'Rendit',
     searchBooksByTitleAuthor: 'Kërko libra sipas titullit ose autorit...',
-    addFirstBook: 'Shto librin e parë',
+    addFirstWishlistBook: 'Shto librin e parë',
     loanPending: 'Huazimi në Pritje',
     loanApproved: 'Huazimi Aprovuar',
     loanRejected: 'Huazimi Refuzuar',
@@ -643,7 +643,7 @@ const translations = {
     pagesRead: 'Faqe të Lexuara',
     averagePerMonth: 'Mesatarja në Muaj',
     favoriteGenre: 'Zhanri i Preferuar',
-    readingGoal: 'Qëllimi i Leximit',
+    readingGoalStats: 'Qëllimi i Leximit',
     goalProgress: 'Progresi i Qëllimit',
     
     // Authors

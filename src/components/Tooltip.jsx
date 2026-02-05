@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './Tooltip.css';
 
 const Tooltip = ({ 
@@ -8,15 +8,21 @@ const Tooltip = ({
   delay = 200 
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [timeoutId, setTimeoutId] = useState(null);
+  const timeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const showTooltip = () => {
-    const id = setTimeout(() => setIsVisible(true), delay);
-    setTimeoutId(id);
+    timeoutRef.current = setTimeout(() => setIsVisible(true), delay);
   };
 
   const hideTooltip = () => {
-    clearTimeout(timeoutId);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setIsVisible(false);
   };
 
@@ -30,7 +36,7 @@ const Tooltip = ({
     >
       {children}
       {isVisible && content && (
-        <div className={`tooltip tooltip-${position}`}>
+        <div className={`tooltip tooltip-${position}`} role="tooltip">
           {content}
           <span className="tooltip-arrow"></span>
         </div>

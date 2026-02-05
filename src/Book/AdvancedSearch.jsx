@@ -3,6 +3,26 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaSearch, FaFilter, FaTimes, FaStar, FaCalendar, FaBook, FaUser, FaGlobe } from 'react-icons/fa';
 import './AdvancedSearch.css';
 
+const SUBJECTS = [
+  'Fiction', 'Non-fiction', 'Science Fiction', 'Fantasy', 'Mystery', 
+  'Romance', 'Thriller', 'Biography', 'History', 'Science', 
+  'Technology', 'Philosophy', 'Psychology', 'Self-Help', 'Business',
+  'Art', 'Poetry', 'Drama', 'Children', 'Young Adult'
+];
+
+const LANGUAGES = [
+  { code: '', label: 'Any Language' },
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'it', label: 'Italian' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'zh', label: 'Chinese' },
+  { code: 'ja', label: 'Japanese' },
+];
+
 const AdvancedSearch = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,26 +44,6 @@ const AdvancedSearch = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [startIndex, setStartIndex] = useState(0);
   const maxResults = 20;
-
-  const subjects = [
-    'Fiction', 'Non-fiction', 'Science Fiction', 'Fantasy', 'Mystery', 
-    'Romance', 'Thriller', 'Biography', 'History', 'Science', 
-    'Technology', 'Philosophy', 'Psychology', 'Self-Help', 'Business',
-    'Art', 'Poetry', 'Drama', 'Children', 'Young Adult'
-  ];
-
-  const languages = [
-    { code: '', label: 'Any Language' },
-    { code: 'en', label: 'English' },
-    { code: 'es', label: 'Spanish' },
-    { code: 'fr', label: 'French' },
-    { code: 'de', label: 'German' },
-    { code: 'it', label: 'Italian' },
-    { code: 'pt', label: 'Portuguese' },
-    { code: 'ru', label: 'Russian' },
-    { code: 'zh', label: 'Chinese' },
-    { code: 'ja', label: 'Japanese' },
-  ];
 
   useEffect(() => {
     const query = searchParams.get('q');
@@ -206,7 +206,7 @@ const AdvancedSearch = () => {
                   onChange={(e) => handleFilterChange('subject', e.target.value)}
                 >
                   <option value="">All Subjects</option>
-                  {subjects.map(subject => (
+                  {SUBJECTS.map(subject => (
                     <option key={subject} value={subject.toLowerCase()}>{subject}</option>
                   ))}
                 </select>
@@ -218,7 +218,7 @@ const AdvancedSearch = () => {
                   value={filters.language}
                   onChange={(e) => handleFilterChange('language', e.target.value)}
                 >
-                  {languages.map(lang => (
+                  {LANGUAGES.map(lang => (
                     <option key={lang.code} value={lang.code}>{lang.label}</option>
                   ))}
                 </select>

@@ -405,7 +405,7 @@ const BookPage = () => {
           </div>
           <div className="book-details">
             <h1>{book.title || 'Unknown Title'}</h1>
-            <p className="author" onClick={() => navigate(`/authors/${book.authors[0]}`)}>by {book.authors?.join(', ') || 'Unknown Author'}</p>
+            <p className="author" onClick={() => book.authors?.[0] && navigate(`/authors/${book.authors[0]}`)} style={{ cursor: book.authors?.[0] ? 'pointer' : 'default' }}>by {book.authors?.join(', ') || 'Unknown Author'}</p>
             
             <div className="description">
               <h2>Description</h2>
@@ -423,7 +423,7 @@ const BookPage = () => {
               </p>
             </div>
             <div className="additional-info">
-              <p><strong>ISBN:</strong> {book.industryIdentifiers?.[0]?.identifier || '97807461927'}</p>
+              <p><strong>ISBN:</strong> {book.industryIdentifiers?.[0]?.identifier || 'Not available'}</p>
             </div>
             <div className="publication-info">
               <p><strong>Publisher:</strong> {book.publisher || 'Unknown'}</p>
