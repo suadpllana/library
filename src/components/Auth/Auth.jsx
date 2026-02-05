@@ -108,9 +108,22 @@ const Auth = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      toast.error('Password must be at least 6 characters');
+    // Strong password validation
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      toast.error('Password must be at least 8 characters');
+      setLoading(false);
+      return;
+    }
+    
+    // Check for password complexity
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      setError('Password must contain uppercase, lowercase, and a number');
+      toast.error('Password must contain uppercase, lowercase letters, and a number');
       setLoading(false);
       return;
     }
@@ -147,6 +160,15 @@ const Auth = () => {
     
     try {
       if (isSignUp) {
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          setError('Please enter a valid email address');
+          toast.error('Please enter a valid email address');
+          setLoading(false);
+          return;
+        }
+        
         // Validate passwords on signup
         if (password !== confirmPassword) {
           setError('Passwords do not match');
@@ -155,9 +177,40 @@ const Auth = () => {
           return;
         }
 
-        if (password.length < 6) {
-          setError('Password must be at least 6 characters');
-          toast.error('Password must be at least 6 characters');
+        // Strong password validation
+        if (password.length < 8) {
+          setError('Password must be at least 8 characters');
+          toast.error('Password must be at least 8 characters');
+          setLoading(false);
+          return;
+        }
+        
+        // Check for password complexity
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        
+        if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+          setError('Password must contain uppercase, lowercase, and a number');
+          toast.error('Password must contain uppercase, lowercase letters, and a number');
+          setLoading(false);
+          return;
+        }
+        
+        // Validate name fields
+        const trimmedFirstName = firstName.trim();
+        const trimmedLastName = lastName.trim();
+        
+        if (!trimmedFirstName || trimmedFirstName.length < 2 || trimmedFirstName.length > 50) {
+          setError('First name must be 2-50 characters');
+          toast.error('First name must be 2-50 characters');
+          setLoading(false);
+          return;
+        }
+        
+        if (!trimmedLastName || trimmedLastName.length < 2 || trimmedLastName.length > 50) {
+          setError('Last name must be 2-50 characters');
+          toast.error('Last name must be 2-50 characters');
           setLoading(false);
           return;
         }
@@ -167,8 +220,8 @@ const Auth = () => {
           password,
           options: {
             data: {
-              first_name: firstName,
-              last_name: lastName,
+              first_name: trimmedFirstName,
+              last_name: trimmedLastName,
               role: role
             }
           }

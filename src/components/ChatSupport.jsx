@@ -126,6 +126,13 @@ const ChatSupport = () => {
     e.preventDefault();
     if (!newMessage.trim() || !user || sending) return;
 
+    // Check if this is the user's first message today BEFORE sending
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const hasUserMessageToday = messages.some(msg => 
+      msg.sender_type === 'user' && new Date(msg.created_at) >= today
+    );
+
     setSending(true);
     try {
       const { data: profile } = await supabase
@@ -149,6 +156,26 @@ const ChatSupport = () => {
       
       setNewMessage('');
       inputRef.current?.focus();
+
+      // Send automated response if it's the first message today
+      if (!hasUserMessageToday) {
+        setTimeout(async () => {
+          try {
+            await supabase
+              .from('chat_messages')
+              .insert({
+                user_id: user.id,
+                user_name: 'Librium Support',
+                user_email: 'support@librium.com',
+                message: 'Thank you for messaging Librium! 📚 An admin will connect with you shortly. In the meantime, feel free to share more details about your inquiry.',
+                sender_type: 'admin',
+                is_read: isOpen
+              });
+          } catch (err) {
+            console.error('Error sending automated response:', err);
+          }
+        }, 1000);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');

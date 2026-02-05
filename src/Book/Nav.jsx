@@ -24,7 +24,7 @@ const Nav = () => {
   const categoryRef = useRef(null);
 
   const isActive = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
-  const isDropdownActive = () => ['/discover', '/search', '/collections', '/history', '/stats', '/notes'].some(path => location.pathname.startsWith(path));
+  const isDropdownActive = () => ['/discover', '/search', '/collections', '/history', '/stats', '/notes', '/community'].some(path => location.pathname.startsWith(path));
   const isCategoryPage = () => location.pathname.startsWith('/category');
   const currentCategoryName = location.state?.categoryName || null;
 
@@ -99,6 +99,7 @@ const Nav = () => {
               <div className="nav-dropdown-menu">
                 <Link to="/discover" onClick={handleMenuItemClick}>✨ {t('discover')}</Link>
                 <Link to="/search" onClick={handleMenuItemClick}>🔍 {t('search')}</Link>
+                <Link to="/community" onClick={handleMenuItemClick}>💬 {t('community')}</Link>
                 <Link to="/collections" onClick={handleMenuItemClick}>📚 {t('collections')}</Link>
                 <Link to="/history" onClick={handleMenuItemClick}>📖 {t('history')}</Link>
                 <Link to="/notes" onClick={handleMenuItemClick}>📝 {t('Notes') || 'Notes'}</Link>
