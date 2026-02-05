@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -33,6 +33,16 @@ const AdminDashboard = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [loanFilter, setLoanFilter] = useState('all');
   const [userSearch, setUserSearch] = useState('');
+  
+  // Pagination state
+  const [usersPage, setUsersPage] = useState(0);
+  const [usersTotalCount, setUsersTotalCount] = useState(0);
+  const [loansPage, setLoansPage] = useState(0);
+  const [loansTotalCount, setLoansTotalCount] = useState(0);
+  const [reviewsPage, setReviewsPage] = useState(0);
+  const [reviewsTotalCount, setReviewsTotalCount] = useState(0);
+  const PAGE_SIZE = 20;
+  
   const [inviteForm, setInviteForm] = useState({
     email: '',
     password: '',
@@ -504,13 +514,24 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = usersPage) => {
     try {
       console.log('Fetching users...');
+      
+      // First get total count
+      const { count, error: countError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      setUsersTotalCount(count || 0);
+      
+      // Then fetch paginated data
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
       if (error) {
         console.error('Detailed error:', error);
@@ -713,7 +734,8 @@ const AdminDashboard = () => {
     return loanRequests.filter(l => l.status === loanFilter);
   };
 
-  const getFilteredUsers = () => {
+  // Memoized filtered users to avoid recalculation on every render
+  const filteredUsers = useMemo(() => {
     if (!userSearch) return users;
     const search = userSearch.toLowerCase();
     return users.filter(u => 
@@ -721,7 +743,7 @@ const AdminDashboard = () => {
       u.last_name?.toLowerCase().includes(search) ||
       u.email?.toLowerCase().includes(search)
     );
-  };
+  }, [users, userSearch]);
 
   const isOverdue = (loan) => {
     if (loan.status !== 'approved' || !loan.due_date) return false;
@@ -1094,7 +1116,7 @@ const AdminDashboard = () => {
           /* USERS TAB */
           <div className="users-section">
             <div className="section-header">
-              <h2>Users ({users.length})</h2>
+              <h2>Users ({usersTotalCount || users.length})</h2>
               <div className="users-actions">
                 <div className="search-box">
                   <input
@@ -1112,7 +1134,7 @@ const AdminDashboard = () => {
                 </button>
               </div>
             </div>
-            {getFilteredUsers().length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <p className="no-data">
                 {userSearch ? 'No users found matching your search' : 'No users registered yet'}
               </p>
@@ -1129,7 +1151,7 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {getFilteredUsers().map((u) => (
+                    {filteredUsers.map((u) => (
                       <tr key={u.id}>
                         <td>
                           {u.first_name} {u.last_name}
@@ -1159,6 +1181,37 @@ const AdminDashboard = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {/* Pagination controls */}
+            {usersTotalCount > PAGE_SIZE && (
+              <div className="pagination-controls">
+                <button 
+                  className="pagination-btn"
+                  disabled={usersPage === 0}
+                  onClick={() => {
+                    const newPage = usersPage - 1;
+                    setUsersPage(newPage);
+                    fetchUsers(newPage);
+                  }}
+                >
+                  ← Previous
+                </button>
+                <span className="pagination-info">
+                  Page {usersPage + 1} of {Math.ceil(usersTotalCount / PAGE_SIZE)} 
+                  ({usersTotalCount} total users)
+                </span>
+                <button 
+                  className="pagination-btn"
+                  disabled={(usersPage + 1) * PAGE_SIZE >= usersTotalCount}
+                  onClick={() => {
+                    const newPage = usersPage + 1;
+                    setUsersPage(newPage);
+                    fetchUsers(newPage);
+                  }}
+                >
+                  Next →
+                </button>
               </div>
             )}
           </div>

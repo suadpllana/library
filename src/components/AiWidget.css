@@ -37,7 +37,7 @@
   position: fixed;
   right: 24px;
   bottom: 100px;
-  width: 400px;
+  width: 450px;
   max-width: calc(100% - 48px);
   z-index: 19999;
   animation: slideUp 0.3s ease;
@@ -61,8 +61,8 @@
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  height: 550px;
-  max-height: 70vh;
+  height: 600px;
+  max-height: 80vh;
   overflow: hidden;
 }
 
@@ -213,15 +213,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  max-width: calc(100% - 44px);
+  min-width: 0;
 }
 
 .message-text {
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.1rem;
   border-radius: 16px;
-  line-height: 1.5;
-  font-size: 0.9rem;
+  line-height: 1.6;
+  font-size: 0.95rem;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .message.user .message-text {
@@ -418,7 +421,8 @@
   }
 
   .ai-chat-container {
-    height: 60vh;
+    height: 70vh;
+    max-height: 75vh;
   }
 
   .ai-fab {

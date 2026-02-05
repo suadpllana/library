@@ -26,6 +26,7 @@ import CollectionDetail from './Book/CollectionDetail';
 import ReadingHistory from './Book/ReadingHistory';
 import ReadingStats from './Book/ReadingStats';
 import BookNotes from './Book/BookNotes';
+import Community from './Book/Community';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -126,6 +127,7 @@ function App() {
                       <Route path="/history" element={<ReadingHistory />} />
                       <Route path="/stats" element={<ReadingStats />} />
                       <Route path="/notes" element={<BookNotes />} />
+                      <Route path="/community" element={<Community />} />
                     </Routes>
                     <AiWidget />
                     <ChatSupport />
