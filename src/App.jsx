@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import Nav from "./Book/Nav"
-import {HashRouter as Router, Routes, Route, Navigate} from "react-router-dom";
+import {HashRouter as Router, Routes, Route, Navigate, useLocation} from "react-router-dom";
 import {ToastContainer} from "react-toastify"
 import Auth from './components/Auth/Auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -92,6 +92,37 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const UserLayout = () => {
+  const location = useLocation();
+  const isCommunity = location.pathname === '/community';
+
+  return (
+    <>
+      <Nav />
+      <Routes>
+        <Route path="/" element={<Book />} />
+        <Route path="/discover" element={<Discover />} />
+        <Route path="/search" element={<AdvancedSearch />} />
+        <Route path="/category" element={<CategoryPage />} />
+        <Route path="/book/:id" element={<BookPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/loaned-books" element={<LoanedBooks />} />
+        <Route path="/authors" element={<Authors />} />
+        <Route path="/authors/:authorName" element={<AuthorPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/collections" element={<MyCollections />} />
+        <Route path="/collection/:id" element={<CollectionDetail />} />
+        <Route path="/history" element={<ReadingHistory />} />
+        <Route path="/stats" element={<ReadingStats />} />
+        <Route path="/notes" element={<BookNotes />} />
+        <Route path="/community" element={<Community />} />
+      </Routes>
+      {!isCommunity && <AiWidget />}
+      {!isCommunity && <ChatSupport />}
+    </>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider>
@@ -117,29 +148,7 @@ function App() {
               path="/*"
               element={
                 <UserRoute>
-                  <>
-                    <Nav />
-                    <Routes>
-                      <Route path="/" element={<Book />} />
-                      <Route path="/discover" element={<Discover />} />
-                      <Route path="/search" element={<AdvancedSearch />} />
-                      <Route path="/category" element={<CategoryPage />} />
-                      <Route path="/book/:id" element={<BookPage />} />
-                      <Route path="/wishlist" element={<WishlistPage />} />
-                      <Route path="/loaned-books" element={<LoanedBooks />} />
-                      <Route path="/authors" element={<Authors />} />
-                      <Route path="/authors/:authorName" element={<AuthorPage />} />
-                      <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="/collections" element={<MyCollections />} />
-                      <Route path="/collection/:id" element={<CollectionDetail />} />
-                      <Route path="/history" element={<ReadingHistory />} />
-                      <Route path="/stats" element={<ReadingStats />} />
-                      <Route path="/notes" element={<BookNotes />} />
-                      <Route path="/community" element={<Community />} />
-                    </Routes>
-                    <AiWidget />
-                    <ChatSupport />
-                  </>
+                  <UserLayout />
                 </UserRoute>
               }
             />
