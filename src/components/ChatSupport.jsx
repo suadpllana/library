@@ -2,11 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaComments, FaTimes, FaPaperPlane, FaUser, FaUserShield } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import { toast } from 'react-toastify';
 import './ChatSupport.css';
 
-const ChatSupport = () => {
+const ChatSupport = ({ externalOpen, onToggle }) => {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -15,6 +19,13 @@ const ChatSupport = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Sync with external open state
+  useEffect(() => {
+    if (externalOpen !== undefined) {
+      setIsOpen(externalOpen);
+    }
+  }, [externalOpen]);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -126,12 +137,8 @@ const ChatSupport = () => {
     e.preventDefault();
     if (!newMessage.trim() || !user || sending) return;
 
-    // Check if this is the user's first message today BEFORE sending
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const hasUserMessageToday = messages.some(msg => 
-      msg.sender_type === 'user' && new Date(msg.created_at) >= today
-    );
+    // Check if this is the user's first message (no previous user messages)
+    const hasAnyMessages = messages.length > 0;
 
     setSending(true);
     try {
@@ -157,28 +164,44 @@ const ChatSupport = () => {
       setNewMessage('');
       inputRef.current?.focus();
 
-      // Send automated response if it's the first message today
-      if (!hasUserMessageToday) {
+      // Send automated response via RPC (bypasses RLS for admin sender_type)
+      if (!hasAnyMessages) {
+        // First message ever — send welcome auto-reply
         setTimeout(async () => {
           try {
-            await supabase
-              .from('chat_messages')
-              .insert({
-                user_id: user.id,
-                user_name: 'Librium Support',
-                user_email: 'support@librium.com',
-                message: 'Thank you for messaging Librium! 📚 An admin will connect with you shortly. In the meantime, feel free to share more details about your inquiry.',
-                sender_type: 'admin',
-                is_read: isOpen
-              });
+            await supabase.rpc('send_auto_reply', {
+              p_user_id: user.id,
+              p_message: 'Thank you for messaging Librium! 📚 An admin will connect with you shortly. In the meantime, feel free to share more details about your inquiry.',
+              p_is_read: isOpen
+            });
           } catch (err) {
             console.error('Error sending automated response:', err);
           }
         }, 1000);
+      } else {
+        // Check if this is the first user message today — send welcome-back auto-reply
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const hasUserMessageToday = messages.some(msg => 
+          msg.sender_type === 'user' && new Date(msg.created_at) >= today
+        );
+        if (!hasUserMessageToday) {
+          setTimeout(async () => {
+            try {
+              await supabase.rpc('send_auto_reply', {
+                p_user_id: user.id,
+                p_message: 'Welcome back! 📚 An admin will connect with you shortly. Feel free to share what you need help with.',
+                p_is_read: isOpen
+              });
+            } catch (err) {
+              console.error('Error sending automated response:', err);
+            }
+          }, 1000);
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      toast.error(t.failedSendMessage);
     } finally {
       setSending(false);
     }
@@ -200,9 +223,9 @@ const ChatSupport = () => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (date.toDateString() === today.toDateString()) {
-      return 'Today';
+      return t.today;
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+      return t.yesterday;
     }
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -229,12 +252,14 @@ const ChatSupport = () => {
       <button 
         className={`chat-toggle-btn ${isOpen ? 'open' : ''}`}
         onClick={() => {
-          setIsOpen(!isOpen);
-          if (!isOpen) {
+          const newState = !isOpen;
+          setIsOpen(newState);
+          if (onToggle) onToggle(newState);
+          if (newState) {
             setTimeout(() => inputRef.current?.focus(), 100);
           }
         }}
-        aria-label="Toggle chat support"
+        aria-label={t.toggleChatSupport}
       >
         {isOpen ? <FaTimes /> : <FaComments />}
         {!isOpen && unreadCount > 0 && (
@@ -249,14 +274,14 @@ const ChatSupport = () => {
             <div className="chat-header-info">
               <FaUserShield className="admin-icon" />
               <div>
-                <h3>Support Chat</h3>
-                <span className="status-text">Chat with Admin</span>
+                <h3>{t.supportChat}</h3>
+                <span className="status-text">{t.chatWithAdmin}</span>
               </div>
             </div>
             <button 
               className="close-chat-btn"
-              onClick={() => setIsOpen(false)}
-              aria-label="Close chat"
+              onClick={() => { setIsOpen(false); if (onToggle) onToggle(false); }}
+              aria-label={t.close}
             >
               <FaTimes />
             </button>
@@ -266,13 +291,13 @@ const ChatSupport = () => {
             {loading ? (
               <div className="chat-loading">
                 <div className="chat-spinner"></div>
-                <p>Loading messages...</p>
+                <p>{t.loadingMessagesChat}</p>
               </div>
             ) : messages.length === 0 ? (
               <div className="no-messages">
                 <FaComments className="no-messages-icon" />
-                <p>No messages yet</p>
-                <span>Start a conversation with our support team!</span>
+                <p>{t.noMessagesYetChat}</p>
+                <span>{t.startConversation}</span>
               </div>
             ) : (
               Object.entries(groupedMessages).map(([date, dateMessages]) => (
@@ -306,13 +331,13 @@ const ChatSupport = () => {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
+              placeholder={t.typeYourMessage}
               disabled={sending}
             />
             <button 
               type="submit" 
               disabled={!newMessage.trim() || sending}
-              aria-label="Send message"
+              aria-label={t.send}
             >
               <FaPaperPlane />
             </button>

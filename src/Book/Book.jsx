@@ -6,7 +6,7 @@ import kidsWithBook from "../assets/image.png";
 import { toast } from "react-toastify";
 import { FaChevronLeft } from "react-icons/fa";
 import { FaChevronRight } from "react-icons/fa";
-import { FaStar, FaEnvelope, FaUsers, FaCalendarAlt, FaQuoteLeft } from 'react-icons/fa'
+import { FaStar, FaEnvelope, FaUsers, FaCalendarAlt, FaQuoteLeft, FaBookOpen, FaRandom, FaCompass, FaHistory, FaHeart, FaListUl } from 'react-icons/fa'
 import "react-toastify/dist/ReactToastify.css";
 import { useLanguage } from "../context/LanguageContext";
 import translations from "../i18n/translations";
@@ -38,6 +38,8 @@ const Book = () => {
     try { return Number(localStorage.getItem('booksRead') || 0); } catch { return 0; }
   });
   const [topAuthors, setTopAuthors] = useState([]);
+  const [randomBook, setRandomBook] = useState(null);
+  const [loadingRandom, setLoadingRandom] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -65,7 +67,7 @@ const Book = () => {
         setRecommendedBooks(data.items || []);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to fetch books");
+        toast.error(t.somethingWentWrong);
       } finally {
         setSearching(false);
       }
@@ -137,6 +139,24 @@ const Book = () => {
     });
     toast.success(t.niceProgressSaved);
   }, [t]);
+
+  const discoverRandomBook = useCallback(async () => {
+    setLoadingRandom(true);
+    const subjects = ['fiction', 'science', 'history', 'philosophy', 'biography', 'fantasy', 'mystery', 'romance', 'adventure', 'poetry'];
+    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+    const startIndex = Math.floor(Math.random() * 20);
+    try {
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=subject:${randomSubject}&startIndex=${startIndex}&maxResults=1`);
+      const data = await res.json();
+      if (data.items?.[0]) {
+        setRandomBook(data.items[0]);
+      }
+    } catch (err) {
+      console.error('Random book error:', err);
+    } finally {
+      setLoadingRandom(false);
+    }
+  }, []);
 
   // Single query set with 4 categories to reduce API calls
   const categoryQueries = {
@@ -335,7 +355,7 @@ const Book = () => {
     };
     
     if (!books || books.length === 0) {
-      return <p>{t.noResults}</p>;
+      return null;
     }
 
     const currentIndex = currentSlides[category];
@@ -531,7 +551,74 @@ const Book = () => {
             </div>
           ))
         )}
-        {!loading &&  <footer style={{textAlign: "center"}}>{t.createdBy} @Suad Pllana </footer>}
+
+        {/* Quick Access Links */}
+        {!loading && (
+          <div className="homepage-quick-access">
+            <h2 className="section-title">{t.exploreMore}</h2>
+            <div className="quick-access-grid">
+              <button className="quick-access-card" onClick={() => navigate('/discover')}>
+                <FaCompass className="qa-icon" />
+                <h4>{t.discover}</h4>
+                <p>{t.findNewBooks}</p>
+              </button>
+              <button className="quick-access-card" onClick={() => navigate('/wishlist')}>
+                <FaHeart className="qa-icon wishlist-icon" />
+                <h4>{t.wishlist}</h4>
+                <p>{t.viewSavedBooks}</p>
+              </button>
+              <button className="quick-access-card" onClick={() => navigate('/history')}>
+                <FaHistory className="qa-icon history-icon" />
+                <h4>{t.history}</h4>
+                <p>{t.trackWhatRead}</p>
+              </button>
+              <button className="quick-access-card" onClick={() => navigate('/collections')}>
+                <FaListUl className="qa-icon collections-icon" />
+                <h4>{t.collections}</h4>
+                <p>{t.organizeLibrary}</p>
+              </button>
+              <button className="quick-access-card" onClick={() => navigate('/stats')}>
+                <FaBookOpen className="qa-icon stats-icon" />
+                <h4>{t.stats}</h4>
+                <p>{t.yourReadingAnalytics}</p>
+              </button>
+              <button className="quick-access-card" onClick={() => navigate('/community')}>
+                <FaUsers className="qa-icon community-icon" />
+                <h4>{t.community}</h4>
+                <p>{t.joinBookDiscussions}</p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Random Book Discovery */}
+        {!loading && (
+          <div className="random-book-section">
+            <div className="random-book-header">
+              <h2 className="section-title"><FaRandom className="icon-inline" /> {t.feelingLucky}</h2>
+              <button className="discover-random-btn" onClick={discoverRandomBook} disabled={loadingRandom}>
+                {loadingRandom ? t.discovering : t.discoverRandomBook}
+              </button>
+            </div>
+            {randomBook && (
+              <div className="random-book-card" onClick={() => handleBookClick(randomBook)}>
+                <img 
+                  src={randomBook.volumeInfo?.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image'} 
+                  alt={randomBook.volumeInfo?.title} 
+                  className="random-book-cover"
+                />
+                <div className="random-book-info">
+                  <h3>{randomBook.volumeInfo?.title}</h3>
+                  <p className="random-book-author">{t.by} {randomBook.volumeInfo?.authors?.join(', ') || t.unknownAuthor}</p>
+                  <p className="random-book-desc">{randomBook.volumeInfo?.description?.slice(0, 200) || t.noDescription}...</p>
+                  <span className="random-book-category">{randomBook.volumeInfo?.categories?.[0] || t.general}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!loading && <footer style={{textAlign: "center", color: "#6b6b8a"}}>{t.createdBy} @Suad Pllana</footer>}
        
       </div>
 

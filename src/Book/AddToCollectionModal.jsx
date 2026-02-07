@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import { toast } from 'react-toastify';
 import './AddToCollectionModal.css';
 
 const AddToCollectionModal = ({ book, isOpen, onClose }) => {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [notes, setNotes] = useState('');
@@ -39,7 +43,7 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
 
   const handleCreateCollection = async () => {
     if (!newCollection.name.trim()) {
-      toast.error('Please enter a collection name');
+      toast.error(t.pleaseEnterCollectionName);
       return;
     }
 
@@ -60,16 +64,16 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
       setSelectedCollection(data.id);
       setNewCollection({ name: '', description: '' });
       setShowNewForm(false);
-      toast.success('Collection created!');
+      toast.success(t.collectionCreated);
     } catch (error) {
       console.error('Error creating collection:', error);
-      toast.error('Failed to create collection');
+      toast.error(t.failedCreateCollection);
     }
   };
 
   const handleAddToCollection = async () => {
     if (!selectedCollection) {
-      toast.error('Please select a collection');
+      toast.error(t.pleaseSelectCollection);
       return;
     }
 
@@ -84,7 +88,7 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
         .single();
 
       if (existing) {
-        toast.info('This book is already in the collection');
+        toast.info(t.bookAlreadyInCollection);
         onClose();
         return;
       }
@@ -100,11 +104,11 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
 
       if (error) throw error;
 
-      toast.success('Book added to collection!');
+      toast.success(t.bookAddedToCollection);
       onClose();
     } catch (error) {
       console.error('Error adding to collection:', error);
-      toast.error('Failed to add book to collection');
+      toast.error(t.failedAddToCollection);
     } finally {
       setSaving(false);
     }
@@ -118,32 +122,32 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
         <button className="close-btn" onClick={onClose}>×</button>
         
         <div className="modal-header">
-          <h2>📚 Add to Collection</h2>
+          <h2>{`📚 ${t.addToCollectionTitle}`}</h2>
           <p>Save "{book?.volumeInfo?.title}" to a collection</p>
         </div>
 
         {loading ? (
           <div className="modal-loading">
             <div className="spinner"></div>
-            <p>Loading collections...</p>
+            <p>{t.loadingCollections}</p>
           </div>
         ) : (
           <>
             {collections.length === 0 && !showNewForm ? (
               <div className="no-collections">
-                <p>You don't have any collections yet.</p>
+                <p>{t.noCollectionsYet}</p>
                 <button 
                   className="create-new-btn"
                   onClick={() => setShowNewForm(true)}
                 >
-                  + Create Your First Collection
+                  {t.createFirstCollection}
                 </button>
               </div>
             ) : (
               <>
                 {!showNewForm && (
                   <div className="collections-list">
-                    <label>Select a collection:</label>
+                    <label>{t.selectCollection}</label>
                     <div className="collection-options">
                       {collections.map((col) => (
                         <button
@@ -161,22 +165,22 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
                       className="create-new-link"
                       onClick={() => setShowNewForm(true)}
                     >
-                      + Create new collection
+                      {t.createNewCollection}
                     </button>
                   </div>
                 )}
 
                 {showNewForm && (
                   <div className="new-collection-form">
-                    <h4>Create New Collection</h4>
+                    <h4>{t.createNewCollectionTitle}</h4>
                     <input
                       type="text"
-                      placeholder="Collection name"
+                      placeholder={t.collectionNamePlaceholder}
                       value={newCollection.name}
                       onChange={(e) => setNewCollection({ ...newCollection, name: e.target.value })}
                     />
                     <textarea
-                      placeholder="Description (optional)"
+                      placeholder={t.descriptionOptional}
                       value={newCollection.description}
                       onChange={(e) => setNewCollection({ ...newCollection, description: e.target.value })}
                       rows="2"
@@ -186,13 +190,13 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
                         className="cancel-btn"
                         onClick={() => setShowNewForm(false)}
                       >
-                        Cancel
+                        {t.cancel}
                       </button>
                       <button 
                         className="create-btn"
                         onClick={handleCreateCollection}
                       >
-                        Create
+                        {t.create}
                       </button>
                     </div>
                   </div>
@@ -201,9 +205,9 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
                 {!showNewForm && (
                   <>
                     <div className="notes-section">
-                      <label>Notes (optional):</label>
+                      <label>{t.notesOptional}</label>
                       <textarea
-                        placeholder="Add personal notes about this book..."
+                        placeholder={t.addPersonalNotes}
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows="3"
@@ -215,7 +219,7 @@ const AddToCollectionModal = ({ book, isOpen, onClose }) => {
                       onClick={handleAddToCollection}
                       disabled={!selectedCollection || saving}
                     >
-                      {saving ? 'Adding...' : 'Add to Collection'}
+                      {saving ? t.adding : t.addToCollectionBtn}
                     </button>
                   </>
                 )}

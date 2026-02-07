@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import translations from '../i18n/translations';
 import { toast } from 'react-toastify';
+import { notifyLoanUpdate } from '../lib/emailNotifications';
 import { FaArrowLeftLong, FaClockRotateLeft, FaBook, FaCalendarCheck, FaHourglass, FaCircleCheck, FaCircleXmark, FaBoxArchive, FaList, FaGrip } from 'react-icons/fa6';
 import { MdFilterListOff } from 'react-icons/md';
 import './LoanedBooks.css';
@@ -25,7 +26,7 @@ const LoanedBooks = () => {
   const filters = useMemo(() => [
     { id: 'all', label: t.allBooks, icon: <FaBook /> },
     { id: 'pending', label: t.pending, icon: <FaHourglass /> },
-    { id: 'approved', label: t.active || 'Active', icon: <FaCircleCheck /> },
+    { id: 'approved', label: t.active, icon: <FaCircleCheck /> },
     { id: 'rejected', label: t.rejected, icon: <FaCircleXmark /> },
     { id: 'returned', label: t.returned, icon: <FaBoxArchive /> }
   ], [t]);
@@ -76,7 +77,7 @@ const LoanedBooks = () => {
   const getStatusInfo = (status) => {
     const statusMap = {
       pending: { class: 'status-pending', label: t.pending, icon: '⏳' },
-      approved: { class: 'status-approved', label: t.active || 'Active', icon: '✅' },
+      approved: { class: 'status-approved', label: t.active, icon: '✅' },
       rejected: { class: 'status-rejected', label: t.rejected, icon: '❌' },
       returned: { class: 'status-returned', label: t.returned, icon: '📦' }
     };
@@ -94,7 +95,7 @@ const LoanedBooks = () => {
     // Check extension limit
     const extensionCount = (loan.notes?.match(/\[Extended/g) || []).length;
     if (extensionCount >= 2) {
-      toast.error(t.maxExtensionsReached || 'Maximum extensions reached (2 allowed)');
+      toast.error(t.maxExtensionsReached);
       return;
     }
 
@@ -122,7 +123,9 @@ const LoanedBooks = () => {
         b.id === loan.id ? { ...b, due_date: newDueDate.toISOString() } : b
       ));
       
-      toast.success(t.loanExtended || 'Loan extended by 14 days!');
+      toast.success(t.loanExtended);
+      // Queue email notification
+      notifyLoanUpdate(user.id, loan.book_title, 'extended').catch(() => {});
     } catch (error) {
       console.error('Error extending loan:', error);
       toast.error(t.somethingWentWrong);
@@ -150,7 +153,9 @@ const LoanedBooks = () => {
         b.id === loan.id ? { ...b, status: 'returned', returned_at: new Date().toISOString() } : b
       ));
       
-      toast.success(t.bookReturned || 'Book marked as returned!');
+      toast.success(t.bookReturned);
+      // Queue email notification
+      notifyLoanUpdate(user.id, loan.book_title, 'returned').catch(() => {});
     } catch (error) {
       console.error('Error returning book:', error);
       toast.error(t.somethingWentWrong);
@@ -224,14 +229,14 @@ const LoanedBooks = () => {
 
           <div className="loan-card-details">
             <div className="detail-row">
-              <span className="detail-label">{t.requested || 'Requested'}:</span>
+              <span className="detail-label">{t.requested}:</span>
               <span className="detail-value">{formatDate(loan.requested_at)}</span>
             </div>
 
             {loan.status === 'approved' && (
               <>
                 <div className="detail-row">
-                  <span className="detail-label">{t.dueDate || 'Due Date'}:</span>
+                  <span className="detail-label">{t.dueDate}:</span>
                   <span className={`detail-value ${overdue ? 'overdue-text' : ''}`}>
                     {formatDate(loan.due_date)}
                   </span>
@@ -239,8 +244,8 @@ const LoanedBooks = () => {
                 {daysRemaining !== null && (
                   <div className={`days-remaining ${overdue ? 'overdue' : daysRemaining <= 3 ? 'warning' : ''}`}>
                     {overdue 
-                      ? `${Math.abs(daysRemaining)} ${t.daysOverdue || 'days overdue'}`
-                      : `${daysRemaining} ${t.daysRemaining || 'days remaining'}`
+                      ? `${Math.abs(daysRemaining)} ${t.daysOverdue}`
+                      : `${daysRemaining} ${t.daysRemaining}`
                     }
                   </div>
                 )}
@@ -256,7 +261,7 @@ const LoanedBooks = () => {
 
             {loan.status === 'rejected' && loan.notes && (
               <div className="rejection-note">
-                <strong>{t.reason || 'Reason'}:</strong> {loan.notes}
+                <strong>{t.reason}:</strong> {loan.notes}
               </div>
             )}
           </div>
@@ -267,19 +272,19 @@ const LoanedBooks = () => {
                 className="extend-btn"
                 onClick={() => handleExtendLoan(loan)}
                 disabled={extendingLoan === loan.id}
-                title={t.extendLoan || 'Extend loan by 14 days'}
+                title={t.extendLoan}
               >
                 <FaClockRotateLeft />
-                {extendingLoan === loan.id ? `${t.extending || 'Extending'}...` : t.extend || 'Extend'}
+                {extendingLoan === loan.id ? `${t.extending}...` : t.extend}
               </button>
               <button
                 className="return-btn"
                 onClick={() => handleReturnBook(loan)}
                 disabled={returningLoan === loan.id}
-                title={t.markAsReturned || 'Mark as returned'}
+                title={t.markAsReturned}
               >
                 <FaBoxArchive />
-                {returningLoan === loan.id ? `${t.returning || 'Returning'}...` : t.return || 'Return'}
+                {returningLoan === loan.id ? `${t.returning}...` : t.return_}
               </button>
             </div>
           )}
@@ -295,7 +300,7 @@ const LoanedBooks = () => {
         <div className="loaned-books-header">
           <div className="header-left">
             <h1>📚 {t.myLoanedBooks}</h1>
-            <p className="header-subtitle">{t.trackManageBooks || 'Track and manage your borrowed books'}</p>
+            <p className="header-subtitle">{t.trackManageBooks}</p>
           </div>
           <button 
             onClick={() => navigate(-1)}
@@ -312,14 +317,14 @@ const LoanedBooks = () => {
               <div className="stat-icon total"><FaBook /></div>
               <div className="stat-info">
                 <span className="stat-number">{stats.total}</span>
-                <span className="stat-label">{t.totalLoans || 'Total Loans'}</span>
+                <span className="stat-label">{t.totalLoans}</span>
               </div>
             </div>
             <div className="stat-item">
               <div className="stat-icon active"><FaCircleCheck /></div>
               <div className="stat-info">
                 <span className="stat-number">{stats.active}</span>
-                <span className="stat-label">{t.active || 'Active'}</span>
+                <span className="stat-label">{t.active}</span>
               </div>
             </div>
             <div className="stat-item">
@@ -334,7 +339,7 @@ const LoanedBooks = () => {
                 <div className="stat-icon overdue"><FaCalendarCheck /></div>
                 <div className="stat-info">
                   <span className="stat-number">{stats.overdue}</span>
-                  <span className="stat-label">{t.overdue || 'Overdue'}</span>
+                  <span className="stat-label">{t.overdue}</span>
                 </div>
               </div>
             )}
@@ -344,18 +349,18 @@ const LoanedBooks = () => {
         {loading ? (
           <div className="loading-state">
             <div className="loading-spinner"></div>
-            <p>{t.loadingYourLoanedBooks || 'Loading your loaned books...'}</p>
+            <p>{t.loadingYourLoanedBooks}</p>
           </div>
         ) : loanedBooks.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📚</div>
-            <h2>{t.noLoanedBooksYet || 'No Loaned Books Yet'}</h2>
+            <h2>{t.noLoanedBooksYet}</h2>
             <p>{t.noLoanedBooks}</p>
             <button 
               onClick={() => navigate('/')}
               className="explore-button"
             >
-              <FaBook /> {t.exploreBooks || 'Explore Books'}
+              <FaBook /> {t.exploreBooks}
             </button>
           </div>
         ) : (
@@ -366,7 +371,7 @@ const LoanedBooks = () => {
               <div className="search-container">
                 <input
                   type="text"
-                  placeholder="Search by title or author..."
+                  placeholder={t.searchBooks || 'Search by title or author...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -386,14 +391,14 @@ const LoanedBooks = () => {
                 <button 
                   className={`view-btn ${viewMode === 'cards' ? 'active' : ''}`}
                   onClick={() => setViewMode('cards')}
-                  title="Card View"
+                  title={t.cardView}
                 >
                   <FaGrip />
                 </button>
                 <button 
                   className={`view-btn ${viewMode === 'table' ? 'active' : ''}`}
                   onClick={() => setViewMode('table')}
-                  title="Table View"
+                  title={t.tableView}
                 >
                   <FaList />
                 </button>
@@ -418,13 +423,13 @@ const LoanedBooks = () => {
             {filteredBooks.length === 0 ? (
               <div className="no-filtered-data">
                 <MdFilterListOff className="no-data-icon" />
-                <p>No {activeFilter === 'all' ? '' : activeFilter} books found</p>
-                {searchTerm && <span className="search-hint">Try a different search term</span>}
+                <p>{t.noLoanedBooksYet}</p>
+                {searchTerm && <span className="search-hint">{t.tryAgain}</span>}
                 <button 
                   onClick={() => { setActiveFilter('all'); setSearchTerm(''); }}
                   className="show-all-btn"
                 >
-                  Clear Filters
+                  {t.clearFilters || 'Clear Filters'}
                 </button>
               </div>
             ) : viewMode === 'cards' ? (
@@ -438,12 +443,12 @@ const LoanedBooks = () => {
                 <table className="loaned-books-table">
                   <thead>
                     <tr>
-                      <th>Book</th>
-                      <th>Author(s)</th>
-                      <th>Requested</th>
-                      <th>Status</th>
-                      <th>Due Date</th>
-                      <th>Actions</th>
+                      <th>{t.book_}</th>
+                      <th>{t.authors_}</th>
+                      <th>{t.requested}</th>
+                      <th>{t.status}</th>
+                      <th>{t.dueDate}</th>
+                      <th>{t.actions}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -471,7 +476,7 @@ const LoanedBooks = () => {
                             <td className="author-cell">
                               {Array.isArray(loan.book_authors) 
                                 ? loan.book_authors.join(', ') 
-                                : (loan.book_authors || 'Unknown')}
+                                : (loan.book_authors || t.unknownAuthor)}
                             </td>
                             <td>{formatDate(loan.requested_at)}</td>
                             <td>
@@ -483,7 +488,7 @@ const LoanedBooks = () => {
                               {loan.status === 'approved' ? (
                                 <span className={overdue ? 'overdue-text' : ''}>
                                   {formatDate(loan.due_date)}
-                                  {overdue && <span className="overdue-badge">Overdue</span>}
+                                  {overdue && <span className="overdue-badge">{t.overdue}</span>}
                                 </span>
                               ) : '—'}
                             </td>
@@ -494,7 +499,7 @@ const LoanedBooks = () => {
                                     className="extend-btn small"
                                     onClick={() => handleExtendLoan(loan)}
                                     disabled={extendingLoan === loan.id}
-                                    title="Extend by 14 days"
+                                    title={t.extendBy14Days}
                                   >
                                     <FaClockRotateLeft />
                                   </button>
@@ -502,7 +507,7 @@ const LoanedBooks = () => {
                                     className="return-btn small"
                                     onClick={() => handleReturnBook(loan)}
                                     disabled={returningLoan === loan.id}
-                                    title="Mark as returned"
+                                    title={t.markAsReturned}
                                   >
                                     <FaBoxArchive />
                                   </button>
@@ -513,7 +518,7 @@ const LoanedBooks = () => {
                           {loan.status === 'rejected' && loan.notes && (
                             <tr className="rejection-reason-row">
                               <td colSpan="6">
-                                <strong>Rejection Reason:</strong> {loan.notes}
+                                <strong>{t.rejectionReason}:</strong> {loan.notes}
                               </td>
                             </tr>
                           )}

@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { FaArrowLeftLong, FaBook, FaBookOpen, FaCircleCheck, FaHeart, FaStar, FaEye } from 'react-icons/fa6'
 import { toast } from 'react-toastify';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import './ReadingHistory.css';
 
 // Cache for book details
@@ -17,6 +19,8 @@ const ReadingHistory = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, reading: 0, completed: 0 });
+  const { language } = useLanguage();
+  const t = translations[language];
 
   useEffect(() => {
     let mounted = true;
@@ -180,9 +184,9 @@ const ReadingHistory = () => {
     return (
       <div className="history-page">
         <div className="not-logged-in">
-          <h2>📚 Reading History</h2>
-          <p>Please log in to view your reading history.</p>
-          <Link to="/auth" className="login-btn">Log In</Link>
+          <h2>{`📚 ${t.readingHistory}`}</h2>
+          <p>{t.pleaseLogIn}</p>
+          <Link to="/auth" className="login-btn">{t.logIn}</Link>
         </div>
       </div>
     );
@@ -194,11 +198,11 @@ const ReadingHistory = () => {
         {/* Header */}
         <div className="history-header">
           <button className="back-btn" onClick={() => navigate(-1)}>
-            <FaArrowLeftLong /> Back
+            <FaArrowLeftLong /> {t.back}
           </button>
           <div className="header-info">
-            <h1>📖 My Reading Journey</h1>
-            <p>Track your progress and celebrate your achievements</p>
+            <h1>{`📖 ${t.myReadingJourney}`}</h1>
+            <p>{t.trackReadingProgress}</p>
           </div>
         </div>
 
@@ -208,21 +212,21 @@ const ReadingHistory = () => {
             <div className="stat-icon total"><FaBook /></div>
             <div className="stat-data">
               <span className="stat-num">{stats.total}</span>
-              <span className="stat-text">Total Books</span>
+              <span className="stat-text">{t.totalBooksLabel}</span>
             </div>
           </div>
           <div className="journey-stat">
             <div className="stat-icon reading"><FaBookOpen /></div>
             <div className="stat-data">
               <span className="stat-num">{stats.reading}</span>
-              <span className="stat-text">Reading</span>
+              <span className="stat-text">{t.readingLabel}</span>
             </div>
           </div>
           <div className="journey-stat">
             <div className="stat-icon completed"><FaCircleCheck /></div>
             <div className="stat-data">
               <span className="stat-num">{stats.completed}</span>
-              <span className="stat-text">Completed</span>
+              <span className="stat-text">{t.completedLabel}</span>
             </div>
           </div>
         </div>
@@ -230,10 +234,10 @@ const ReadingHistory = () => {
         {/* Filter Tabs */}
         <div className="filter-bar">
           {[
-            { key: 'all', label: 'All Books', icon: <FaBook /> },
-            { key: 'wishlist', label: 'Want to Read', icon: <FaHeart /> },
-            { key: 'reading', label: 'Reading', icon: <FaBookOpen /> },
-            { key: 'completed', label: 'Completed', icon: <FaCircleCheck /> }
+            { key: 'all', label: t.allBooksFilter, icon: <FaBook /> },
+            { key: 'wishlist', label: t.wantToReadFilter, icon: <FaHeart /> },
+            { key: 'reading', label: t.readingFilter, icon: <FaBookOpen /> },
+            { key: 'completed', label: t.completedFilter, icon: <FaCircleCheck /> }
           ].map(({ key, label, icon }) => (
             <button
               key={key}
@@ -253,18 +257,18 @@ const ReadingHistory = () => {
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>Loading your reading journey...</p>
+            <p>{t.loadingReadingJourney}</p>
           </div>
         ) : filteredBooks.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📚</div>
-            <h3>No Books Found</h3>
+            <h3>{t.noBooksFoundReading}</h3>
             <p>
               {filterStatus === 'all'
-                ? 'Start your reading journey by adding books to your wishlist!'
+                ? t.startReadingJourney
                 : `No books marked as "${filterStatus}" yet.`}
             </p>
-            <Link to="/discover" className="discover-btn">Discover Books</Link>
+            <Link to="/discover" className="discover-btn">{t.discoverBooks}</Link>
           </div>
         ) : (
           <div className="books-grid">
@@ -294,18 +298,18 @@ const ReadingHistory = () => {
                   
                   <div className="book-info">
                     <h3 onClick={() => navigate(`/book/${book.book_id}`)}>
-                      {bookInfo?.title || 'Unknown Title'}
+                      {bookInfo?.title || t.unknownTitle}
                     </h3>
                     <p className="book-author">
-                      {bookInfo?.authors?.join(', ') || 'Unknown Author'}
+                      {bookInfo?.authors?.join(', ') || t.unknownAuthor}
                     </p>
                     
                     {bookInfo?.pageCount && (
-                      <p className="book-pages">{bookInfo.pageCount} pages</p>
+                      <p className="book-pages">{bookInfo.pageCount} {t.pages}</p>
                     )}
                     
                     <p className="book-added">
-                      Added {new Date(book.added_at || book.created_at).toLocaleDateString('en-US', { 
+                      {t.added} {new Date(book.added_at || book.created_at).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric', 
                         year: 'numeric' 
@@ -318,16 +322,16 @@ const ReadingHistory = () => {
                         onChange={(e) => updateStatus(book.book_id, e.target.value)}
                         className="status-select"
                       >
-                        <option value="wishlist">💫 Want to Read</option>
-                        <option value="reading">📖 Reading</option>
-                        <option value="completed">✅ Completed</option>
+                        <option value="wishlist">{`💫 ${t.wantToReadStatus}`}</option>
+                        <option value="reading">{`📖 ${t.readingStatus}`}</option>
+                        <option value="completed">{`✅ ${t.completedStatus}`}</option>
                       </select>
                       
                       <button 
                         className="view-btn"
                         onClick={() => navigate(`/book/${book.book_id}`)}
                       >
-                        <FaEye /> View
+                        <FaEye /> {t.view}
                       </button>
                     </div>
                   </div>

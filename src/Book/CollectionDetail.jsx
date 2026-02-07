@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import { toast } from 'react-toastify';
 import './CollectionDetail.css';
 
 const CollectionDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [collection, setCollection] = useState(null);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +70,7 @@ const CollectionDetail = () => {
   };
 
   const removeBook = async (bookId) => {
-    if (!confirm('Remove this book from the collection?')) return;
+    if (!confirm(t.confirmRemoveFromCollection)) return;
 
     try {
       const { error } = await supabase
@@ -77,10 +81,10 @@ const CollectionDetail = () => {
 
       if (error) throw error;
       setBooks(books.filter(b => b.book_id !== bookId));
-      toast.success('Book removed from collection');
+      toast.success(t.bookRemovedFromCollection);
     } catch (error) {
       console.error('Error removing book:', error);
-      toast.error('Failed to remove book');
+      toast.error(t.failedRemoveBook);
     }
   };
 
@@ -89,7 +93,7 @@ const CollectionDetail = () => {
       <div className="collection-detail-page">
         <div className="loading-state">
           <div className="spinner"></div>
-          <p>Loading collection...</p>
+          <p>{t.loadingCollection}</p>
         </div>
       </div>
     );
@@ -99,9 +103,9 @@ const CollectionDetail = () => {
     return (
       <div className="collection-detail-page">
         <div className="not-found">
-          <h2>Collection Not Found</h2>
-          <p>This collection doesn't exist or you don't have access to it.</p>
-          <Link to="/collections" className="back-link">Back to Collections</Link>
+          <h2>{t.collectionNotFound}</h2>
+          <p>{t.collectionNotFoundDesc}</p>
+          <Link to="/collections" className="back-link">{t.backToCollections}</Link>
         </div>
       </div>
     );
@@ -111,7 +115,7 @@ const CollectionDetail = () => {
     <div className="collection-detail-page">
       <div className="collection-detail-header" style={{ '--accent-color': collection.color || '#6366f1' }}>
         <Link to="/collections" className="back-btn">
-          ← Back to Collections
+          {t.backToCollections}
         </Link>
         
         <div className="collection-title">
@@ -127,7 +131,7 @@ const CollectionDetail = () => {
         <div className="collection-stats">
           <div className="stat">
             <span className="stat-value">{books.length}</span>
-            <span className="stat-label">Books</span>
+            <span className="stat-label">{t.books}</span>
           </div>
         </div>
       </div>
@@ -135,9 +139,9 @@ const CollectionDetail = () => {
       {books.length === 0 ? (
         <div className="empty-collection">
           <div className="empty-icon">📖</div>
-          <h3>No Books Yet</h3>
-          <p>Start adding books to this collection from any book page!</p>
-          <Link to="/discover" className="discover-btn">Discover Books</Link>
+          <h3>{t.noBooksYetCollection}</h3>
+          <p>{t.startAddingBooks}</p>
+          <Link to="/discover" className="discover-btn">{t.discoverBooks}</Link>
         </div>
       ) : (
         <div className="books-grid">
@@ -153,7 +157,7 @@ const CollectionDetail = () => {
                 <Link to={`/book/${book.book_id}`}>
                   <h4>{book.volumeInfo?.title || book.book_title}</h4>
                 </Link>
-                <p className="author">{book.volumeInfo?.authors?.join(', ') || 'Unknown Author'}</p>
+                <p className="author">{book.volumeInfo?.authors?.join(', ') || t.unknownAuthor}</p>
                 {book.notes && (
                   <p className="notes">{book.notes}</p>
                 )}
@@ -161,7 +165,7 @@ const CollectionDetail = () => {
                   className="remove-btn"
                   onClick={() => removeBook(book.book_id)}
                 >
-                  Remove
+                  {t.remove}
                 </button>
               </div>
             </div>

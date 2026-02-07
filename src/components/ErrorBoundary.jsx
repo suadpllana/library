@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import translations from '../i18n/translations';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -26,6 +27,8 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      const lang = localStorage.getItem('language') || 'en';
+      const t = translations[lang];
       return (
         <div style={{
           minHeight: '100vh',
@@ -52,13 +55,13 @@ class ErrorBoundary extends Component {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
-              Oops!
+              {t.oops}
             </h1>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#f87171' }}>
-              Something went wrong
+              {t.somethingWentWrong}
             </h2>
             <p style={{ color: '#a5a5c0', marginBottom: '2rem' }}>
-              We encountered an unexpected error. Don&apos;t worry, your data is safe.
+              {t.unexpectedError}
             </p>
             <button
               onClick={this.handleReset}
@@ -83,12 +86,12 @@ class ErrorBoundary extends Component {
                 e.target.style.boxShadow = '0 4px 15px rgba(99, 102, 241, 0.3)';
               }}
             >
-              Go Back Home
+              {t.goBackHome}
             </button>
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details style={{ marginTop: '2rem', textAlign: 'left' }}>
                 <summary style={{ cursor: 'pointer', color: '#6b6b8a' }}>
-                  Error Details (Development Only)
+                  {t.errorDetails}
                 </summary>
                 <pre style={{ 
                   marginTop: '1rem',

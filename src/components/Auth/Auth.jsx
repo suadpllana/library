@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../i18n/translations';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
 import './Auth.css';
@@ -20,6 +22,8 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, signUp, user, userRole } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
 
   // Check for password reset token in URL (from email link)
   useEffect(() => {
@@ -78,6 +82,19 @@ const Auth = () => {
     setSuccessMessage(null);
 
     try {
+      // Check if email exists in database first
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        setError('No account found with this email address.');
+        setLoading(false);
+        return;
+      }
+
       const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/') || 'https://suadpllana.github.io/library';
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${siteUrl}/#/auth`,
@@ -85,8 +102,8 @@ const Auth = () => {
       
       if (error) throw error;
       
-      setSuccessMessage('Password reset link sent! Please check your email.');
-      toast.success('Password reset link sent! Check your email.');
+      setSuccessMessage(t.passwordResetSent);
+      toast.success(t.passwordResetSent);
     } catch (error) {
       setError(error.message);
       toast.error(error.message);
@@ -102,8 +119,8 @@ const Auth = () => {
     setSuccessMessage(null);
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      toast.error('Passwords do not match');
+      setError(t.passwordsDoNotMatch);
+      toast.error(t.passwordsDoNotMatch);
       setLoading(false);
       return;
     }
@@ -135,8 +152,8 @@ const Auth = () => {
       
       if (error) throw error;
       
-      setSuccessMessage('Password updated successfully!');
-      toast.success('Password updated successfully! You can now sign in.');
+      setSuccessMessage(t.profileUpdated);
+      toast.success(t.profileUpdated);
       
       // Clear the hash and redirect to sign in
       setTimeout(() => {
@@ -171,8 +188,8 @@ const Auth = () => {
         
         // Validate passwords on signup
         if (password !== confirmPassword) {
-          setError('Passwords do not match');
-          toast.error('Passwords do not match');
+          setError(t.passwordsDoNotMatch);
+          toast.error(t.passwordsDoNotMatch);
           setLoading(false);
           return;
         }
@@ -226,7 +243,7 @@ const Auth = () => {
           }
         });
         if (error) throw error;
-        toast.success('Account created! Please check your email to confirm your account.');
+        toast.success(t.signUpSuccessCheck);
         setError('Please check your email to confirm your account');
         setEmail('');
         setPassword('');
@@ -238,12 +255,11 @@ const Auth = () => {
           password,
         });
         if (error) throw error;
-        toast.success('Successfully signed in!');
+        toast.success(t.signedInSuccess);
         navigate('/');
       }
     } catch (error) {
       setError(error.message);
-      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -293,63 +309,63 @@ const Auth = () => {
       <div className="auth-box">
         {isResetPassword ? (
           <>
-            <h2>Reset Password</h2>
+            <h2>{t.resetPasswordTitle}</h2>
             {error && <div className="error-message">{error}</div>}
             {successMessage && <div className="success-message">{successMessage}</div>}
             <form onSubmit={handleResetPassword}>
               <div className="form-group">
-                <label>New Password</label>
+                <label>{t.newPassword}</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter new password"
+                  placeholder={t.enterNewPassword}
                   required
                   minLength={6}
                 />
               </div>
               <div className="form-group">
-                <label>Confirm Password</label>
+                <label>{t.confirmPassword}</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
+                  placeholder={t.enterNewPasswordAgain}
                   required
                   minLength={6}
                 />
               </div>
               <button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
+                {loading ? t.updating : t.updatePassword}
               </button>
             </form>
           </>
         ) : isForgotPassword ? (
           /* Forgot Password Form */
           <>
-            <h2>Forgot Password</h2>
+            <h2>{t.forgotPasswordTitle}</h2>
             {error && <div className="error-message">{error}</div>}
             {successMessage && <div className="success-message">{successMessage}</div>}
             <p className="forgot-password-description">
-              Enter your email address and we'll send you a link to reset your password.
+              {t.enterEmailForReset}
             </p>
             <form onSubmit={handleForgotPassword}>
               <div className="form-group">
-                <label>Email</label>
+                <label>{t.email}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder={t.enterYourEmail}
                   required
                 />
               </div>
               <button type="submit" disabled={loading}>
-                {loading ? 'Sending...' : 'Send Reset Link'}
+                {loading ? t.sending : t.sendResetLink}
               </button>
             </form>
             <p>
-              Remember your password?{' '}
+              {t.rememberPassword}{' '}
               <button
                 className="switch-auth"
                 onClick={() => {
@@ -358,20 +374,20 @@ const Auth = () => {
                   setSuccessMessage(null);
                 }}
               >
-                Sign In
+                {t.signIn}
               </button>
             </p>
           </>
         ) : (
           /* Sign In / Sign Up Form */
           <>
-            <h2>{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
+            <h2>{isSignUp ? t.signUp : t.signIn}</h2>
             {error && <div className="error-message">{error}</div>}
             <form onSubmit={handleAuth}>
               {isSignUp && (
                 <>
                   <div className="form-group">
-                    <label>First Name</label>
+                    <label>{t.firstName}</label>
                     <input
                       type="text"
                       value={firstName}
@@ -380,7 +396,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Last Name</label>
+                    <label>{t.lastName}</label>
                     <input
                       type="text"
                       value={lastName}
@@ -395,7 +411,7 @@ const Auth = () => {
                 </>
               )}
               <div className="form-group">
-                <label>Email</label>
+                <label>{t.email}</label>
                 <input
                   type="email"
                   value={email}
@@ -404,7 +420,7 @@ const Auth = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Password</label>
+                <label>{t.password}</label>
                 <input
                   type="password"
                   value={password}
@@ -414,7 +430,7 @@ const Auth = () => {
               </div>
               {isSignUp && (
                 <div className="form-group">
-                  <label>Confirm Password</label>
+                  <label>{t.confirmPassword}</label>
                   <input
                     type="password"
                     value={confirmPassword}
@@ -431,19 +447,21 @@ const Auth = () => {
                     onClick={() => {
                       setIsForgotPassword(true);
                       setError(null);
+                      setEmail('');
+                      setPassword('');
                     }}
                   >
-                    Forgot Password?
+                    {t.forgotPassword}
                   </button>
                 </div>
               )}
               <button type="submit" disabled={loading}>
-                {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+                {loading ? t.loading : isSignUp ? t.signUp : t.signIn}
               </button>
             </form>
 
             <div className="divider">
-              <span>Or continue with</span>
+              <span>{t.orContinueWith}</span>
             </div>
 
             <button 
@@ -458,16 +476,16 @@ const Auth = () => {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              {isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
+              {isSignUp ? t.signUpWithGoogle : t.signInWithGoogle}
             </button>
 
             <p>
-              {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+              {isSignUp ? t.haveAccount + ' ' : t.noAccount + ' '}
               <button
                 className="switch-auth"
                 onClick={handleToggleAuth}
               >
-                {isSignUp ? 'Sign In' : 'Sign Up'}
+                {isSignUp ? t.signIn : t.signUp}
               </button>
             </p>
           </>

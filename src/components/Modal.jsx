@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import './Modal.css';
 
 /**
@@ -82,7 +83,7 @@ const Modal = ({ isOpen, onClose, title, children, className = '', size = 'mediu
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="accessible-modal-overlay" onClick={onClose}>
       <div
         ref={modalRef}
@@ -109,7 +110,8 @@ const Modal = ({ isOpen, onClose, title, children, className = '', size = 'mediu
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

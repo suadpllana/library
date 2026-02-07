@@ -74,6 +74,7 @@
   padding: 1rem 1.25rem;
   background: rgba(99, 102, 241, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.5rem;
 }
 
 .ai-chat-title {
@@ -112,21 +113,33 @@
 
 .header-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 260px;
+  scrollbar-width: none;
+}
+
+.header-actions::-webkit-scrollbar {
+  display: none;
 }
 
 .header-actions button {
   background: rgba(255, 255, 255, 0.05);
   border: none;
   color: #6b6b8a;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 .header-actions .clear-btn:hover {
@@ -135,7 +148,11 @@
 }
 
 .header-actions .close-btn {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+  margin-left: 2px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 6px 6px 0;
+  padding-left: 4px;
 }
 
 .header-actions .close-btn:hover {
@@ -443,4 +460,451 @@
   .quick-prompt {
     font-size: 0.7rem;
   }
+}
+
+/* ========================================
+   ENHANCED AI FEATURES
+   ======================================== */
+
+/* Active FAB state */
+.ai-fab.active {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+}
+
+.ai-msg-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Header action buttons */
+.header-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: #6b6b8a;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 0.75rem;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.header-action-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.header-action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.action-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: #10b981;
+  color: white;
+  font-size: 0.55rem;
+  font-weight: 700;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Search Bar */
+.ai-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(15, 15, 26, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ai-search-bar .search-icon {
+  color: #6b6b8a;
+  font-size: 0.8rem;
+}
+
+.ai-search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.ai-search-bar input::placeholder {
+  color: #4b4b6a;
+}
+
+.ai-search-bar button {
+  background: none;
+  border: none;
+  color: #6b6b8a;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.25rem;
+}
+
+.ai-search-bar button:hover {
+  color: #fff;
+}
+
+/* Side Views (History, Bookmarks, Reading List) */
+.ai-side-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.side-view-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.side-view-header .back-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: #a5a5c0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.side-view-header .back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.side-view-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.side-view-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.side-view-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.side-view-content::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 2px;
+}
+
+.side-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  height: 100%;
+}
+
+.side-empty .empty-icon {
+  font-size: 2rem;
+  color: #3b3b5c;
+  margin-bottom: 0.75rem;
+}
+
+.side-empty p {
+  color: #a5a5c0;
+  font-size: 0.9rem;
+  margin: 0 0 0.25rem;
+}
+
+.side-empty span {
+  color: #5b5b7a;
+  font-size: 0.75rem;
+}
+
+/* History items */
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 0.5rem;
+}
+
+.history-item:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-preview {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-meta {
+  font-size: 0.7rem;
+  color: #5b5b7a;
+}
+
+.history-delete {
+  background: none;
+  border: none;
+  color: #5b5b7a;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.25rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.history-item:hover .history-delete {
+  opacity: 1;
+}
+
+.history-delete:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* Bookmark items */
+.bookmark-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.bookmark-role {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.bookmark-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.bookmark-content p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #c0c0d0;
+  line-height: 1.4;
+}
+
+.bookmark-date {
+  font-size: 0.65rem;
+  color: #5b5b7a;
+}
+
+.bookmark-remove {
+  background: none;
+  border: none;
+  color: #5b5b7a;
+  cursor: pointer;
+  font-size: 0.65rem;
+  padding: 0.2rem;
+  flex-shrink: 0;
+}
+
+.bookmark-remove:hover {
+  color: #f87171;
+}
+
+/* Reading List items */
+.reading-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.reading-list-item:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.reading-list-cover {
+  width: 32px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.reading-list-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.reading-list-title {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #e0e0e0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reading-list-author {
+  font-size: 0.7rem;
+  color: #6b6b8a;
+}
+
+.reading-list-remove {
+  background: none;
+  border: none;
+  color: #5b5b7a;
+  cursor: pointer;
+  font-size: 0.65rem;
+  padding: 0.2rem;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.reading-list-item:hover .reading-list-remove {
+  opacity: 1;
+}
+
+.reading-list-remove:hover {
+  color: #f87171;
+}
+
+/* Message action buttons */
+.msg-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-top: -0.25rem;
+}
+
+.message:hover .msg-actions {
+  opacity: 1;
+}
+
+.msg-action-btn {
+  background: none;
+  border: none;
+  color: #5b5b7a;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.msg-action-btn:hover {
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.msg-action-btn.bookmarked {
+  color: #fbbf24;
+}
+
+/* Book result action buttons */
+.book-result-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.book-action-btn.add-reading {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.book-action-btn.add-reading:hover {
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Book chip group */
+.book-chip-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.chip-add-btn {
+  padding: 0.3rem 0.45rem;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  color: #34d399;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chip-add-btn:hover {
+  background: rgba(16, 185, 129, 0.35);
+  color: #fff;
+}
+
+.book-chip-group .book-chip {
+  border-radius: 8px 0 0 8px;
 }

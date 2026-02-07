@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import Nav from "./Book/Nav"
 import {HashRouter as Router, Routes, Route, Navigate, useLocation} from "react-router-dom";
 import {ToastContainer} from "react-toastify"
@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { supabase } from './lib/supabase';
 
 // Lazy-loaded route components for code splitting
 const Book = lazy(() => import("./Book/Book"));
@@ -28,6 +29,7 @@ const ReadingHistory = lazy(() => import('./Book/ReadingHistory'));
 const ReadingStats = lazy(() => import('./Book/ReadingStats'));
 const BookNotes = lazy(() => import('./Book/BookNotes'));
 const Community = lazy(() => import('./Book/Community'));
+const UsernameModal = lazy(() => import('./components/UsernameModal'));
 
 const LoadingFallback = () => (
   <div className="loading-screen" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -94,11 +96,50 @@ const AdminRoute = ({ children }) => {
 
 const UserLayout = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const isCommunity = location.pathname === '/community';
+  const [aiOpen, setAiOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [needsUsername, setNeedsUsername] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(true);
+
+  useEffect(() => {
+    const checkUsername = async () => {
+      if (!user) { setCheckingUsername(false); return; }
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single();
+        setNeedsUsername(!data?.username);
+      } catch {
+        setNeedsUsername(false);
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+    checkUsername();
+  }, [user]);
+
+  const handleAiToggle = (open) => {
+    setAiOpen(open);
+    if (open) setChatOpen(false);
+  };
+
+  const handleChatToggle = (open) => {
+    setChatOpen(open);
+    if (open) setAiOpen(false);
+  };
 
   return (
     <>
       <Nav />
+      {!checkingUsername && needsUsername && (
+        <Suspense fallback={null}>
+          <UsernameModal onComplete={() => setNeedsUsername(false)} />
+        </Suspense>
+      )}
       <Routes>
         <Route path="/" element={<Book />} />
         <Route path="/discover" element={<Discover />} />
@@ -117,8 +158,8 @@ const UserLayout = () => {
         <Route path="/notes" element={<BookNotes />} />
         <Route path="/community" element={<Community />} />
       </Routes>
-      {!isCommunity && <AiWidget />}
-      {!isCommunity && <ChatSupport />}
+      {!isCommunity && <AiWidget externalOpen={aiOpen} onToggle={handleAiToggle} />}
+      {!isCommunity && <ChatSupport externalOpen={chatOpen} onToggle={handleChatToggle} />}
     </>
   );
 };

@@ -4,11 +4,15 @@ import { FaArrowLeftLong, FaBook, FaChartBar, FaCalendarDays, FaTrophy, FaClock,
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import './ReadingStats.css';
 
 const ReadingStats = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalBooks: 0,
@@ -19,7 +23,7 @@ const ReadingStats = () => {
     reviewsWritten: 0,
     avgRating: 0,
     pagesRead: 0,
-    favoriteGenre: 'Not set',
+    favoriteGenre: t.notSet,
     readingGoal: 12,
     monthlyReading: Array(12).fill(0),
     genreDistribution: []
@@ -93,7 +97,7 @@ const ReadingStats = () => {
       const pagesRead = booksRead * 300;
 
       // Find most common genre
-      const favoriteGenre = genreDistribution.length > 0 ? genreDistribution[0].name : 'Not enough data';
+      const favoriteGenre = genreDistribution.length > 0 ? genreDistribution[0].name : t.notEnoughData;
 
       setStats({
         totalBooks,
@@ -111,7 +115,7 @@ const ReadingStats = () => {
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
-      toast.error('Failed to load statistics');
+      toast.error(t.failedLoadStats);
     } finally {
       setLoading(false);
     }
@@ -133,7 +137,7 @@ const ReadingStats = () => {
       <div className="reading-stats-page">
         <div className="stats-loading">
           <div className="loading-spinner"></div>
-          <p>Loading your statistics...</p>
+          <p>{t.loadingStats}</p>
         </div>
       </div>
     );
@@ -145,32 +149,32 @@ const ReadingStats = () => {
         className="back-link"
         onClick={() => navigate(-1)}
       >
-        <FaArrowLeftLong /> Go Back
+        <FaArrowLeftLong /> {t.goBack}
       </h3>
 
       <div className="stats-header">
         <div className="header-content">
-          <h1><FaChartBar /> Reading Statistics</h1>
-          <p>Track your reading journey with detailed insights</p>
+          <h1><FaChartBar /> {t.readingStats}</h1>
+          <p>{t.trackReadingHabits}</p>
         </div>
         <div className="time-filter">
           <button 
             className={timeRange === 'month' ? 'active' : ''} 
             onClick={() => setTimeRange('month')}
           >
-            This Month
+            {t.thisMonth}
           </button>
           <button 
             className={timeRange === 'year' ? 'active' : ''} 
             onClick={() => setTimeRange('year')}
           >
-            This Year
+            {t.thisYear}
           </button>
           <button 
             className={timeRange === 'all' ? 'active' : ''} 
             onClick={() => setTimeRange('all')}
           >
-            All Time
+            {t.allTime}
           </button>
         </div>
       </div>
@@ -183,7 +187,7 @@ const ReadingStats = () => {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.totalBooks}</span>
-            <span className="metric-label">Total Books</span>
+            <span className="metric-label">{t.totalBooksLabel}</span>
           </div>
         </div>
 
@@ -193,7 +197,7 @@ const ReadingStats = () => {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.booksRead}</span>
-            <span className="metric-label">Books Read</span>
+            <span className="metric-label">{t.booksReadStat}</span>
           </div>
         </div>
 
@@ -203,7 +207,7 @@ const ReadingStats = () => {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.booksReading}</span>
-            <span className="metric-label">Currently Reading</span>
+            <span className="metric-label">{t.currentlyReadingStat}</span>
           </div>
         </div>
 
@@ -213,7 +217,7 @@ const ReadingStats = () => {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.pagesRead.toLocaleString()}</span>
-            <span className="metric-label">Est. Pages Read</span>
+            <span className="metric-label">{t.estPagesRead}</span>
           </div>
         </div>
 
@@ -223,7 +227,7 @@ const ReadingStats = () => {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.reviewsWritten}</span>
-            <span className="metric-label">Reviews Written</span>
+            <span className="metric-label">{t.reviewsWrittenStat}</span>
           </div>
         </div>
 
@@ -233,7 +237,7 @@ const ReadingStats = () => {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.loansApproved}</span>
-            <span className="metric-label">Books Borrowed</span>
+            <span className="metric-label">{t.booksBorrowedStat}</span>
           </div>
         </div>
       </div>
@@ -242,7 +246,7 @@ const ReadingStats = () => {
       <div className="charts-grid">
         {/* Reading Goal Progress */}
         <div className="chart-card goal-card">
-          <h3><FaTrophy /> Reading Goal {new Date().getFullYear()}</h3>
+          <h3><FaTrophy /> {t.readingGoalTitle} {new Date().getFullYear()}</h3>
           <div className="goal-visualization">
             <div className="goal-circle">
               <svg viewBox="0 0 100 100">
@@ -271,11 +275,11 @@ const ReadingStats = () => {
               </div>
             </div>
             <div className="goal-info">
-              <p className="goal-percentage">{Math.round(readingGoalProgress)}% Complete</p>
+              <p className="goal-percentage">{Math.round(readingGoalProgress)}% {t.complete}</p>
               <p className="goal-remaining">
                 {stats.booksRead >= stats.readingGoal 
-                  ? '🎉 Goal achieved!' 
-                  : `${stats.readingGoal - stats.booksRead} books to go`}
+                  ? `🎉 ${t.goalAchieved}` 
+                  : `${stats.readingGoal - stats.booksRead} ${t.booksToGo}`}
               </p>
             </div>
           </div>
@@ -283,7 +287,7 @@ const ReadingStats = () => {
 
         {/* Monthly Reading Chart */}
         <div className="chart-card monthly-chart">
-          <h3><FaCalendarDays /> Books Added per Month</h3>
+          <h3><FaCalendarDays /> {t.booksAddedPerMonth}</h3>
           <div className="bar-chart">
             {months.map((month, index) => (
               <div key={month} className="bar-item">
@@ -305,11 +309,11 @@ const ReadingStats = () => {
 
         {/* Genre Distribution */}
         <div className="chart-card genre-chart">
-          <h3><FaBook /> Genre Distribution</h3>
+          <h3><FaBook /> {t.genreDistribution}</h3>
           {stats.genreDistribution.length === 0 ? (
             <div className="no-data">
-              <p>No genre data available yet.</p>
-              <p>Add more books to see your reading preferences!</p>
+              <p>{t.noGenreData}</p>
+              <p>{t.addMoreBooksGenre}</p>
             </div>
           ) : (
             <div className="genre-bars">
@@ -317,7 +321,7 @@ const ReadingStats = () => {
                 <div key={genre.name} className="genre-bar-item">
                   <div className="genre-info">
                     <span className="genre-name">{genre.name}</span>
-                    <span className="genre-count">{genre.count} books</span>
+                    <span className="genre-count">{genre.count} {t.books}</span>
                   </div>
                   <div className="genre-bar-wrapper">
                     <div 
@@ -336,25 +340,25 @@ const ReadingStats = () => {
 
         {/* Reading Status Distribution */}
         <div className="chart-card status-chart">
-          <h3><FaBookOpen /> Reading Status</h3>
+          <h3><FaBookOpen /> {t.readingStatusTitle}</h3>
           <div className="status-grid">
             <div className="status-item completed">
               <div className="status-circle">
                 <span className="status-number">{stats.booksRead}</span>
               </div>
-              <span className="status-label">Completed</span>
+              <span className="status-label">{t.completedStatus}</span>
             </div>
             <div className="status-item reading">
               <div className="status-circle">
                 <span className="status-number">{stats.booksReading}</span>
               </div>
-              <span className="status-label">Reading</span>
+              <span className="status-label">{t.readingStatus}</span>
             </div>
             <div className="status-item want">
               <div className="status-circle">
                 <span className="status-number">{stats.booksWantToRead}</span>
               </div>
-              <span className="status-label">Want to Read</span>
+              <span className="status-label">{t.wantToReadStatus}</span>
             </div>
           </div>
           
@@ -379,35 +383,35 @@ const ReadingStats = () => {
 
         {/* Insights Card */}
         <div className="chart-card insights-card">
-          <h3><FaFire /> Reading Insights</h3>
+          <h3><FaFire /> {t.readingInsights}</h3>
           <div className="insights-list">
             <div className="insight-item">
               <span className="insight-icon">📚</span>
               <div className="insight-content">
-                <span className="insight-title">Favorite Genre</span>
+                <span className="insight-title">{t.favoriteGenreLabel}</span>
                 <span className="insight-value">{stats.favoriteGenre}</span>
               </div>
             </div>
             <div className="insight-item">
               <span className="insight-icon">⭐</span>
               <div className="insight-content">
-                <span className="insight-title">Average Rating Given</span>
-                <span className="insight-value">{stats.avgRating || 'No ratings yet'}</span>
+                <span className="insight-title">{t.averageRatingGiven}</span>
+                <span className="insight-value">{stats.avgRating || t.noRatingsYet}</span>
               </div>
             </div>
             <div className="insight-item">
               <span className="insight-icon">📖</span>
               <div className="insight-content">
-                <span className="insight-title">Reading Pace</span>
+                <span className="insight-title">{t.readingPace}</span>
                 <span className="insight-value">
-                  ~{Math.round(stats.booksRead / Math.max(new Date().getMonth() + 1, 1))} books/month
+                  ~{Math.round(stats.booksRead / Math.max(new Date().getMonth() + 1, 1))} {t.booksPerMonth}
                 </span>
               </div>
             </div>
             <div className="insight-item">
               <span className="insight-icon">🎯</span>
               <div className="insight-content">
-                <span className="insight-title">Completion Rate</span>
+                <span className="insight-title">{t.completionRate}</span>
                 <span className="insight-value">
                   {stats.totalBooks > 0 ? Math.round((stats.booksRead / stats.totalBooks) * 100) : 0}%
                 </span>

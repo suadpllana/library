@@ -6,6 +6,8 @@ import { FaArrowLeft, FaGripVertical } from "react-icons/fa6";
 import { toast } from 'react-toastify';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 
 // Fix for react-beautiful-dnd with React 18 StrictMode
 const StrictModeDroppable = ({ children, ...props }) => {
@@ -27,6 +29,8 @@ const StrictModeDroppable = ({ children, ...props }) => {
 };
 
 const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, refreshWishlist }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [hasChanges, setHasChanges] = useState(false);
 
   async function persistPositions(currentList) {
@@ -41,10 +45,10 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, refreshWishlist 
       await Promise.all(updates);
       
       if (typeof refreshWishlist === 'function') await refreshWishlist();
-      toast.success('Wishlist order saved!');
+      toast.success(t.wishlistOrderSaved);
     } catch (err) {
       console.error('Error saving wishlist order:', err);
-      toast.error('Failed to save wishlist order');
+      toast.error(t.failedSaveWishlistOrder);
     }
   }
 
@@ -73,9 +77,9 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, refreshWishlist 
         <div className="wishlist-modal-header">
           <button className="back-btn" onClick={handleClose}>
             <FaArrowLeft />
-            <span>Back</span>
+            <span>{t.back}</span>
           </button>
-          <h2>Sort Your Wishlist</h2>
+          <h2>{t.sortYourWishlist}</h2>
           <button className="close-btn" onClick={handleClose}>
             <IoClose />
           </button>
@@ -94,7 +98,7 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, refreshWishlist 
                   {watchlist?.length === 0 ? (
                     <div className="empty-state">
                       <span className="empty-icon">📚</span>
-                      <p>Your wishlist is empty</p>
+                      <p>{t.emptyWishlist}</p>
                     </div>
                   ) : (
                     watchlist?.map((book, index) => (
@@ -117,7 +121,7 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, refreshWishlist 
                             />
                             <div className="book-details">
                               <h4>{book.title}</h4>
-                              <p>{(book.authors || []).join(", ") || "Unknown Author"}</p>
+                              <p>{(book.authors || []).join(", ") || t.unknownAuthor}</p>
                             </div>
                           </div>
                         )}
@@ -134,10 +138,10 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, refreshWishlist 
         {/* Footer */}
         <div className="wishlist-modal-footer">
           <p className="hint-text">
-            <MdDragIndicator /> Drag items to reorder your reading priority
+            <MdDragIndicator /> {t.dragToReorder}
           </p>
           <button className="save-btn" onClick={handleClose}>
-            {hasChanges ? 'Save & Close' : 'Close'}
+            {hasChanges ? t.saveAndClose : t.close}
           </button>
         </div>
       </div>

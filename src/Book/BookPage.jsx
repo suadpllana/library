@@ -5,8 +5,12 @@ import { toast } from "react-toastify";
 import { FaArrowLeftLong, FaStar, FaRegStar, FaTrash } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
 import AddToCollectionModal from './AddToCollectionModal';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 
 const BookPage = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const location = useLocation();
   const { id: urlId } = useParams();
   // Use state so we can fetch book details when navigated directly via URL
@@ -92,7 +96,7 @@ const BookPage = () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        toast.error('Please sign in to request a loan');
+        toast.error(t.pleaseSignIn);
         return;
       }
 
@@ -101,7 +105,7 @@ const BookPage = () => {
         .insert({
           user_id: user.id,
           book_id: id,
-          book_title: book.title || 'Unknown Title',
+          book_title: book.title || t.unknownTitle,
           book_authors: book.authors || [],
           book_image: book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image',
           status: 'pending'
@@ -157,7 +161,7 @@ const BookPage = () => {
       
       if (authError || !user) {
         console.error('Authentication error:', authError);
-        toast.error('Please sign in to manage your wishlist');
+        toast.error(t.pleaseSignIn);
         return;
       }
 
@@ -229,44 +233,45 @@ const BookPage = () => {
 
       // Fetch user profiles for reviews
       const userIds = [...new Set(data?.map(r => r.user_id) || [])];
+      const profilesMap = {};
+      
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, username')
           .in('id', userIds);
 
-        const profilesMap = {};
         profiles?.forEach(p => { profilesMap[p.id] = p; });
+      }
 
-        const reviewsWithProfiles = (data || []).map(review => ({
-          ...review,
-          user_name: review.is_anonymous 
-            ? 'Anonymous' 
-            : (profilesMap[review.user_id] 
-                ? `${profilesMap[review.user_id].first_name} ${profilesMap[review.user_id].last_name || ''}`.trim()
-                : 'Anonymous')
-        }));
+      const reviewsWithProfiles = (data || []).map(review => ({
+        ...review,
+        user_name: review.is_anonymous 
+          ? t.anonymous 
+          : (profilesMap[review.user_id] 
+              ? (profilesMap[review.user_id].username 
+                  ? `@${profilesMap[review.user_id].username}`
+                  : `${profilesMap[review.user_id].first_name} ${profilesMap[review.user_id].last_name || ''}`.trim())
+              : (review.reviewer_name || t.aReader))
+      }));
 
-        setReviews(reviewsWithProfiles);
+      setReviews(reviewsWithProfiles);
 
-        // Calculate average rating
-        if (reviewsWithProfiles.length > 0) {
-          const avg = reviewsWithProfiles.reduce((sum, r) => sum + r.rating, 0) / reviewsWithProfiles.length;
-          setAverageRating(avg);
+      // Calculate average rating
+      if (reviewsWithProfiles.length > 0) {
+        const avg = reviewsWithProfiles.reduce((sum, r) => sum + r.rating, 0) / reviewsWithProfiles.length;
+        setAverageRating(avg);
+      }
+
+      // Check if current user has reviewed
+      if (user) {
+        const myReview = reviewsWithProfiles.find(r => r.user_id === user.id);
+        if (myReview) {
+          setUserReview(myReview);
+          setReviewRating(myReview.rating);
+          setReviewText(myReview.review_text || '');
+          setIsAnonymous(myReview.is_anonymous || false);
         }
-
-        // Check if current user has reviewed
-        if (user) {
-          const myReview = reviewsWithProfiles.find(r => r.user_id === user.id);
-          if (myReview) {
-            setUserReview(myReview);
-            setReviewRating(myReview.rating);
-            setReviewText(myReview.review_text || '');
-            setIsAnonymous(myReview.is_anonymous || false);
-          }
-        }
-      } else {
-        setReviews([]);
       }
     } catch (error) {
       console.error('Error fetching reviews:', error);
@@ -284,17 +289,29 @@ const BookPage = () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        toast.error('Please sign in to leave a review');
+        toast.error(t.pleaseSignIn);
         return;
       }
 
+      // Fetch the user's profile name to store with the review
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
+      
+      const reviewerName = profile 
+        ? `${profile.first_name} ${profile.last_name || ''}`.trim() 
+        : t.aReader;
+
       const reviewData = {
         book_id: id,
-        book_title: book.title || 'Unknown Title',
+        book_title: book.title || t.unknownTitle,
         user_id: user.id,
         rating: reviewRating,
         review_text: reviewText.trim(),
-        is_anonymous: isAnonymous
+        is_anonymous: isAnonymous,
+        reviewer_name: reviewerName
       };
 
       if (userReview) {
@@ -305,12 +322,13 @@ const BookPage = () => {
             rating: reviewRating,
             review_text: reviewText.trim(),
             is_anonymous: isAnonymous,
+            reviewer_name: reviewerName,
             updated_at: new Date().toISOString()
           })
           .eq('id', userReview.id);
 
         if (error) throw error;
-        toast.success('Review updated successfully!');
+        toast.success(t.reviewUpdated);
       } else {
         // Create new review
         const { error } = await supabase
@@ -318,14 +336,14 @@ const BookPage = () => {
           .insert(reviewData);
 
         if (error) throw error;
-        toast.success('Review submitted successfully!');
+        toast.success(t.reviewSubmitted);
       }
 
       setShowReviewForm(false);
       fetchReviews();
     } catch (error) {
       console.error('Error submitting review:', error);
-      toast.error('Failed to submit review');
+      toast.error(t.failedSubmitReview);
     } finally {
       setSubmittingReview(false);
     }
@@ -334,7 +352,7 @@ const BookPage = () => {
   const handleDeleteReview = async () => {
     if (!userReview) return;
     
-    if (!confirm('Are you sure you want to delete your review?')) return;
+    if (!confirm(t.confirmDeleteReview)) return;
 
     try {
       const { data, error } = await supabase
@@ -351,14 +369,14 @@ const BookPage = () => {
         return;
       }
 
-      toast.success('Review deleted');
+      toast.success(t.reviewDeleted);
       setUserReview(null);
       setReviewRating(0);
       setReviewText('');
       fetchReviews();
     } catch (error) {
       console.error('Error deleting review:', error);
-      toast.error('Failed to delete review');
+      toast.error(t.failedDeleteReview);
     }
   };
 
@@ -400,15 +418,15 @@ const BookPage = () => {
           <div className="book-image">
             <img
               src={book.imageLinks?.smallThumbnail || 'https://placehold.co/128x192?text=No+Image'}
-              alt={book.title || 'No Title'}
+              alt={book.title || t.noTitle}
             />
           </div>
           <div className="book-details">
-            <h1>{book.title || 'Unknown Title'}</h1>
-            <p className="author" onClick={() => book.authors?.[0] && navigate(`/authors/${book.authors[0]}`)} style={{ cursor: book.authors?.[0] ? 'pointer' : 'default' }}>by {book.authors?.join(', ') || 'Unknown Author'}</p>
+            <h1>{book.title || t.unknownTitle}</h1>
+            <p className="author" onClick={() => book.authors?.[0] && navigate(`/authors/${book.authors[0]}`)} style={{ cursor: book.authors?.[0] ? 'pointer' : 'default' }}>{t.by} {book.authors?.join(', ') || t.unknownAuthor}</p>
             
             <div className="description">
-              <h2>Description</h2>
+              <h2>{t.description}</h2>
               <p>
                 {isFullDescription ? description : shortDescription}
                 {description.length > 150 && (
@@ -417,49 +435,49 @@ const BookPage = () => {
                     onClick={() => setIsFullDescription(!isFullDescription)}
                     aria-expanded={isFullDescription}
                   >
-                    {isFullDescription ? 'Read Less' : 'Read More'}
+                    {isFullDescription ? t.readLess : t.readMore}
                   </button>
                 )}
               </p>
             </div>
             <div className="additional-info">
-              <p><strong>ISBN:</strong> {book.industryIdentifiers?.[0]?.identifier || 'Not available'}</p>
+              <p><strong>{t.isbnColon}</strong> {book.industryIdentifiers?.[0]?.identifier || t.notAvailable}</p>
             </div>
             <div className="publication-info">
-              <p><strong>Publisher:</strong> {book.publisher || 'Unknown'}</p>
-              <p><strong>Published Date:</strong> {book.publishedDate || 'Unknown'}</p>
-              <p><strong>Categories:</strong> {book.categories?.join(', ') || 'None'}</p>
+              <p><strong>{t.publisherColon}</strong> {book.publisher || t.unknown}</p>
+              <p><strong>{t.publishedDateColon}</strong> {book.publishedDate || t.unknown}</p>
+              <p><strong>{t.categoriesColon}</strong> {book.categories?.join(', ') || t.none}</p>
               {averageRating > 0 && (
                 <p>
-                  <strong>Average Rating:</strong> {averageRating.toFixed(1)} / 5 <FaStar color='orange' /> ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                  <strong>{t.averageRatingColon}</strong> {averageRating.toFixed(1)} / 5 <FaStar color='orange' /> ({reviews.length} {reviews.length === 1 ? t.review : t.reviews})
                 </p>
               )}
             </div>
             
             <div className="button-container">
               <a href={book.previewLink || '#'} target="_blank" rel="noopener noreferrer">
-                <button className="more-info">More Info</button>
+                <button className="more-info">{t.moreInfo}</button>
               </a>
               <button 
                 className={`watchlist-button ${isInWatchlist ? 'remove' : ''}`}
                 onClick={handleWatchlistToggle}
               >
-                {isInWatchlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                {isInWatchlist ? t.removeFromWishlist : t.addToWishlist}
               </button>
               <button 
                 className="collection-button"
                 onClick={() => setShowCollectionModal(true)}
               >
-                📚 Add to Collection
+                📚 {t.addToCollection}
               </button>
               <button 
                 className={`loan-button ${loanStatus === 'pending' ? 'pending' : ''} ${loanStatus === 'approved' ? 'approved' : ''}`}
                 onClick={handleRequestLoan}
                 disabled={isRequestingLoan || loanStatus === 'pending' || loanStatus === 'approved'}
               >
-                {loanStatus === 'pending' ? '⏳ Loan Pending' : 
-                 loanStatus === 'approved' ? '✓ Loan Approved' : 
-                 isRequestingLoan ? 'Requesting...' : '📚 Request Loan'}
+                {loanStatus === 'pending' ? `⏳ ${t.loanPendingBtn}` : 
+                 loanStatus === 'approved' ? `✓ ${t.loanApprovedBtn}` : 
+                 isRequestingLoan ? t.requestingBtn : `📚 ${t.requestLoanBtn}`}
               </button>
             </div>
             <button 
@@ -478,12 +496,12 @@ const BookPage = () => {
                 fontSize: '1rem'
               }}
             >
-              <FaArrowLeftLong /> Go Back
+              <FaArrowLeftLong /> {t.goBack}
             </button>
           </div>
         </div>
       ) : (
-        <p>Something went wrong</p>
+        <p>{t.somethingWentWrongPage}</p>
       )}
 
       {/* Reviews Section */}
@@ -491,14 +509,14 @@ const BookPage = () => {
         <div className="reviews-section">
           <div className="reviews-header">
             <div className="reviews-title">
-              <h2>⭐ Reviews & Ratings</h2>
+              <h2>⭐ {t.reviewsAndRatings}</h2>
               {reviews.length > 0 && (
                 <div className="average-rating">
                   <span className="rating-number">{averageRating.toFixed(1)}</span>
                   <div className="rating-stars">
                     {renderStars(Math.round(averageRating))}
                   </div>
-                  <span className="review-count">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
+                  <span className="review-count">({reviews.length} {reviews.length === 1 ? t.review : t.reviews})</span>
                 </div>
               )}
             </div>
@@ -508,7 +526,7 @@ const BookPage = () => {
                 className="write-review-btn"
                 onClick={() => setShowReviewForm(true)}
               >
-                {userReview ? '✏️ Edit Review' : '✍️ Write Review'}
+                {userReview ? `✏️ ${t.editReview}` : `✍️ ${t.writeReviewBtn}`}
               </button>
             )}
           </div>
@@ -516,21 +534,21 @@ const BookPage = () => {
           {/* Review Form */}
           {showReviewForm && (
             <div className="review-form">
-              <h3>{userReview ? 'Edit Your Review' : 'Write a Review'}</h3>
+              <h3>{userReview ? t.editYourReview : t.writeAReview}</h3>
               
               <div className="rating-input">
-                <label>Your Rating:</label>
+                <label>{t.yourRating}</label>
                 <div className="star-input">
                   {renderStars(reviewRating, true, 'large')}
                 </div>
               </div>
 
               <div className="review-text-input">
-                <label>Your Review (optional):</label>
+                <label>{t.yourReviewOptional}</label>
                 <textarea
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
-                  placeholder="Share your thoughts about this book..."
+                  placeholder={t.shareThoughts}
                   rows={4}
                 />
               </div>
@@ -542,11 +560,11 @@ const BookPage = () => {
                     checked={isAnonymous}
                     onChange={(e) => setIsAnonymous(e.target.checked)}
                   />
-                  <span>Post as Anonymous</span>
+                  <span>{t.postAsAnonymous}</span>
                   <small className="anonymous-hint">
                     {isAnonymous 
-                      ? 'Your name will be hidden from other users' 
-                      : 'Your name will be visible to other users'}
+                      ? t.nameHidden 
+                      : t.nameVisible}
                   </small>
                 </label>
               </div>
@@ -567,14 +585,14 @@ const BookPage = () => {
                     }
                   }}
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 {userReview && (
                   <button 
                     className="delete-btn"
                     onClick={handleDeleteReview}
                   >
-                    <FaTrash /> Delete
+                    <FaTrash /> {t.delete}
                   </button>
                   
                 )}
@@ -583,7 +601,7 @@ const BookPage = () => {
                   onClick={handleSubmitReview}
                   disabled={submittingReview || reviewRating === 0}
                 >
-                  {submittingReview ? 'Submitting...' : userReview ? 'Update Review' : 'Submit Review'}
+                  {submittingReview ? t.submitting : userReview ? t.updateReview : t.submitReview}
                 </button>
               </div>
             </div>
@@ -593,7 +611,7 @@ const BookPage = () => {
           <div className="reviews-list">
             {reviews.length === 0 ? (
               <div className="no-reviews">
-                <p>No reviews yet. Be the first to review this book!</p>
+                <p>{t.noReviewsYet}</p>
               </div>
             ) : (
               reviews.map(review => (

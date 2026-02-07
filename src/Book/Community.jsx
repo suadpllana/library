@@ -21,12 +21,12 @@ const EMOJI_LIST = ['👍', '❤️', '😂', '😮', '😢', '🔥', '📚', '�
 
 // Channel definitions
 const CHANNELS = [
-  { id: 'general', name: 'General', icon: <FaComments />, description: 'General book discussions' },
-  { id: 'recommendations', name: 'Recommendations', icon: <FaLightbulb />, description: 'Share and get book recommendations' },
-  { id: 'reviews', name: 'Reviews', icon: <FaStar />, description: 'Discuss and share book reviews' },
-  { id: 'reading-now', name: 'Currently Reading', icon: <FaBookOpen />, description: 'What are you reading?' },
-  { id: 'quotes', name: 'Favorite Quotes', icon: <FaQuoteLeft />, description: 'Share memorable quotes' },
-  { id: 'announcements', name: 'Announcements', icon: <FaShieldAlt />, description: 'Official announcements', adminOnly: true },
+  { id: 'general', nameKey: 'generalChannel', icon: <FaComments />, descKey: 'generalChannelDesc' },
+  { id: 'recommendations', nameKey: 'recommendationsChannel', icon: <FaLightbulb />, descKey: 'recommendationsChannelDesc' },
+  { id: 'reviews', nameKey: 'reviewsChannel', icon: <FaStar />, descKey: 'reviewsChannelDesc' },
+  { id: 'reading-now', nameKey: 'currentlyReadingChannel', icon: <FaBookOpen />, descKey: 'currentlyReadingChannelDesc' },
+  { id: 'quotes', nameKey: 'quotesChannel', icon: <FaQuoteLeft />, descKey: 'quotesChannelDesc' },
+  { id: 'announcements', nameKey: 'announcementsChannel', icon: <FaShieldAlt />, descKey: 'announcementsChannelDesc', adminOnly: true },
 ];
 
 const Community = () => {
@@ -36,6 +36,8 @@ const Community = () => {
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const typingChannelRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   // State
   const [activeChannel, setActiveChannel] = useState('general');
@@ -88,7 +90,7 @@ const Community = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, role')
+        .select('id, first_name, last_name, role, username')
         .eq('id', userId)
         .single();
 
@@ -130,7 +132,7 @@ const Community = () => {
         const userIds = [...new Set(data.map(m => m.user_id))];
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, role')
+          .select('id, first_name, last_name, role, username')
           .in('id', userIds);
 
         const profilesMap = {};
@@ -182,7 +184,7 @@ const Community = () => {
       setTimeout(() => scrollToBottom(false), 100);
     } catch (error) {
       console.error('Error fetching messages:', error);
-      toast.error('Failed to load messages');
+      toast.error(t('failedLoadMessages'));
     } finally {
       setLoading(false);
     }
@@ -202,7 +204,19 @@ const Community = () => {
         filter: `channel=eq.${activeChannel}`
       }, async (payload) => {
         if (payload.eventType === 'INSERT') {
-          // Fetch the profile for the new message
+          // Skip if this message was already added optimistically (own message)
+          if (payload.new.user_id === user?.id) {
+            setMessages(prev => {
+              const alreadyExists = prev.some(m => m.id === payload.new.id);
+              if (alreadyExists) return prev;
+              // Replace temp message if still present
+              const tempIdx = prev.findIndex(m => String(m.id).startsWith('temp-') && m.user_id === user.id);
+              if (tempIdx !== -1) return prev; // Already handled by sendMessage
+              return prev;
+            });
+            return;
+          }
+          // Fetch the profile for the new message from another user
           const profile = await fetchUserProfile(payload.new.user_id);
           const newMsg = { ...payload.new, profiles: profile };
           
@@ -251,18 +265,49 @@ const Community = () => {
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED' && user) {
           const profile = await fetchUserProfile(user.id);
+          const displayName = profile?.username
+            ? `@${profile.username}`
+            : (profile
+              ? (`${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user.email?.split('@')[0] || 'A Member')
+              : (user.email?.split('@')[0] || 'A Member'));
           await presenceChannel.track({
             user_id: user.id,
-            name: profile ? `${profile.first_name} ${profile.last_name}` : 'User',
+            name: displayName,
             role: profile?.role || 'user',
             online_at: new Date().toISOString(),
           });
         }
       });
 
+    // Typing broadcast channel
+    const typingChannel = supabase.channel(`typing_${activeChannel}`);
+    
+    typingChannel
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.user_id === user?.id) return;
+        setTypingUsers(prev => {
+          const exists = prev.find(u => u === payload.name);
+          if (exists) return prev;
+          return [...prev, payload.name];
+        });
+        // Remove after 3 seconds
+        setTimeout(() => {
+          setTypingUsers(prev => prev.filter(u => u !== payload.name));
+        }, 3000);
+      })
+      .on('broadcast', { event: 'stop_typing' }, ({ payload }) => {
+        setTypingUsers(prev => prev.filter(u => u !== payload.name));
+      })
+      .subscribe();
+
+    // Store channel ref for sending typing events
+    typingChannelRef.current = typingChannel;
+
     return () => {
       subscription.unsubscribe();
       presenceChannel.unsubscribe();
+      typingChannel.unsubscribe();
+      typingChannelRef.current = null;
     };
   }, [activeChannel, user, fetchMessages, fetchUserProfile, scrollToBottom]);
 
@@ -280,24 +325,27 @@ const Community = () => {
     const MIN_MESSAGE_LENGTH = 1;
     
     if (trimmedMessage.length < MIN_MESSAGE_LENGTH) {
-      toast.error('Message is too short');
+      toast.error(t('messageTooShort'));
       return;
     }
     
     if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
-      toast.error(`Message is too long. Maximum ${MAX_MESSAGE_LENGTH} characters allowed.`);
+      toast.error(t('messageTooLong').replace('{max}', MAX_MESSAGE_LENGTH));
       return;
     }
     
     const channel = CHANNELS.find(c => c.id === activeChannel);
     if (channel?.adminOnly && !isAdmin) {
-      toast.error('Only admins can post in this channel');
+      toast.error(t('adminOnlyChannel'));
       return;
     }
 
     setSending(true);
     
     try {
+      // Get the current user's profile for optimistic insert
+      const currentProfile = userProfilesRef.current[user.id] || await fetchUserProfile(user.id);
+
       const messageData = {
         user_id: user.id,
         channel: activeChannel,
@@ -308,18 +356,51 @@ const Community = () => {
         is_edited: false,
       };
 
-      const { error } = await supabase
-        .from('community_messages')
-        .insert(messageData);
+      // Optimistic insert — display message immediately with the user's profile
+      const optimisticId = `temp-${Date.now()}`;
+      const optimisticMsg = {
+        ...messageData,
+        id: optimisticId,
+        created_at: new Date().toISOString(),
+        profiles: currentProfile,
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      scrollToBottom();
 
-      if (error) throw error;
+      const { data: inserted, error } = await supabase
+        .from('community_messages')
+        .insert(messageData)
+        .select()
+        .single();
+
+      if (error) {
+        // Remove optimistic message on failure
+        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        throw error;
+      }
+
+      // Replace optimistic message with the real one (keep profile)
+      setMessages(prev => prev.map(m =>
+        m.id === optimisticId ? { ...inserted, profiles: currentProfile } : m
+      ));
 
       setNewMessage('');
       setReplyingTo(null);
       messageInputRef.current?.focus();
+
+      // Stop typing broadcast
+      if (typingChannelRef.current && user) {
+        const profile = userProfilesRef.current[user.id];
+        const name = profile?.username || (`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()) || user.email?.split('@')[0] || 'Someone';
+        typingChannelRef.current.send({
+          type: 'broadcast',
+          event: 'stop_typing',
+          payload: { user_id: user.id, name }
+        });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      toast.error(t('failedSendCommunity'));
     } finally {
       setSending(false);
     }
@@ -334,7 +415,7 @@ const Community = () => {
     // Apply same validation
     const MAX_MESSAGE_LENGTH = 2000;
     if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
-      toast.error(`Message is too long. Maximum ${MAX_MESSAGE_LENGTH} characters allowed.`);
+      toast.error(t('messageTooLong').replace('{max}', MAX_MESSAGE_LENGTH));
       return;
     }
 
@@ -353,10 +434,10 @@ const Community = () => {
 
       setEditingMessage(null);
       setNewMessage('');
-      toast.success('Message updated');
+      toast.success(t('messageEdited'));
     } catch (error) {
       console.error('Error editing message:', error);
-      toast.error('Failed to edit message');
+      toast.error(t('failedEditMessage'));
     }
   };
 
@@ -371,10 +452,10 @@ const Community = () => {
         .eq('id', message.id);
 
       if (error) throw error;
-      toast.success('Message deleted');
+      toast.success(t('messageDeleted'));
     } catch (error) {
       console.error('Error deleting message:', error);
-      toast.error('Failed to delete message');
+      toast.error(t('failedDeleteMessage'));
     }
     setContextMenu({ show: false, x: 0, y: 0, message: null });
   };
@@ -390,10 +471,10 @@ const Community = () => {
         .eq('id', message.id);
 
       if (error) throw error;
-      toast.success(message.is_pinned ? 'Message unpinned' : 'Message pinned');
+      toast.success(message.is_pinned ? t('messageUnpinned') : t('messagePinned'));
     } catch (error) {
       console.error('Error pinning message:', error);
-      toast.error('Failed to pin message');
+      toast.error(t('failedPinMessage'));
     }
     setContextMenu({ show: false, x: 0, y: 0, message: null });
   };
@@ -450,12 +531,12 @@ const Community = () => {
 
       if (error) throw error;
       
-      toast.success('Report submitted. Thank you for helping keep our community safe.');
+      toast.success(t('thankYouReport'));
       setReportModal({ show: false, message: null });
       setReportReason('');
     } catch (error) {
       console.error('Error reporting message:', error);
-      toast.error('Failed to submit report');
+      toast.error(t('failedReport'));
     }
   };
 
@@ -481,6 +562,30 @@ const Community = () => {
   const handleInputChange = async (e) => {
     const value = e.target.value;
     setNewMessage(value);
+
+    // Broadcast typing indicator
+    if (typingChannelRef.current && user) {
+      const profile = userProfilesRef.current[user.id];
+      const displayName = profile
+        ? (`${profile.username || ''} || ${profile.first_name || ''} ${profile.last_name || ''}`.trim())
+        : (user.email?.split('@')[0] || 'Someone');
+      const name = profile?.username || (`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()) || user.email?.split('@')[0] || 'Someone';
+      
+      typingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { user_id: user.id, name }
+      });
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        typingChannelRef.current?.send({
+          type: 'broadcast',
+          event: 'stop_typing',
+          payload: { user_id: user.id, name }
+        });
+      }, 3000);
+    }
 
     // Check for @ mentions
     const lastAtIndex = value.lastIndexOf('@');
@@ -554,10 +659,14 @@ const Community = () => {
     });
   };
 
-  // Get user display name
+  // Get user display name — prefer username for privacy
   const getUserDisplayName = (profile) => {
-    if (!profile) return 'Unknown User';
-    return `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User';
+    if (!profile) return 'A Member';
+    if (profile.username) return `@${profile.username}`;
+    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+    if (fullName) return fullName;
+    if (profile.email) return profile.email.split('@')[0];
+    return 'A Member';
   };
 
   // Format timestamp
@@ -582,27 +691,27 @@ const Community = () => {
       {/* Sidebar */}
       <aside className="community-sidebar">
         <div className="sidebar-header">
-          <h2><FaUsers /> Community</h2>
+          <h2><FaUsers /> {t('community')}</h2>
           <span className="online-count">
             <span className="online-dot"></span>
-            {onlineUsers.length} online
+            {onlineUsers.length} {t('onlineNow')}
           </span>
         </div>
 
         {/* Channels */}
         <div className="channels-section">
-          <h3><FaHashtag /> Channels</h3>
+          <h3><FaHashtag /> {t('channels')}</h3>
           <ul className="channel-list">
             {CHANNELS.map(channel => (
               <li 
                 key={channel.id}
                 className={`channel-item ${activeChannel === channel.id ? 'active' : ''} ${channel.adminOnly ? 'admin-only' : ''}`}
                 onClick={() => !channel.adminOnly || isAdmin ? setActiveChannel(channel.id) : null}
-                title={channel.description}
+                title={t(channel.descKey)}
               >
                 <span className="channel-icon">{channel.icon}</span>
-                <span className="channel-name">{channel.name}</span>
-                {channel.adminOnly && <FaCrown className="admin-badge" title="Admin only" />}
+                <span className="channel-name">{t(channel.nameKey)}</span>
+                {channel.adminOnly && <FaCrown className="admin-badge" title={t('adminOnlyBadge')} />}
                 {unreadCount[channel.id] > 0 && (
                   <span className="unread-badge">{unreadCount[channel.id]}</span>
                 )}
@@ -614,7 +723,7 @@ const Community = () => {
         {/* Online Users */}
         <div className="online-users-section">
           <h3 onClick={() => setShowUserList(!showUserList)}>
-            <FaGlobe /> Online Members
+            <FaGlobe /> {t('onlineMembers')}
             <span className="toggle-icon">{showUserList ? '−' : '+'}</span>
           </h3>
           {showUserList && (
@@ -632,13 +741,13 @@ const Community = () => {
                   <span className="user-name">{u.name}</span>
                   {u.role === 'admin' && (
                     <span className="role-badge admin">
-                      <FaShieldAlt /> Admin
+                      <FaShieldAlt /> {t('adminRole')}
                     </span>
                   )}
                 </li>
               ))}
               {onlineUsers.length === 0 && (
-                <li className="no-users">No one else online</li>
+                <li className="no-users">{t('noOneOnline')}</li>
               )}
             </ul>
           )}
@@ -646,12 +755,12 @@ const Community = () => {
 
         {/* Community Guidelines */}
         <div className="community-guidelines">
-          <h4><FaInfoCircle /> Guidelines</h4>
+          <h4><FaInfoCircle /> {t('communityGuidelines')}</h4>
           <ul>
-            <li>Be respectful to others</li>
-            <li>No spoilers without warnings</li>
-            <li>Stay on topic in channels</li>
-            <li>Have fun discussing books!</li>
+            <li>{t('beRespectful')}</li>
+            <li>{t('noSpoilers')}</li>
+            <li>{t('stayOnTopic')}</li>
+            <li>{t('haveFun')}</li>
           </ul>
         </div>
       </aside>
@@ -663,16 +772,16 @@ const Community = () => {
           <div className="channel-info">
             <h2>
               {CHANNELS.find(c => c.id === activeChannel)?.icon}
-              {CHANNELS.find(c => c.id === activeChannel)?.name}
+              {t(CHANNELS.find(c => c.id === activeChannel)?.nameKey)}
             </h2>
-            <p>{CHANNELS.find(c => c.id === activeChannel)?.description}</p>
+            <p>{t(CHANNELS.find(c => c.id === activeChannel)?.descKey)}</p>
           </div>
           <div className="channel-actions">
             {pinnedMessages.length > 0 && (
               <button 
                 className={`action-btn ${showPinnedMessages ? 'active' : ''}`}
                 onClick={() => setShowPinnedMessages(!showPinnedMessages)}
-                title="Pinned messages"
+                title={t('pinnedMessagesTitle')}
               >
                 <FaThumbtack />
                 <span className="badge">{pinnedMessages.length}</span>
@@ -681,7 +790,7 @@ const Community = () => {
             <button 
               className={`action-btn ${showSearch ? 'active' : ''}`}
               onClick={() => setShowSearch(!showSearch)}
-              title="Search messages"
+              title={t('searchMessagesTitle')}
             >
               <FaSearch />
             </button>
@@ -694,7 +803,7 @@ const Community = () => {
             <FaSearch />
             <input
               type="text"
-              placeholder="Search messages..."
+              placeholder={t('searchMessages')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoFocus
@@ -711,7 +820,7 @@ const Community = () => {
         {showPinnedMessages && pinnedMessages.length > 0 && (
           <div className="pinned-messages-panel">
             <div className="panel-header">
-              <h3><FaThumbtack /> Pinned Messages</h3>
+              <h3><FaThumbtack /> {t('pinnedMessages')}</h3>
               <button onClick={() => setShowPinnedMessages(false)}><FaTimes /></button>
             </div>
             <div className="pinned-list">
@@ -735,13 +844,13 @@ const Community = () => {
           {loading ? (
             <div className="loading-messages">
               <div className="spinner"></div>
-              <p>Loading messages...</p>
+              <p>{t('loadingMessages')}</p>
             </div>
           ) : filteredMessages.length === 0 ? (
             <div className="empty-messages">
               <FaComments className="empty-icon" />
-              <h3>No messages yet</h3>
-              <p>Be the first to start the conversation!</p>
+              <h3>{t('noMessagesYet')}</h3>
+              <p>{t('beFirstToStart')}</p>
             </div>
           ) : (
             <div className="messages-list">
@@ -754,6 +863,7 @@ const Community = () => {
                 return (
                   <div 
                     key={message.id}
+                    id={`message-${message.id}`}
                     className={`message ${message.user_id === user?.id ? 'own-message' : ''} ${message.is_pinned ? 'pinned' : ''}`}
                     onContextMenu={(e) => handleContextMenu(e, message)}
                   >
@@ -767,7 +877,7 @@ const Community = () => {
                             {getUserDisplayName(message.profiles)}
                             {message.profiles?.role === 'admin' && (
                               <span className="role-badge admin">
-                                <FaShieldAlt /> Admin
+                                <FaShieldAlt /> {t('adminRole')}
                               </span>
                             )}
                           </span>
@@ -776,17 +886,37 @@ const Community = () => {
                       </div>
                     )}
                     
-                    {message.reply_to && (
-                      <div className="reply-reference">
-                        <FaReply />
-                        <span>Replying to a message</span>
-                      </div>
-                    )}
+                    {message.reply_to && (() => {
+                      const originalMsg = messages.find(m => m.id === message.reply_to);
+                      return (
+                        <div 
+                          className="reply-reference clickable"
+                          onClick={() => {
+                            const el = document.getElementById(`message-${message.reply_to}`);
+                            if (el) {
+                              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              el.classList.add('highlight-message');
+                              setTimeout(() => el.classList.remove('highlight-message'), 2000);
+                            }
+                          }}
+                        >
+                          <FaReply />
+                          <div className="reply-preview">
+                            <span className="reply-author">
+                              {originalMsg ? getUserDisplayName(originalMsg.profiles) : t('unknown')}
+                            </span>
+                            <span className="reply-text">
+                              {originalMsg ? originalMsg.content.slice(0, 80) + (originalMsg.content.length > 80 ? '...' : '') : t('messageNotFound')}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="message-content">
                       <p dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }} />
-                      {message.is_edited && <span className="edited-tag">(edited)</span>}
-                      {message.is_pinned && <FaThumbtack className="pin-indicator" title="Pinned" />}
+                      {message.is_edited && <span className="edited-tag">{t('edited')}</span>}
+                      {message.is_pinned && <FaThumbtack className="pin-indicator" title={t('pinned')} />}
                     </div>
 
                     {/* Reactions */}
@@ -811,7 +941,7 @@ const Community = () => {
                       <button 
                         className="action-btn" 
                         onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? false : message.id)}
-                        title="Add reaction"
+                        title={t('addReaction')}
                       >
                         <FaSmile />
                       </button>
@@ -821,11 +951,11 @@ const Community = () => {
                           setReplyingTo(message);
                           messageInputRef.current?.focus();
                         }}
-                        title="Reply"
+                        title={t('reply')}
                       >
                         <FaReply />
                       </button>
-                      <button className="action-btn" title="More options">
+                      <button className="action-btn" title={t('moreOptions')}>
                         <FaEllipsisV />
                       </button>
                     </div>
@@ -856,7 +986,7 @@ const Community = () => {
           {/* New Message Indicator */}
           {showNewMessageIndicator && (
             <button className="new-message-indicator" onClick={() => scrollToBottom()}>
-              <FaArrowDown /> New messages
+              <FaArrowDown /> {t('newMessages')}
             </button>
           )}
         </div>
@@ -867,7 +997,7 @@ const Community = () => {
             <span className="typing-dots">
               <span></span><span></span><span></span>
             </span>
-            {typingUsers.slice(0, 3).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+            {typingUsers.slice(0, 3).join(', ')} {typingUsers.length === 1 ? t('isTyping') : t('areTyping')}...
           </div>
         )}
 
@@ -876,7 +1006,7 @@ const Community = () => {
           <div className="reply-preview">
             <div className="reply-content">
               <FaReply />
-              <span>Replying to <strong>{getUserDisplayName(replyingTo.profiles)}</strong></span>
+              <span>{t('replyingToLabel')} <strong>{getUserDisplayName(replyingTo.profiles)}</strong></span>
               <p>{replyingTo.content.slice(0, 100)}...</p>
             </div>
             <button onClick={() => setReplyingTo(null)}><FaTimes /></button>
@@ -888,7 +1018,7 @@ const Community = () => {
           <div className="edit-preview">
             <div className="edit-content">
               <FaEdit />
-              <span>Editing message</span>
+              <span>{t('editingMessage')}</span>
             </div>
             <button onClick={() => {
               setEditingMessage(null);
@@ -918,7 +1048,7 @@ const Community = () => {
         {/* Message Input */}
         <form className="message-input-container" onSubmit={editingMessage ? (e) => { e.preventDefault(); handleEditMessage(); } : sendMessage}>
           <div className="input-wrapper">
-            <button type="button" className="input-action" title="Add emoji">
+            <button type="button" className="input-action" title={t('addEmoji')}>
               <FaSmile />
             </button>
             <input
@@ -926,14 +1056,14 @@ const Community = () => {
               type="text"
               placeholder={
                 CHANNELS.find(c => c.id === activeChannel)?.adminOnly && !isAdmin
-                  ? "Only admins can post in this channel"
-                  : `Message #${activeChannel}...`
+                  ? t('adminOnlyChannel')
+                  : `${t('messageChannel')}${activeChannel}...`
               }
               value={newMessage}
               onChange={handleInputChange}
               disabled={CHANNELS.find(c => c.id === activeChannel)?.adminOnly && !isAdmin}
             />
-            <button type="button" className="input-action" title="Mention someone">
+            <button type="button" className="input-action" title={t('mentionSomeone')}>
               <FaAt />
             </button>
           </div>
@@ -964,7 +1094,7 @@ const Community = () => {
             setContextMenu({ show: false, x: 0, y: 0, message: null });
             messageInputRef.current?.focus();
           }}>
-            <FaReply /> Reply
+            <FaReply /> {t('reply')}
           </button>
           
           {contextMenu.message?.user_id === user?.id && (
@@ -974,19 +1104,19 @@ const Community = () => {
               setContextMenu({ show: false, x: 0, y: 0, message: null });
               messageInputRef.current?.focus();
             }}>
-              <FaEdit /> Edit
+              <FaEdit /> {t('editMessage')}
             </button>
           )}
           
           {isAdmin && (
             <button onClick={() => handlePinMessage(contextMenu.message)}>
-              <FaThumbtack /> {contextMenu.message?.is_pinned ? 'Unpin' : 'Pin'}
+              <FaThumbtack /> {contextMenu.message?.is_pinned ? t('unpin') : t('pin')}
             </button>
           )}
           
           {(contextMenu.message?.user_id === user?.id || isAdmin) && (
             <button className="danger" onClick={() => handleDeleteMessage(contextMenu.message)}>
-              <FaTrash /> Delete
+              <FaTrash /> {t('deleteMessage')}
             </button>
           )}
           
@@ -995,7 +1125,7 @@ const Community = () => {
               setReportModal({ show: true, message: contextMenu.message });
               setContextMenu({ show: false, x: 0, y: 0, message: null });
             }}>
-              <FaExclamationTriangle /> Report
+              <FaExclamationTriangle /> {t('report')}
             </button>
           )}
         </div>
@@ -1005,10 +1135,10 @@ const Community = () => {
       {reportModal.show && (
         <div className="modal-overlay" onClick={() => setReportModal({ show: false, message: null })}>
           <div className="report-modal" onClick={e => e.stopPropagation()}>
-            <h3><FaExclamationTriangle /> Report Message</h3>
-            <p>Why are you reporting this message?</p>
+            <h3><FaExclamationTriangle /> {t('reportMessageTitle')}</h3>
+            <p>{t('whyReporting')}</p>
             <textarea
-              placeholder="Please describe the issue..."
+              placeholder={t('describeIssue')}
               value={reportReason}
               onChange={(e) => setReportReason(e.target.value)}
               rows={4}
@@ -1018,14 +1148,14 @@ const Community = () => {
                 setReportModal({ show: false, message: null });
                 setReportReason('');
               }}>
-                Cancel
+                {t('cancel')}
               </button>
               <button 
                 className="submit-btn" 
                 onClick={handleReportMessage}
                 disabled={!reportReason.trim()}
               >
-                Submit Report
+                {t('submitReport')}
               </button>
             </div>
           </div>

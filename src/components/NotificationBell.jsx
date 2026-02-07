@@ -2,10 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import './NotificationBell.css';
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -114,10 +118,10 @@ const NotificationBell = () => {
 
   const getNotificationTitle = (status) => {
     switch (status) {
-      case 'approved': return '✅ Loan Approved';
-      case 'rejected': return '❌ Loan Rejected';
-      case 'returned': return '📥 Book Returned';
-      default: return '📚 Loan Update';
+      case 'approved': return `✅ ${t.loanApprovedNotif}`;
+      case 'rejected': return `❌ ${t.loanRejectedNotif}`;
+      case 'returned': return `📥 ${t.bookReturnedNotif}`;
+      default: return `📚 ${t.loanUpdateNotif}`;
     }
   };
 
@@ -172,7 +176,7 @@ const NotificationBell = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return t.justNowShort;
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -204,10 +208,10 @@ const NotificationBell = () => {
       {isOpen && (
         <div className="notification-dropdown">
           <div className="notification-header">
-            <h3>Notifications</h3>
+            <h3>{t.notifications}</h3>
             {unreadCount > 0 && (
               <button className="mark-all-read" onClick={markAllAsRead}>
-                Mark all read
+                {t.markAllRead}
               </button>
             )}
           </div>
@@ -220,7 +224,7 @@ const NotificationBell = () => {
             ) : notifications.length === 0 ? (
               <div className="no-notifications">
                 <span>🔔</span>
-                <p>No notifications yet</p>
+                <p>{t.noNotificationsYet}</p>
               </div>
             ) : (
               notifications.map(notif => (
@@ -246,7 +250,7 @@ const NotificationBell = () => {
           {notifications.length > 0 && (
             <div className="notification-footer">
               <button onClick={() => { setIsOpen(false); navigate('/loaned-books'); }}>
-                View all loan requests
+                {t.viewAllLoanRequests}
               </button>
             </div>
           )}

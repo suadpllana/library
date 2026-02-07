@@ -61,6 +61,56 @@ const AdminDashboard = () => {
   const [unreadChats, setUnreadChats] = useState(0);
   const chatMessagesEndRef = useRef(null);
 
+  // ===== NEW FEATURE STATES =====
+  
+  // Analytics state
+  const [analyticsData, setAnalyticsData] = useState({
+    loansByMonth: [],
+    usersByMonth: [],
+    ratingDistribution: [0, 0, 0, 0, 0],
+    topBooks: [],
+    topBorrowers: [],
+    loansByDay: [0, 0, 0, 0, 0, 0, 0],
+    reviewsByMonth: [],
+    avgRatingByMonth: []
+  });
+
+  // Bulk selection
+  const [selectedLoans, setSelectedLoans] = useState([]);
+  const [selectedReviews, setSelectedReviews] = useState([]);
+
+  // User detail panel
+  const [userDetailId, setUserDetailId] = useState(null);
+  const [userDetail, setUserDetail] = useState(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
+
+  // Extend loan modal
+  const [extendingLoanId, setExtendingLoanId] = useState(null);
+  const [extendDays, setExtendDays] = useState(7);
+
+  // Announcements
+  const [announcements, setAnnouncements] = useState([]);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '', type: 'info' });
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+
+  // System Settings
+  const [systemSettings, setSystemSettings] = useState({
+    maxLoanDays: 14,
+    maxLoansPerUser: 3,
+    maintenanceMode: false,
+    autoApproveLoans: false,
+    allowNewRegistrations: true,
+    reviewsMustBeApproved: false,
+    maxReviewLength: 2000,
+    enableChatSupport: true
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Review search/filter
+  const [reviewSearch, setReviewSearch] = useState('');
+  const [reviewFilter, setReviewFilter] = useState('all');
+
   // Export functions
   const exportToCSV = (data, filename) => {
     if (data.length === 0) {
@@ -169,6 +219,12 @@ const AdminDashboard = () => {
       await fetchRecentActivity();
     } else if (activeTab === 'chat') {
       await fetchChatConversations();
+    } else if (activeTab === 'analytics') {
+      await fetchAnalytics();
+    } else if (activeTab === 'announcements') {
+      await fetchAnnouncements();
+    } else if (activeTab === 'settings') {
+      await fetchSystemSettings();
     }
     setLoading(false);
   };
@@ -723,6 +779,407 @@ const AdminDashboard = () => {
     }
   };
 
+  // ===== NEW FEATURES =====
+
+  // Analytics
+  const fetchAnalytics = async () => {
+    try {
+      // Fetch all loans for analytics
+      const { data: allLoans } = await supabase
+        .from('loan_requests')
+        .select('status, requested_at, due_date, book_title, book_id, user_id');
+
+      // Fetch all reviews
+      const { data: allReviews } = await supabase
+        .from('book_reviews')
+        .select('rating, created_at, book_title');
+
+      // Fetch all users
+      const { data: allUsers } = await supabase
+        .from('profiles')
+        .select('id, created_at, first_name, last_name');
+
+      const now = new Date();
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push({ label: d.toLocaleString('default', { month: 'short' }), year: d.getFullYear(), month: d.getMonth() });
+      }
+
+      // Loans by month
+      const loansByMonth = months.map(m => {
+        const count = (allLoans || []).filter(l => {
+          const d = new Date(l.requested_at);
+          return d.getMonth() === m.month && d.getFullYear() === m.year;
+        }).length;
+        return { label: m.label, count };
+      });
+
+      // Users by month
+      const usersByMonth = months.map(m => {
+        const count = (allUsers || []).filter(u => {
+          const d = new Date(u.created_at);
+          return d.getMonth() === m.month && d.getFullYear() === m.year;
+        }).length;
+        return { label: m.label, count };
+      });
+
+      // Reviews by month
+      const reviewsByMonth = months.map(m => {
+        const monthReviews = (allReviews || []).filter(r => {
+          const d = new Date(r.created_at);
+          return d.getMonth() === m.month && d.getFullYear() === m.year;
+        });
+        return { label: m.label, count: monthReviews.length };
+      });
+
+      // Rating distribution
+      const ratingDist = [0, 0, 0, 0, 0];
+      (allReviews || []).forEach(r => {
+        if (r.rating >= 1 && r.rating <= 5) ratingDist[r.rating - 1]++;
+      });
+
+      // Top borrowed books
+      const bookCounts = {};
+      (allLoans || []).forEach(l => {
+        const key = l.book_title || 'Unknown';
+        bookCounts[key] = (bookCounts[key] || 0) + 1;
+      });
+      const topBooks = Object.entries(bookCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([title, count]) => ({ title, count }));
+
+      // Top borrowers
+      const userCounts = {};
+      (allLoans || []).forEach(l => { userCounts[l.user_id] = (userCounts[l.user_id] || 0) + 1; });
+      const userMap = {};
+      (allUsers || []).forEach(u => { userMap[u.id] = `${u.first_name || ''} ${u.last_name || ''}`.trim(); });
+      const topBorrowers = Object.entries(userCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([id, count]) => ({ name: userMap[id] || 'Unknown', count }));
+
+      // Loans by day of week
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const loansByDay = [0, 0, 0, 0, 0, 0, 0];
+      (allLoans || []).forEach(l => {
+        const day = new Date(l.requested_at).getDay();
+        loansByDay[day]++;
+      });
+
+      setAnalyticsData({
+        loansByMonth,
+        usersByMonth,
+        ratingDistribution: ratingDist,
+        topBooks,
+        topBorrowers,
+        loansByDay: dayNames.map((name, i) => ({ name, count: loansByDay[i] })),
+        reviewsByMonth
+      });
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+  // Bar chart renderer (pure CSS)
+  const renderBar = (value, maxValue, color = '#6366f1') => {
+    const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
+    return (
+      <div className="bar-container">
+        <div className="bar-fill" style={{ width: `${pct}%`, background: color }}></div>
+      </div>
+    );
+  };
+
+  // Bulk loan actions
+  const handleBulkLoanAction = async (action) => {
+    if (selectedLoans.length === 0) {
+      toast.error('No loans selected');
+      return;
+    }
+    const actionLabel = action === 'approved' ? 'approve' : action === 'rejected' ? 'reject' : action;
+    if (!confirm(`Are you sure you want to ${actionLabel} ${selectedLoans.length} loan(s)?`)) return;
+
+    try {
+      const updateData = {
+        status: action,
+        responded_at: new Date().toISOString(),
+        responded_by: user.id
+      };
+      if (action === 'approved') {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + (systemSettings.maxLoanDays || 14));
+        updateData.due_date = dueDate.toISOString();
+      }
+      if (action === 'rejected') {
+        updateData.notes = 'Bulk rejected by administrator';
+      }
+
+      for (const loanId of selectedLoans) {
+        await supabase.from('loan_requests').update(updateData).eq('id', loanId);
+      }
+
+      toast.success(`${selectedLoans.length} loan(s) ${action} successfully`);
+      setSelectedLoans([]);
+      fetchLoanRequests();
+      fetchStats();
+    } catch (error) {
+      console.error('Error bulk updating loans:', error);
+      toast.error('Failed to update some loans');
+    }
+  };
+
+  const toggleLoanSelection = (loanId) => {
+    setSelectedLoans(prev => 
+      prev.includes(loanId) ? prev.filter(id => id !== loanId) : [...prev, loanId]
+    );
+  };
+
+  const toggleAllLoans = () => {
+    const filtered = getFilteredLoans().filter(l => l.status === 'pending');
+    if (selectedLoans.length === filtered.length) {
+      setSelectedLoans([]);
+    } else {
+      setSelectedLoans(filtered.map(l => l.id));
+    }
+  };
+
+  // Bulk review delete
+  const handleBulkDeleteReviews = async () => {
+    if (selectedReviews.length === 0) {
+      toast.error('No reviews selected');
+      return;
+    }
+    if (!confirm(`Delete ${selectedReviews.length} review(s)? This cannot be undone.`)) return;
+
+    try {
+      for (const reviewId of selectedReviews) {
+        await supabase.from('book_reviews').delete().eq('id', reviewId);
+      }
+      toast.success(`${selectedReviews.length} review(s) deleted`);
+      setSelectedReviews([]);
+      fetchReviews();
+      fetchStats();
+    } catch (error) {
+      console.error('Error bulk deleting reviews:', error);
+      toast.error('Failed to delete some reviews');
+    }
+  };
+
+  // User detail panel
+  const fetchUserDetail = async (userId) => {
+    setUserDetailLoading(true);
+    setUserDetailId(userId);
+    try {
+      const targetUser = users.find(u => u.id === userId);
+
+      const [loansRes, reviewsRes, wishlistRes, collectionsRes] = await Promise.all([
+        supabase.from('loan_requests').select('*').eq('user_id', userId).order('requested_at', { ascending: false }),
+        supabase.from('book_reviews').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('wishlist').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('reading_collections').select('*', { count: 'exact', head: true }).eq('user_id', userId)
+      ]);
+
+      setUserDetail({
+        ...targetUser,
+        loans: loansRes.data || [],
+        reviews: reviewsRes.data || [],
+        wishlistCount: wishlistRes.count || 0,
+        collectionsCount: collectionsRes.count || 0
+      });
+    } catch (error) {
+      console.error('Error fetching user detail:', error);
+      toast.error('Failed to load user details');
+    } finally {
+      setUserDetailLoading(false);
+    }
+  };
+
+  // Change user role
+  const handleChangeRole = async (userId, newRole) => {
+    if (!confirm(`Change this user's role to ${newRole}?`)) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+      if (error) throw error;
+      toast.success(`User role updated to ${newRole}`);
+      fetchUsers();
+      if (userDetailId === userId) {
+        setUserDetail(prev => prev ? { ...prev, role: newRole } : prev);
+      }
+    } catch (error) {
+      console.error('Error changing role:', error);
+      toast.error('Failed to change user role');
+    }
+  };
+
+  // Extend loan due date
+  const handleExtendLoan = async () => {
+    if (!extendingLoanId) return;
+    try {
+      const loan = loanRequests.find(l => l.id === extendingLoanId);
+      if (!loan) return;
+      
+      const currentDue = loan.due_date ? new Date(loan.due_date) : new Date();
+      currentDue.setDate(currentDue.getDate() + extendDays);
+
+      const { error } = await supabase
+        .from('loan_requests')
+        .update({ 
+          due_date: currentDue.toISOString(),
+          notes: `${loan.notes ? loan.notes + ' | ' : ''}Extended by ${extendDays} days by admin`
+        })
+        .eq('id', extendingLoanId);
+
+      if (error) throw error;
+      toast.success(`Loan extended by ${extendDays} days`);
+      setExtendingLoanId(null);
+      setExtendDays(7);
+      fetchLoanRequests();
+    } catch (error) {
+      console.error('Error extending loan:', error);
+      toast.error('Failed to extend loan');
+    }
+  };
+
+  // Announcements
+  const fetchAnnouncements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAnnouncements(data || []);
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+      setAnnouncements([]);
+    }
+  };
+
+  const handleSendAnnouncement = async () => {
+    if (!announcementForm.title.trim() || !announcementForm.message.trim()) {
+      toast.error('Please fill in title and message');
+      return;
+    }
+    setSendingAnnouncement(true);
+    try {
+      const { error } = await supabase.from('announcements').insert({
+        title: announcementForm.title.trim(),
+        message: announcementForm.message.trim(),
+        type: announcementForm.type,
+        created_by: user.id,
+        is_active: true
+      });
+      if (error) throw error;
+      toast.success('Announcement published!');
+      setShowAnnouncementModal(false);
+      setAnnouncementForm({ title: '', message: '', type: 'info' });
+      fetchAnnouncements();
+    } catch (error) {
+      console.error('Error sending announcement:', error);
+      toast.error('Failed to publish announcement');
+    } finally {
+      setSendingAnnouncement(false);
+    }
+  };
+
+  const handleToggleAnnouncement = async (id, currentActive) => {
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .update({ is_active: !currentActive })
+        .eq('id', id);
+      if (error) throw error;
+      toast.success(currentActive ? 'Announcement hidden' : 'Announcement activated');
+      fetchAnnouncements();
+    } catch (error) {
+      console.error('Error toggling announcement:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id) => {
+    if (!confirm('Delete this announcement permanently?')) return;
+    try {
+      const { error } = await supabase.from('announcements').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Announcement deleted');
+      fetchAnnouncements();
+    } catch (error) {
+      toast.error('Failed to delete announcement');
+    }
+  };
+
+  // System Settings
+  const fetchSystemSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+        .single();
+      if (!error && data) {
+        setSystemSettings({
+          maxLoanDays: data.max_loan_days ?? 14,
+          maxLoansPerUser: data.max_loans_per_user ?? 3,
+          maintenanceMode: data.maintenance_mode ?? false,
+          autoApproveLoans: data.auto_approve_loans ?? false,
+          allowNewRegistrations: data.allow_new_registrations ?? true,
+          reviewsMustBeApproved: data.reviews_must_be_approved ?? false,
+          maxReviewLength: data.max_review_length ?? 2000,
+          enableChatSupport: data.enable_chat_support ?? true
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase.from('system_settings').upsert({
+        id: 1,
+        max_loan_days: systemSettings.maxLoanDays,
+        max_loans_per_user: systemSettings.maxLoansPerUser,
+        maintenance_mode: systemSettings.maintenanceMode,
+        auto_approve_loans: systemSettings.autoApproveLoans,
+        allow_new_registrations: systemSettings.allowNewRegistrations,
+        reviews_must_be_approved: systemSettings.reviewsMustBeApproved,
+        max_review_length: systemSettings.maxReviewLength,
+        enable_chat_support: systemSettings.enableChatSupport,
+        updated_at: new Date().toISOString(),
+        updated_by: user.id
+      });
+      if (error) throw error;
+      toast.success('Settings saved successfully!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings — the settings table may not exist yet');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  // Filtered reviews
+  const filteredReviews = useMemo(() => {
+    let result = reviews;
+    if (reviewSearch) {
+      const s = reviewSearch.toLowerCase();
+      result = result.filter(r =>
+        r.book_title?.toLowerCase().includes(s) ||
+        r.user_name?.toLowerCase().includes(s) ||
+        r.review_text?.toLowerCase().includes(s)
+      );
+    }
+    if (reviewFilter !== 'all') {
+      result = result.filter(r => r.rating === parseInt(reviewFilter));
+    }
+    return result;
+  }, [reviews, reviewSearch, reviewFilter]);
+
   const getFilteredLoans = () => {
     if (loanFilter === 'all') return loanRequests;
     if (loanFilter === 'overdue') {
@@ -817,6 +1274,24 @@ const AdminDashboard = () => {
           onClick={() => setActiveTab('chat')}
         >
           💬 Chat {unreadChats > 0 && <span className="badge">{unreadChats}</span>}
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          📈 Analytics
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'announcements' ? 'active' : ''}`}
+          onClick={() => setActiveTab('announcements')}
+        >
+          📢 Announcements
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          ⚙️ Settings
         </button>
       </nav>
       
@@ -994,7 +1469,19 @@ const AdminDashboard = () => {
           <div className="loans-section">
             <div className="section-header">
               <h2>Loan Requests ({loanRequests.length})</h2>
-              <div className="loan-filters">
+              <div className="loan-header-actions">
+                {selectedLoans.length > 0 && (
+                  <div className="bulk-actions">
+                    <span className="bulk-count">{selectedLoans.length} selected</span>
+                    <button className="bulk-btn approve" onClick={() => handleBulkLoanAction('approved')}>✓ Bulk Approve</button>
+                    <button className="bulk-btn reject" onClick={() => handleBulkLoanAction('rejected')}>✗ Bulk Reject</button>
+                    <button className="bulk-btn clear" onClick={() => setSelectedLoans([])}>Clear</button>
+                  </div>
+                )}
+                <button className="export-btn-sm" onClick={exportLoans}>📥 Export CSV</button>
+              </div>
+            </div>
+            <div className="loan-filters">
                 <button 
                   className={`filter-btn ${loanFilter === 'all' ? 'active' : ''}`}
                   onClick={() => setLoanFilter('all')}
@@ -1026,7 +1513,6 @@ const AdminDashboard = () => {
                   Returned
                 </button>
               </div>
-            </div>
             {getFilteredLoans().length === 0 ? (
               <p className="no-data">No loan requests {loanFilter !== 'all' && `with status "${loanFilter}"`}</p>
             ) : (
@@ -1034,6 +1520,14 @@ const AdminDashboard = () => {
                 <table className="admin-table">
                   <thead>
                     <tr>
+                      <th className="checkbox-col">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedLoans.length > 0 && selectedLoans.length === getFilteredLoans().filter(l => l.status === 'pending').length}
+                          onChange={toggleAllLoans}
+                          title="Select all pending"
+                        />
+                      </th>
                       <th>Book</th>
                       <th>User</th>
                       <th>Requested</th>
@@ -1045,6 +1539,15 @@ const AdminDashboard = () => {
                   <tbody>
                     {getFilteredLoans().map((loan) => (
                       <tr key={loan.id} className={isOverdue(loan) ? 'overdue-row' : ''}>
+                        <td className="checkbox-col">
+                          {loan.status === 'pending' && (
+                            <input 
+                              type="checkbox" 
+                              checked={selectedLoans.includes(loan.id)}
+                              onChange={() => toggleLoanSelection(loan.id)}
+                            />
+                          )}
+                        </td>
                         <td className="book-cell">
                           <img 
                             src={loan.book_image} 
@@ -1094,12 +1597,20 @@ const AdminDashboard = () => {
                             </>
                           )}
                           {loan.status === 'approved' && (
-                            <button 
-                              className="action-btn return"
-                              onClick={() => handleMarkReturned(loan.id)}
-                            >
-                              📥 Mark Returned
-                            </button>
+                            <>
+                              <button 
+                                className="action-btn return"
+                                onClick={() => handleMarkReturned(loan.id)}
+                              >
+                                📥 Returned
+                              </button>
+                              <button 
+                                className="action-btn extend"
+                                onClick={() => setExtendingLoanId(loan.id)}
+                              >
+                                📅 Extend
+                              </button>
+                            </>
                           )}
                           {(loan.status === 'rejected' || loan.status === 'returned') && (
                             <span className="no-actions">—</span>
@@ -1126,6 +1637,7 @@ const AdminDashboard = () => {
                     onChange={(e) => setUserSearch(e.target.value)}
                   />
                 </div>
+                <button className="export-btn-sm" onClick={exportUsers}>📥 Export CSV</button>
                 <button 
                   className="invite-btn"
                   onClick={() => setShowInviteModal(true)}
@@ -1164,17 +1676,33 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td>{formatDate(u.updated_at)}</td>
-                        <td>
-                          {u.role === 'admin' ? (
-                            <span className="no-actions">—</span>
-                          ) : (
-                            <button
-                              className="delete-btn"
-                              onClick={() => setDeletingUserId(u.id)}
-                              title="Delete user"
-                            >
-                              🗑️ Delete
-                            </button>
+                        <td className="actions-cell user-actions-cell">
+                          <button
+                            className="action-btn detail"
+                            onClick={() => fetchUserDetail(u.id)}
+                            title="View details"
+                          >
+                            👁️ View
+                          </button>
+                          {u.id !== user?.id && (
+                            <>
+                              <button
+                                className="action-btn role"
+                                onClick={() => handleChangeRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
+                                title={u.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
+                              >
+                                {u.role === 'admin' ? '⬇️' : '⬆️'} {u.role === 'admin' ? 'Demote' : 'Promote'}
+                              </button>
+                              {u.role !== 'admin' && (
+                                <button
+                                  className="action-btn delete-sm"
+                                  onClick={() => setDeletingUserId(u.id)}
+                                  title="Delete user"
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </>
                           )}
                         </td>
                       </tr>
@@ -1220,14 +1748,47 @@ const AdminDashboard = () => {
           <div className="reviews-section">
             <div className="section-header">
               <h2>Book Reviews ({reviews.length})</h2>
+              <div className="reviews-header-actions">
+                <div className="search-box">
+                  <input
+                    type="text"
+                    placeholder="Search reviews..."
+                    value={reviewSearch}
+                    onChange={(e) => setReviewSearch(e.target.value)}
+                  />
+                </div>
+                <select className="review-filter-select" value={reviewFilter} onChange={(e) => setReviewFilter(e.target.value)}>
+                  <option value="all">All Ratings</option>
+                  <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                  <option value="4">⭐⭐⭐⭐ (4)</option>
+                  <option value="3">⭐⭐⭐ (3)</option>
+                  <option value="2">⭐⭐ (2)</option>
+                  <option value="1">⭐ (1)</option>
+                </select>
+                {selectedReviews.length > 0 && (
+                  <button className="bulk-btn reject" onClick={handleBulkDeleteReviews}>
+                    🗑️ Delete {selectedReviews.length} Selected
+                  </button>
+                )}
+                <button className="export-btn-sm" onClick={exportReviews}>📥 Export CSV</button>
+              </div>
             </div>
-            {reviews.length === 0 ? (
-              <p className="no-data">No reviews yet</p>
+            {filteredReviews.length === 0 ? (
+              <p className="no-data">No reviews found</p>
             ) : (
               <div className="reviews-list">
-                {reviews.map((review) => (
-                  <div key={review.id} className="review-card">
+                {filteredReviews.map((review) => (
+                  <div key={review.id} className={`review-card ${selectedReviews.includes(review.id) ? 'selected' : ''}`}>
                     <div className="review-header">
+                      <div className="review-select-area">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedReviews.includes(review.id)}
+                          onChange={() => setSelectedReviews(prev => 
+                            prev.includes(review.id) ? prev.filter(id => id !== review.id) : [...prev, review.id]
+                          )}
+                        />
+                      </div>
                       <div className="review-book">
                         {review.book_image && (
                           <img src={review.book_image} alt={review.book_title} />
@@ -1381,8 +1942,496 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
+        ) : activeTab === 'analytics' ? (
+          /* ANALYTICS TAB */
+          <div className="analytics-section">
+            <div className="section-header">
+              <h2>📈 Analytics & Insights</h2>
+            </div>
+
+            <div className="analytics-grid">
+              {/* Loans by Month */}
+              <div className="analytics-card">
+                <h3>📚 Loans per Month</h3>
+                <div className="chart-area">
+                  {analyticsData.loansByMonth.map((m, i) => (
+                    <div key={i} className="chart-bar-group">
+                      <span className="chart-value">{m.count}</span>
+                      {renderBar(m.count, Math.max(...analyticsData.loansByMonth.map(x => x.count)), '#6366f1')}
+                      <span className="chart-label">{m.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Users by Month */}
+              <div className="analytics-card">
+                <h3>👥 New Users per Month</h3>
+                <div className="chart-area">
+                  {analyticsData.usersByMonth.map((m, i) => (
+                    <div key={i} className="chart-bar-group">
+                      <span className="chart-value">{m.count}</span>
+                      {renderBar(m.count, Math.max(...analyticsData.usersByMonth.map(x => x.count)), '#34d399')}
+                      <span className="chart-label">{m.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rating Distribution */}
+              <div className="analytics-card">
+                <h3>⭐ Rating Distribution</h3>
+                <div className="chart-area horizontal">
+                  {analyticsData.ratingDistribution.map((count, i) => (
+                    <div key={i} className="chart-row">
+                      <span className="chart-row-label">{'⭐'.repeat(i + 1)}</span>
+                      {renderBar(count, Math.max(...analyticsData.ratingDistribution), '#f59e0b')}
+                      <span className="chart-row-value">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reviews by Month */}
+              <div className="analytics-card">
+                <h3>📝 Reviews per Month</h3>
+                <div className="chart-area">
+                  {analyticsData.reviewsByMonth.map((m, i) => (
+                    <div key={i} className="chart-bar-group">
+                      <span className="chart-value">{m.count}</span>
+                      {renderBar(m.count, Math.max(...analyticsData.reviewsByMonth.map(x => x.count)), '#ec4899')}
+                      <span className="chart-label">{m.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Loans by Day of Week */}
+              <div className="analytics-card">
+                <h3>📅 Busiest Days</h3>
+                <div className="chart-area">
+                  {analyticsData.loansByDay.map((d, i) => (
+                    <div key={i} className="chart-bar-group">
+                      <span className="chart-value">{d.count}</span>
+                      {renderBar(d.count, Math.max(...analyticsData.loansByDay.map(x => x.count)), '#8b5cf6')}
+                      <span className="chart-label">{d.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top Books */}
+              <div className="analytics-card full-width">
+                <h3>🏆 Most Borrowed Books</h3>
+                <div className="top-list">
+                  {analyticsData.topBooks.length === 0 ? (
+                    <p className="no-data">No loan data yet</p>
+                  ) : (
+                    analyticsData.topBooks.map((book, i) => (
+                      <div key={i} className="top-list-item">
+                        <span className="top-rank">#{i + 1}</span>
+                        <span className="top-name">{book.title}</span>
+                        <div className="top-bar-area">
+                          {renderBar(book.count, analyticsData.topBooks[0]?.count, '#6366f1')}
+                        </div>
+                        <span className="top-count">{book.count} loans</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Top Borrowers */}
+              <div className="analytics-card full-width">
+                <h3>👑 Top Borrowers</h3>
+                <div className="top-list">
+                  {analyticsData.topBorrowers.length === 0 ? (
+                    <p className="no-data">No borrower data yet</p>
+                  ) : (
+                    analyticsData.topBorrowers.map((b, i) => (
+                      <div key={i} className="top-list-item">
+                        <span className="top-rank">#{i + 1}</span>
+                        <span className="top-name">{b.name}</span>
+                        <div className="top-bar-area">
+                          {renderBar(b.count, analyticsData.topBorrowers[0]?.count, '#34d399')}
+                        </div>
+                        <span className="top-count">{b.count} loans</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'announcements' ? (
+          /* ANNOUNCEMENTS TAB */
+          <div className="announcements-section">
+            <div className="section-header">
+              <h2>📢 Announcements</h2>
+              <button className="invite-btn" onClick={() => setShowAnnouncementModal(true)}>
+                ➕ New Announcement
+              </button>
+            </div>
+            {announcements.length === 0 ? (
+              <p className="no-data">No announcements yet. Create one to broadcast to all users.</p>
+            ) : (
+              <div className="announcements-list">
+                {announcements.map((ann) => (
+                  <div key={ann.id} className={`announcement-card type-${ann.type} ${!ann.is_active ? 'inactive' : ''}`}>
+                    <div className="announcement-header">
+                      <div className="announcement-title-area">
+                        <span className={`ann-type-badge ${ann.type}`}>
+                          {ann.type === 'info' ? 'ℹ️' : ann.type === 'warning' ? '⚠️' : ann.type === 'success' ? '✅' : '🚨'} {ann.type}
+                        </span>
+                        <h4>{ann.title}</h4>
+                        {!ann.is_active && <span className="ann-inactive-badge">Hidden</span>}
+                      </div>
+                      <span className="announcement-date">{formatDate(ann.created_at)}</span>
+                    </div>
+                    <p className="announcement-message">{ann.message}</p>
+                    <div className="announcement-actions">
+                      <button 
+                        className={`action-btn ${ann.is_active ? 'reject' : 'approve'}`}
+                        onClick={() => handleToggleAnnouncement(ann.id, ann.is_active)}
+                      >
+                        {ann.is_active ? '👁️‍🗨️ Hide' : '👁️ Show'}
+                      </button>
+                      <button 
+                        className="action-btn delete-sm"
+                        onClick={() => handleDeleteAnnouncement(ann.id)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'settings' ? (
+          /* SETTINGS TAB */
+          <div className="settings-section">
+            <div className="section-header">
+              <h2>⚙️ System Settings</h2>
+              <button 
+                className="invite-btn" 
+                onClick={handleSaveSettings}
+                disabled={savingSettings}
+              >
+                {savingSettings ? '⏳ Saving...' : '💾 Save Settings'}
+              </button>
+            </div>
+
+            <div className="settings-grid">
+              <div className="settings-group">
+                <h3>📚 Loan Settings</h3>
+                
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Default Loan Duration (days)</label>
+                    <p>How many days a user can keep a borrowed book</p>
+                  </div>
+                  <input 
+                    type="number" 
+                    className="setting-input"
+                    value={systemSettings.maxLoanDays}
+                    onChange={(e) => setSystemSettings(prev => ({ ...prev, maxLoanDays: parseInt(e.target.value) || 14 }))}
+                    min={1} max={90}
+                  />
+                </div>
+
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Max Active Loans per User</label>
+                    <p>Maximum number of concurrent active loans per user</p>
+                  </div>
+                  <input 
+                    type="number" 
+                    className="setting-input"
+                    value={systemSettings.maxLoansPerUser}
+                    onChange={(e) => setSystemSettings(prev => ({ ...prev, maxLoansPerUser: parseInt(e.target.value) || 3 }))}
+                    min={1} max={20}
+                  />
+                </div>
+
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Auto-Approve Loans</label>
+                    <p>Automatically approve loan requests without admin action</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.autoApproveLoans}
+                      onChange={(e) => setSystemSettings(prev => ({ ...prev, autoApproveLoans: e.target.checked }))}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="settings-group">
+                <h3>👥 User Settings</h3>
+
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Allow New Registrations</label>
+                    <p>Allow new users to create accounts</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.allowNewRegistrations}
+                      onChange={(e) => setSystemSettings(prev => ({ ...prev, allowNewRegistrations: e.target.checked }))}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Maintenance Mode</label>
+                    <p>Show maintenance page to non-admin users</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.maintenanceMode}
+                      onChange={(e) => setSystemSettings(prev => ({ ...prev, maintenanceMode: e.target.checked }))}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="settings-group">
+                <h3>⭐ Review Settings</h3>
+
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Reviews Require Approval</label>
+                    <p>New reviews must be manually approved by admin</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.reviewsMustBeApproved}
+                      onChange={(e) => setSystemSettings(prev => ({ ...prev, reviewsMustBeApproved: e.target.checked }))}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Max Review Length</label>
+                    <p>Maximum character count for reviews</p>
+                  </div>
+                  <input 
+                    type="number" 
+                    className="setting-input"
+                    value={systemSettings.maxReviewLength}
+                    onChange={(e) => setSystemSettings(prev => ({ ...prev, maxReviewLength: parseInt(e.target.value) || 2000 }))}
+                    min={100} max={10000}
+                  />
+                </div>
+              </div>
+
+              <div className="settings-group">
+                <h3>💬 Chat Settings</h3>
+
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Enable Chat Support</label>
+                    <p>Show the chat support widget to users</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.enableChatSupport}
+                      onChange={(e) => setSystemSettings(prev => ({ ...prev, enableChatSupport: e.target.checked }))}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="settings-group danger-zone">
+                <h3>⚠️ Danger Zone</h3>
+                <div className="setting-item">
+                  <div className="setting-info">
+                    <label>Export All Data</label>
+                    <p>Export all library data as CSV files</p>
+                  </div>
+                  <button className="action-btn approve" onClick={generateReport}>📋 Export Report</button>
+                </div>
+              </div>
+            </div>
+          </div>
         ) : null}
       </main>
+
+      {/* User Detail Panel */}
+      {userDetailId && (
+        <div className="modal-overlay" onClick={() => { setUserDetailId(null); setUserDetail(null); }}>
+          <div className="user-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-x" onClick={() => { setUserDetailId(null); setUserDetail(null); }}>×</button>
+            {userDetailLoading ? (
+              <div className="loading"><div className="loading-spinner"></div><p>Loading user details...</p></div>
+            ) : userDetail ? (
+              <>
+                <div className="user-detail-header">
+                  <div className="user-detail-avatar">
+                    {userDetail.first_name?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <h2>{userDetail.first_name} {userDetail.last_name}</h2>
+                    <span className={`role-badge ${userDetail.role === 'admin' ? 'role-admin' : 'role-user'}`}>{userDetail.role || 'user'}</span>
+                    <p className="user-detail-email">{userDetail.email}</p>
+                    <p className="user-detail-joined">Joined: {formatDate(userDetail.created_at)}</p>
+                  </div>
+                </div>
+
+                <div className="user-detail-stats">
+                  <div className="user-stat-card">
+                    <span className="user-stat-value">{userDetail.loans?.length || 0}</span>
+                    <span className="user-stat-label">Total Loans</span>
+                  </div>
+                  <div className="user-stat-card">
+                    <span className="user-stat-value">{userDetail.loans?.filter(l => l.status === 'approved').length || 0}</span>
+                    <span className="user-stat-label">Active Loans</span>
+                  </div>
+                  <div className="user-stat-card">
+                    <span className="user-stat-value">{userDetail.reviews?.length || 0}</span>
+                    <span className="user-stat-label">Reviews</span>
+                  </div>
+                  <div className="user-stat-card">
+                    <span className="user-stat-value">{userDetail.wishlistCount}</span>
+                    <span className="user-stat-label">Wishlist</span>
+                  </div>
+                  <div className="user-stat-card">
+                    <span className="user-stat-value">{userDetail.collectionsCount}</span>
+                    <span className="user-stat-label">Collections</span>
+                  </div>
+                </div>
+
+                {userDetail.loans?.length > 0 && (
+                  <div className="user-detail-section">
+                    <h3>📚 Recent Loans</h3>
+                    <div className="user-detail-list">
+                      {userDetail.loans.slice(0, 5).map((loan) => (
+                        <div key={loan.id} className="user-detail-item">
+                          <span className="detail-item-title">{loan.book_title}</span>
+                          <span>{getStatusBadge(loan.status)}</span>
+                          <span className="detail-item-date">{formatDate(loan.requested_at)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {userDetail.reviews?.length > 0 && (
+                  <div className="user-detail-section">
+                    <h3>⭐ Recent Reviews</h3>
+                    <div className="user-detail-list">
+                      {userDetail.reviews.slice(0, 5).map((review) => (
+                        <div key={review.id} className="user-detail-item">
+                          <span className="detail-item-title">{review.book_title}</span>
+                          <span>{'⭐'.repeat(review.rating)}</span>
+                          <span className="detail-item-date">{formatDate(review.created_at)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="no-data">User not found</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Extend Loan Modal */}
+      {extendingLoanId && (
+        <div className="modal-overlay">
+          <div className="rejection-modal">
+            <h2>📅 Extend Loan Due Date</h2>
+            <p>Extend the due date for this loan:</p>
+            <div className="extend-options">
+              {[3, 7, 14, 30].map(days => (
+                <button 
+                  key={days}
+                  className={`extend-option-btn ${extendDays === days ? 'active' : ''}`}
+                  onClick={() => setExtendDays(days)}
+                >
+                  {days} days
+                </button>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => { setExtendingLoanId(null); setExtendDays(7); }}>
+                Cancel
+              </button>
+              <button className="modal-btn invite-confirm" onClick={handleExtendLoan}>
+                Extend by {extendDays} days
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Announcement Modal */}
+      {showAnnouncementModal && (
+        <div className="modal-overlay">
+          <div className="invite-modal">
+            <h2>📢 New Announcement</h2>
+            <p>Broadcast a message to all users.</p>
+            <div className="invite-form">
+              <div className="form-group">
+                <label>Type</label>
+                <select 
+                  value={announcementForm.type}
+                  onChange={(e) => setAnnouncementForm(prev => ({ ...prev, type: e.target.value }))}
+                >
+                  <option value="info">ℹ️ Info</option>
+                  <option value="warning">⚠️ Warning</option>
+                  <option value="success">✅ Success</option>
+                  <option value="urgent">🚨 Urgent</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Title *</label>
+                <input 
+                  type="text"
+                  placeholder="Announcement title..."
+                  value={announcementForm.title}
+                  onChange={(e) => setAnnouncementForm(prev => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Message *</label>
+                <textarea
+                  placeholder="Write your announcement message..."
+                  value={announcementForm.message}
+                  onChange={(e) => setAnnouncementForm(prev => ({ ...prev, message: e.target.value }))}
+                  rows="4"
+                  className="rejection-textarea"
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => { setShowAnnouncementModal(false); setAnnouncementForm({ title: '', message: '', type: 'info' }); }} disabled={sendingAnnouncement}>
+                Cancel
+              </button>
+              <button className="modal-btn invite-confirm" onClick={handleSendAnnouncement} disabled={sendingAnnouncement}>
+                {sendingAnnouncement ? 'Publishing...' : '📢 Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rejection Modal */}
       {rejectingLoanId && (

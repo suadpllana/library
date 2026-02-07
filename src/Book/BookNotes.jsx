@@ -4,11 +4,15 @@ import { FaArrowLeftLong, FaPlus, FaMagnifyingGlass, FaPen, FaTrash, FaBook, FaN
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import './BookNotes.css';
 
 const BookNotes = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,7 +55,7 @@ const BookNotes = () => {
     e.preventDefault();
     
     if (!noteForm.book_title.trim() || !noteForm.note_text.trim()) {
-      toast.error('Please fill in book title and note');
+      toast.error(t.pleaseFillTitleNote);
       return;
     }
 
@@ -75,21 +79,21 @@ const BookNotes = () => {
           .eq('id', editingNote.id);
 
         if (error) throw error;
-        toast.success('Note updated!');
+        toast.success(t.noteUpdated);
       } else {
         const { error } = await supabase
           .from('book_notes')
           .insert(noteData);
 
         if (error) throw error;
-        toast.success('Note added!');
+        toast.success(t.noteAdded);
       }
 
       resetForm();
       fetchNotes();
     } catch (error) {
       console.error('Error saving note:', error);
-      toast.error('Failed to save note');
+      toast.error(t.failedSaveNote);
     }
   };
 
@@ -106,7 +110,7 @@ const BookNotes = () => {
   };
 
   const handleDelete = async (noteId) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!confirm(t.confirmDeleteNote)) return;
 
     try {
       const { error } = await supabase
@@ -115,11 +119,11 @@ const BookNotes = () => {
         .eq('id', noteId);
 
       if (error) throw error;
-      toast.success('Note deleted');
+      toast.success(t.noteDeleted);
       fetchNotes();
     } catch (error) {
       console.error('Error deleting note:', error);
-      toast.error('Failed to delete note');
+      toast.error(t.failedDeleteNote);
     }
   };
 
@@ -167,8 +171,8 @@ const BookNotes = () => {
         <div className="not-logged-in">
           <FaNoteSticky className="not-logged-icon" />
           <h2>Book Notes</h2>
-          <p>Please log in to manage your book notes.</p>
-          <Link to="/auth" className="login-btn">Log In</Link>
+          <p>{t.pleaseLogIn}</p>
+          <Link to="/auth" className="login-btn">{t.logIn}</Link>
         </div>
       </div>
     );
@@ -180,14 +184,14 @@ const BookNotes = () => {
         {/* Header */}
         <div className="notes-header">
           <button className="back-btn" onClick={() => navigate(-1)}>
-            <FaArrowLeftLong /> Back
+            <FaArrowLeftLong /> {t.back}
           </button>
           <div className="header-info">
-            <h1>📝 My Book Notes</h1>
-            <p>Capture your thoughts, quotes, and insights</p>
+            <h1>{`📝 ${t.myBookNotes}`}</h1>
+            <p>{t.captureThoughts}</p>
           </div>
           <button className="add-note-btn" onClick={() => setShowAddModal(true)}>
-            <FaPlus /> New Note
+            <FaPlus /> {t.newNote}
           </button>
         </div>
 
@@ -197,14 +201,14 @@ const BookNotes = () => {
             <div className="stat-icon notes"><FaNoteSticky /></div>
             <div className="stat-data">
               <span className="stat-num">{notes.length}</span>
-              <span className="stat-text">Notes</span>
+              <span className="stat-text">{t.notes}</span>
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-icon books"><FaBook /></div>
             <div className="stat-data">
               <span className="stat-num">{Object.keys(groupedNotes).length}</span>
-              <span className="stat-text">Books</span>
+              <span className="stat-text">{t.booksLabel}</span>
             </div>
           </div>
           <div className="stat-card">
@@ -213,7 +217,7 @@ const BookNotes = () => {
               <span className="stat-num">
                 {[...new Set(notes.flatMap(n => n.tags || []))].length}
               </span>
-              <span className="stat-text">Tags</span>
+              <span className="stat-text">{t.tagsLabel}</span>
             </div>
           </div>
         </div>
@@ -223,7 +227,7 @@ const BookNotes = () => {
           <FaMagnifyingGlass />
           <input
             type="text"
-            placeholder="Search notes, books, or tags..."
+            placeholder={t.searchNotesPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -236,16 +240,16 @@ const BookNotes = () => {
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>Loading your notes...</p>
+            <p>{t.loadingNotes}</p>
           </div>
         ) : filteredNotes.length === 0 ? (
           <div className="empty-state">
             <FaNoteSticky className="empty-icon" />
-            <h3>{searchQuery ? 'No notes found' : 'No notes yet'}</h3>
-            <p>{searchQuery ? 'Try a different search term' : 'Start capturing your reading insights!'}</p>
+            <h3>{searchQuery ? t.noNotesFound : t.noNotesYet}</h3>
+            <p>{searchQuery ? t.tryDifferentSearch : t.startCapturingInsights}</p>
             {!searchQuery && (
               <button className="add-first-btn" onClick={() => setShowAddModal(true)}>
-                <FaPlus /> Add Your First Note
+                <FaPlus /> {t.addFirstNote}
               </button>
             )}
           </div>
@@ -316,68 +320,68 @@ const BookNotes = () => {
       {showAddModal && (
         <div className="modal-overlay" onClick={resetForm}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2>{editingNote ? 'Edit Note' : 'Add New Note'}</h2>
+            <h2>{editingNote ? t.editNoteTitle : t.addNewNote}</h2>
             
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Book Title *</label>
+                <label>{t.bookTitleStar}</label>
                 <input
                   type="text"
                   value={noteForm.book_title}
                   onChange={(e) => setNoteForm(prev => ({ ...prev, book_title: e.target.value }))}
-                  placeholder="Enter book title"
+                  placeholder={t.enterBookTitle}
                   required
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Chapter</label>
+                  <label>{t.chapterLabel}</label>
                   <input
                     type="text"
                     value={noteForm.chapter}
                     onChange={(e) => setNoteForm(prev => ({ ...prev, chapter: e.target.value }))}
-                    placeholder="e.g., Chapter 5"
+                    placeholder={t.chapterPlaceholder}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Page Number</label>
+                  <label>{t.pageNumber}</label>
                   <input
                     type="number"
                     value={noteForm.page_number}
                     onChange={(e) => setNoteForm(prev => ({ ...prev, page_number: e.target.value }))}
-                    placeholder="e.g., 42"
+                    placeholder={t.pagePlaceholder}
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Note *</label>
+                <label>{t.noteStar}</label>
                 <textarea
                   value={noteForm.note_text}
                   onChange={(e) => setNoteForm(prev => ({ ...prev, note_text: e.target.value }))}
-                  placeholder="Write your note, quote, or thought..."
+                  placeholder={t.writeYourNote}
                   rows={5}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label>Tags (comma separated)</label>
+                <label>{t.tagsCommaSeparated}</label>
                 <input
                   type="text"
                   value={noteForm.tags}
                   onChange={(e) => setNoteForm(prev => ({ ...prev, tags: e.target.value }))}
-                  placeholder="e.g., quote, insight, important"
+                  placeholder={t.tagsPlaceholder}
                 />
               </div>
 
               <div className="modal-actions">
                 <button type="button" className="cancel-btn" onClick={resetForm}>
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button type="submit" className="submit-btn">
-                  {editingNote ? 'Update Note' : 'Add Note'}
+                  {editingNote ? t.updateNote : t.addNote}
                 </button>
               </div>
             </form>

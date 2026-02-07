@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaArrowLeftLong, FaCamera, FaPen, FaFloppyDisk, FaXmark, FaBook, FaHeart, FaClock, FaStar, FaChartLine, FaTrophy, FaCalendarDays, FaCircleCheck, FaBookOpen, FaMedal, FaFire } from "react-icons/fa6";
+import { FaArrowLeftLong, FaCamera, FaPen, FaFloppyDisk, FaXmark, FaBook, FaHeart, FaClock, FaStar, FaChartLine, FaTrophy, FaCalendarDays, FaCircleCheck, FaBookOpen, FaMedal, FaFire, FaBell } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
+import { getEmailPreferences, updateEmailPreferences } from '../lib/emailNotifications';
 import { useAuth } from '../context/AuthContext';
 import './ProfilePage.css';
 import { useLanguage } from '../context/LanguageContext';
@@ -20,7 +21,8 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     first_name: '',
-    last_name: ''
+    last_name: '',
+    username: ''
   });
   const [stats, setStats] = useState({
     totalBooks: 0,
@@ -37,6 +39,8 @@ const ProfilePage = () => {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [emailPrefs, setEmailPrefs] = useState(null);
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   useEffect(() => {
     if (!authUser) {
@@ -51,7 +55,8 @@ const ProfilePage = () => {
           fetchUserProfile(),
           fetchWishlistBooks(),
           fetchUserStats(),
-          fetchRecentActivity()
+          fetchRecentActivity(),
+          loadEmailPreferences()
         ]);
       } catch (error) {
         console.error('Error loading profile data:', error);
@@ -87,6 +92,7 @@ const ProfilePage = () => {
         }),
         first_name: profileData?.first_name || authUser.user_metadata?.first_name || '',
         last_name: profileData?.last_name || authUser.user_metadata?.last_name || '',
+        username: profileData?.username || '',
         avatar_url: profileData?.avatar_url || null
       };
 
@@ -94,7 +100,8 @@ const ProfilePage = () => {
       setAvatarUrl(profile.avatar_url);
       setEditForm({
         first_name: profile.first_name,
-        last_name: profile.last_name
+        last_name: profile.last_name,
+        username: profile.username
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -226,6 +233,33 @@ const ProfilePage = () => {
     }
   };
 
+  const loadEmailPreferences = async () => {
+    try {
+      if (!authUser) return;
+      const prefs = await getEmailPreferences(authUser.id);
+      setEmailPrefs(prefs);
+    } catch (error) {
+      console.error('Error loading email preferences:', error);
+    }
+  };
+
+  const handleToggleEmailPref = async (key) => {
+    if (!emailPrefs || savingPrefs) return;
+    const newValue = !emailPrefs[key];
+    const updatedPrefs = { ...emailPrefs, [key]: newValue };
+    setEmailPrefs(updatedPrefs);
+    setSavingPrefs(true);
+    try {
+      await updateEmailPreferences(authUser.id, { [key]: newValue });
+    } catch (error) {
+      // Revert on failure
+      setEmailPrefs(emailPrefs);
+      toast.error(t.somethingWentWrong);
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
   const fetchWishlistBooks = async () => {
     try {
       if (!authUser) return;
@@ -255,12 +289,33 @@ const ProfilePage = () => {
     try {
       if (!authUser) return;
 
+      // Validate username if provided
+      if (editForm.username) {
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        if (!usernameRegex.test(editForm.username)) {
+          toast.error(t.usernameInvalid || 'Username must be 3-20 characters (letters, numbers, underscore)');
+          return;
+        }
+        // Check uniqueness
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', editForm.username.toLowerCase())
+          .neq('id', authUser.id)
+          .single();
+        if (existing) {
+          toast.error(t.usernameTaken || 'Username is already taken');
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: authUser.id,
           first_name: editForm.first_name,
           last_name: editForm.last_name,
+          username: editForm.username ? editForm.username.toLowerCase() : null,
           updated_at: new Date().toISOString()
         });
 
@@ -431,6 +486,7 @@ const ProfilePage = () => {
             {userProfile && (
               <div className="profile-name-section">
                 <h2>{userProfile.first_name} {userProfile.last_name || ''}</h2>
+                {userProfile.username && <p className="user-username">@{userProfile.username}</p>}
                 <p className="user-email">{userProfile.email}</p>
               </div>
             )}
@@ -499,6 +555,12 @@ const ProfilePage = () => {
               onClick={() => setActiveSection('books')}
             >
               <FaBook /> {t.myBooks || 'My Books'}
+            </button>
+            <button 
+              className={activeSection === 'notifications' ? 'active' : ''}
+              onClick={() => setActiveSection('notifications')}
+            >
+              <FaBell /> {t.emailNotifications || 'Email Notifications'}
             </button>
           </div>
 
@@ -757,6 +819,121 @@ const ProfilePage = () => {
               )}
             </div>
           )}
+
+          {/* Email Notifications Section */}
+          {activeSection === 'notifications' && (
+            <div className="notifications-section">
+              <div className="section-header">
+                <h3><FaBell /> {t.emailNotifications || 'Email Notifications'}</h3>
+              </div>
+              <p className="section-description">{t.emailNotifDesc || 'Choose which email notifications you\'d like to receive.'}</p>
+              
+              {emailPrefs ? (
+                <div className="notification-toggles">
+                  <div className="notif-toggle-item">
+                    <div className="notif-info">
+                      <h4>{t.loanUpdatesNotif || 'Loan Updates'}</h4>
+                      <p>{t.loanUpdatesDesc || 'Get notified when your loan requests are approved, rejected, or extended.'}</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={emailPrefs.loan_updates} 
+                        onChange={() => handleToggleEmailPref('loan_updates')}
+                        disabled={savingPrefs}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="notif-toggle-item">
+                    <div className="notif-info">
+                      <h4>{t.reviewNotif || 'Review Notifications'}</h4>
+                      <p>{t.reviewNotifDesc || 'Receive updates when new reviews are posted on books you\'ve reviewed.'}</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={emailPrefs.review_notifications} 
+                        onChange={() => handleToggleEmailPref('review_notifications')}
+                        disabled={savingPrefs}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="notif-toggle-item">
+                    <div className="notif-info">
+                      <h4>{t.communityMentionsNotif || 'Community Mentions'}</h4>
+                      <p>{t.communityMentionsDesc || 'Get notified when someone mentions you in community chat.'}</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={emailPrefs.community_mentions} 
+                        onChange={() => handleToggleEmailPref('community_mentions')}
+                        disabled={savingPrefs}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="notif-toggle-item">
+                    <div className="notif-info">
+                      <h4>{t.wishlistRemindersNotif || 'Wishlist Reminders'}</h4>
+                      <p>{t.wishlistRemindersDesc || 'Periodic reminders about books on your wishlist.'}</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={emailPrefs.wishlist_reminders} 
+                        onChange={() => handleToggleEmailPref('wishlist_reminders')}
+                        disabled={savingPrefs}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="notif-toggle-item">
+                    <div className="notif-info">
+                      <h4>{t.chatExportNotif || 'Chat Export'}</h4>
+                      <p>{t.chatExportDesc || 'Get a confirmation email when you export your AI chat.'}</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={emailPrefs.chat_export} 
+                        onChange={() => handleToggleEmailPref('chat_export')}
+                        disabled={savingPrefs}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="notif-toggle-item">
+                    <div className="notif-info">
+                      <h4>{t.weeklyDigestNotif || 'Weekly Digest'}</h4>
+                      <p>{t.weeklyDigestDesc || 'A weekly summary of your reading activity and new recommendations.'}</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={emailPrefs.weekly_digest} 
+                        onChange={() => handleToggleEmailPref('weekly_digest')}
+                        disabled={savingPrefs}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="loading-prefs">
+                  <div className="spinner"></div>
+                  <p>{t.loading || 'Loading...'}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -791,6 +968,20 @@ const ProfilePage = () => {
                     placeholder={t.enterLastName}
                   />
                 </div>
+              </div>
+              <div className="form-group username-group">
+                <label>{t.username || 'Username'}</label>
+                <div className="username-input-wrapper">
+                  <span className="username-prefix">@</span>
+                  <input
+                    type="text"
+                    value={editForm.username}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') }))}
+                    placeholder={t.enterUsername || 'Enter username'}
+                    maxLength={20}
+                  />
+                </div>
+                <span className="form-hint">{t.usernameHint || '3-20 characters, letters, numbers, underscore'}</span>
               </div>
             </div>
 

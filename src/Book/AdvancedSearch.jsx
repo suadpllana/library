@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaSearch, FaFilter, FaTimes, FaStar, FaCalendar, FaBook, FaUser, FaGlobe } from 'react-icons/fa';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../i18n/translations';
 import './AdvancedSearch.css';
 
 const SUBJECTS = [
@@ -11,21 +13,23 @@ const SUBJECTS = [
 ];
 
 const LANGUAGES = [
-  { code: '', label: 'Any Language' },
-  { code: 'en', label: 'English' },
-  { code: 'es', label: 'Spanish' },
-  { code: 'fr', label: 'French' },
-  { code: 'de', label: 'German' },
-  { code: 'it', label: 'Italian' },
-  { code: 'pt', label: 'Portuguese' },
-  { code: 'ru', label: 'Russian' },
-  { code: 'zh', label: 'Chinese' },
-  { code: 'ja', label: 'Japanese' },
+  { code: '', label: 'Any Language', labelKey: 'anyLanguage' },
+  { code: 'en', label: 'English', labelKey: 'english' },
+  { code: 'es', label: 'Spanish', labelKey: 'spanish' },
+  { code: 'fr', label: 'French', labelKey: 'french' },
+  { code: 'de', label: 'German', labelKey: 'german' },
+  { code: 'it', label: 'Italian', labelKey: 'italian' },
+  { code: 'pt', label: 'Portuguese', labelKey: 'portuguese' },
+  { code: 'ru', label: 'Russian', labelKey: 'russian' },
+  { code: 'zh', label: 'Chinese', labelKey: 'chinese' },
+  { code: 'ja', label: 'Japanese', labelKey: 'japanese' },
 ];
 
 const AdvancedSearch = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { language } = useLanguage();
+  const t = translations[language];
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [filters, setFilters] = useState({
@@ -143,8 +147,8 @@ const AdvancedSearch = () => {
     <div className="advanced-search-page">
       {/* Search Header */}
       <div className="search-header">
-        <h1><FaSearch /> Advanced Search</h1>
-        <p>Find exactly what you're looking for with powerful filters</p>
+        <h1><FaSearch /> {t.advancedSearch}</h1>
+        <p>{t.findExactly}</p>
       </div>
 
       {/* Search Form */}
@@ -152,19 +156,19 @@ const AdvancedSearch = () => {
         <div className="main-search">
           <input
             type="text"
-            placeholder="Search for books, authors, subjects..."
+            placeholder={t.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <button type="submit" className="search-btn">
-            <FaSearch /> Search
+            <FaSearch /> {t.search}
           </button>
           <button 
             type="button" 
             className={`filter-toggle ${showFilters ? 'active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
-            <FaFilter /> Filters
+            <FaFilter /> {t.filters}
           </button>
         </div>
 
@@ -172,40 +176,40 @@ const AdvancedSearch = () => {
         {showFilters && (
           <div className="filters-panel">
             <div className="filters-header">
-              <h3>Advanced Filters</h3>
+              <h3>{t.advancedFilters}</h3>
               <button type="button" className="clear-btn" onClick={clearFilters}>
-                <FaTimes /> Clear All
+                <FaTimes /> {t.clearAll}
               </button>
             </div>
 
             <div className="filters-grid">
               <div className="filter-group">
-                <label><FaBook /> Title Contains</label>
+                <label><FaBook /> {t.titleContains}</label>
                 <input
                   type="text"
-                  placeholder="e.g., Harry Potter"
+                  placeholder={t.titlePlaceholder}
                   value={filters.title}
                   onChange={(e) => handleFilterChange('title', e.target.value)}
                 />
               </div>
 
               <div className="filter-group">
-                <label><FaUser /> Author</label>
+                <label><FaUser /> {t.authorLabel}</label>
                 <input
                   type="text"
-                  placeholder="e.g., J.K. Rowling"
+                  placeholder={t.authorSearchPlaceholder}
                   value={filters.author}
                   onChange={(e) => handleFilterChange('author', e.target.value)}
                 />
               </div>
 
               <div className="filter-group">
-                <label><FaBook /> Subject/Category</label>
+                <label><FaBook /> {t.subjectCategory}</label>
                 <select
                   value={filters.subject}
                   onChange={(e) => handleFilterChange('subject', e.target.value)}
                 >
-                  <option value="">All Subjects</option>
+                  <option value="">{t.allSubjects}</option>
                   {SUBJECTS.map(subject => (
                     <option key={subject} value={subject.toLowerCase()}>{subject}</option>
                   ))}
@@ -213,57 +217,57 @@ const AdvancedSearch = () => {
               </div>
 
               <div className="filter-group">
-                <label><FaGlobe /> Language</label>
+                <label><FaGlobe /> {t.language}</label>
                 <select
                   value={filters.language}
                   onChange={(e) => handleFilterChange('language', e.target.value)}
                 >
                   {LANGUAGES.map(lang => (
-                    <option key={lang.code} value={lang.code}>{lang.label}</option>
+                    <option key={lang.code} value={lang.code}>{t[lang.labelKey] || lang.label}</option>
                   ))}
                 </select>
               </div>
 
               <div className="filter-group">
-                <label>Publisher</label>
+                <label>{t.publisherLabel}</label>
                 <input
                   type="text"
-                  placeholder="Publisher name"
+                  placeholder={t.publisherPlaceholder}
                   value={filters.publisher}
                   onChange={(e) => handleFilterChange('publisher', e.target.value)}
                 />
               </div>
 
               <div className="filter-group">
-                <label>ISBN</label>
+                <label>{t.isbnLabel}</label>
                 <input
                   type="text"
-                  placeholder="ISBN number"
+                  placeholder={t.isbnPlaceholder}
                   value={filters.isbn}
                   onChange={(e) => handleFilterChange('isbn', e.target.value)}
                 />
               </div>
 
               <div className="filter-group">
-                <label>Print Type</label>
+                <label>{t.printType}</label>
                 <select
                   value={filters.printType}
                   onChange={(e) => handleFilterChange('printType', e.target.value)}
                 >
-                  <option value="all">All Types</option>
-                  <option value="books">Books Only</option>
-                  <option value="magazines">Magazines Only</option>
+                  <option value="all">{t.allTypes}</option>
+                  <option value="books">{t.booksOnly}</option>
+                  <option value="magazines">{t.magazinesOnly}</option>
                 </select>
               </div>
 
               <div className="filter-group">
-                <label><FaCalendar /> Sort By</label>
+                <label><FaCalendar /> {t.sortBy}</label>
                 <select
                   value={filters.orderBy}
                   onChange={(e) => handleFilterChange('orderBy', e.target.value)}
                 >
-                  <option value="relevance">Relevance</option>
-                  <option value="newest">Newest First</option>
+                  <option value="relevance">{t.relevance}</option>
+                  <option value="newest">{t.newestFirst}</option>
                 </select>
               </div>
             </div>
@@ -276,13 +280,13 @@ const AdvancedSearch = () => {
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>Searching...</p>
+            <p>{t.searching}</p>
           </div>
         ) : results.length > 0 ? (
           <>
             <div className="results-header">
-              <p>Found <strong>{totalItems.toLocaleString()}</strong> results</p>
-              <span>Showing {startIndex + 1} - {Math.min(startIndex + maxResults, totalItems)}</span>
+              <p>{t.found} <strong>{totalItems.toLocaleString()}</strong> {t.results}</p>
+              <span>{t.showing} {startIndex + 1} - {Math.min(startIndex + maxResults, totalItems)}</span>
             </div>
 
             <div className="results-grid">
@@ -295,7 +299,7 @@ const AdvancedSearch = () => {
                   <img src={getBookImage(book)} alt={book.volumeInfo?.title} />
                   <div className="result-info">
                     <h4>{book.volumeInfo?.title}</h4>
-                    <p className="author">{book.volumeInfo?.authors?.join(', ') || 'Unknown Author'}</p>
+                    <p className="author">{book.volumeInfo?.authors?.join(', ') || t.unknownAuthor}</p>
                     {book.volumeInfo?.publishedDate && (
                       <p className="date">{book.volumeInfo.publishedDate.split('-')[0]}</p>
                     )}
@@ -321,7 +325,7 @@ const AdvancedSearch = () => {
                   disabled={startIndex === 0}
                   className="page-btn"
                 >
-                  Previous
+                  {t.previous}
                 </button>
                 <span className="page-info">
                   Page {Math.floor(startIndex / maxResults) + 1} of {Math.ceil(totalItems / maxResults)}
@@ -331,24 +335,24 @@ const AdvancedSearch = () => {
                   disabled={startIndex + maxResults >= totalItems}
                   className="page-btn"
                 >
-                  Next
+                  {t.next}
                 </button>
               </div>
             )}
           </>
         ) : searchQuery && !loading ? (
           <div className="no-results">
-            <h3>No results found</h3>
-            <p>Try adjusting your search terms or filters</p>
+            <h3>{t.noResults}</h3>
+            <p>{t.tryAdjusting}</p>
           </div>
         ) : (
           <div className="search-tips">
-            <h3>Search Tips</h3>
+            <h3>{t.searchTips}</h3>
             <ul>
-              <li>Use specific keywords for better results</li>
-              <li>Try searching by author name or book title</li>
-              <li>Use filters to narrow down results</li>
-              <li>Search by ISBN for exact matches</li>
+              <li>{t.searchTip1}</li>
+              <li>{t.searchTip2}</li>
+              <li>{t.searchTip3}</li>
+              <li>{t.searchTip4}</li>
             </ul>
           </div>
         )}
