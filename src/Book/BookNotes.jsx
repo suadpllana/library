@@ -116,7 +116,8 @@ const BookNotes = () => {
       const { error } = await supabase
         .from('book_notes')
         .delete()
-        .eq('id', noteId);
+        .eq('id', noteId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
       toast.success(t.noteDeleted);

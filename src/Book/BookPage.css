@@ -225,6 +225,56 @@
   flex-wrap: wrap;
 }
 
+/* Book Info Badges */
+.book-info-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 20px;
+  color: #a5b4fc;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.info-badge.mature {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Share button */
+.share-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.share-button:hover {
+  transform: translateY(-2px);
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
 .more-info, .watchlist-button {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
@@ -323,7 +373,7 @@
   box-shadow: 0 6px 25px rgba(139, 92, 246, 0.4);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .book-container {
     flex-direction: column;
     width: 100%;
@@ -333,6 +383,15 @@
   .book-page {
     padding: 1rem;
     margin-top: 60px;
+  }
+
+  .book-image {
+    padding: 1.5rem;
+  }
+
+  .book-image img {
+    width: 160px;
+    height: 240px;
   }
 
   .book-details {
@@ -350,6 +409,33 @@
   .more-info, .watchlist-button, .loan-button, .collection-button {
     max-width: none;
     width: 100%;
+  }
+
+  .description {
+    padding: 0 1rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .book-page {
+    padding: 0.5rem;
+  }
+
+  .book-image img {
+    width: 130px;
+    height: 195px;
+  }
+
+  .book-details {
+    padding: 1rem;
+  }
+
+  .book-details h1 {
+    font-size: 1.25rem;
+  }
+
+  .price {
+    font-size: 1.2rem;
   }
 }
 
@@ -694,10 +780,9 @@
 /* Responsive */
 @media (max-width: 768px) {
   .reviews-section {
-    width: 160px;
-    height: 240px;
-    object-fit: cover;
+    padding: 1.25rem;
     border-radius: 16px;
+    margin: 1rem auto 0;
   }
 
   .reviews-header {
@@ -716,5 +801,17 @@
   .review-form-actions button {
     width: 100%;
     justify-content: center;
+  }
+
+  .review-form {
+    padding: 1rem;
+  }
+
+  .rating-number {
+    font-size: 1.5rem;
+  }
+
+  .reviews-title h2 {
+    font-size: 1.2rem;
   }
 }

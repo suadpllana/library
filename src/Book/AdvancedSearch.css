@@ -439,6 +439,10 @@
   .filters-grid {
     grid-template-columns: 1fr;
   }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
   
   .result-card {
     flex-direction: column;

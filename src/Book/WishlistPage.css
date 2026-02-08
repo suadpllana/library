@@ -117,6 +117,91 @@
   font-size: 1.1rem;
 }
 
+/* Export Button */
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.export-btn:hover {
+  background: rgba(234, 179, 8, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Select Mode Button */
+.select-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #a5a5c0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.select-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.select-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Bulk Remove Button */
+.bulk-remove-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: fadeIn 0.2s ease;
+}
+.bulk-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Selection Checkbox */
+.select-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  cursor: pointer;
+}
+.select-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+/* Selected Item Highlight */
+.watchlist-item.selected {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  background: rgba(99, 102, 241, 0.08) !important;
+}
+
 .search-input {
   padding: 0.6rem 1rem;
   min-width: 200px;
@@ -537,7 +622,7 @@
 }
 
 /* Responsive */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .watchlist-page {
     padding: 1rem;
     margin-top: 60px;

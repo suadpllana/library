@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "./BookPage.css";
 import { toast } from "react-toastify";
 import { FaArrowLeftLong, FaStar, FaRegStar, FaTrash } from "react-icons/fa6";
+import { FaShareAlt, FaCopy, FaClock, FaBook } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
 import AddToCollectionModal from './AddToCollectionModal';
 import { useLanguage } from '../context/LanguageContext';
@@ -24,6 +25,7 @@ const BookPage = () => {
   const [loanStatus, setLoanStatus] = useState(null); // null, 'pending', 'approved', 'rejected'
   const [isRequestingLoan, setIsRequestingLoan] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   
   // Review state
   const [reviews, setReviews] = useState([]);
@@ -315,7 +317,7 @@ const BookPage = () => {
       };
 
       if (userReview) {
-        // Update existing review
+        // Update existing review (user_id filter prevents IDOR)
         const { error } = await supabase
           .from('book_reviews')
           .update({
@@ -325,7 +327,8 @@ const BookPage = () => {
             reviewer_name: reviewerName,
             updated_at: new Date().toISOString()
           })
-          .eq('id', userReview.id);
+          .eq('id', userReview.id)
+          .eq('user_id', user.id);
 
         if (error) throw error;
         toast.success(t.reviewUpdated);
@@ -359,6 +362,7 @@ const BookPage = () => {
         .from('book_reviews')
         .delete()
         .eq('id', userReview.id)
+        .eq('user_id', user.id)
         .select();
 
       if (error) throw error;
@@ -408,6 +412,51 @@ const BookPage = () => {
     });
   };
 
+  const handleCopyLink = useCallback(async () => {
+    try {
+      const url = `${window.location.origin}${window.location.pathname}#/book/${id}`;
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copied to clipboard!');
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = `${window.location.origin}${window.location.pathname}#/book/${id}`;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      toast.success('Link copied to clipboard!');
+    }
+    setShowShareMenu(false);
+  }, [id]);
+
+  const handleShare = useCallback(async () => {
+    const shareData = {
+      title: book.title || 'Book',
+      text: `Check out "${book.title}" by ${book.authors?.join(', ') || 'Unknown'}`,
+      url: `${window.location.origin}${window.location.pathname}#/book/${id}`
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if (err.name !== 'AbortError') handleCopyLink();
+      }
+    } else {
+      handleCopyLink();
+    }
+  }, [book, id, handleCopyLink]);
+
+  // Estimated reading time (avg 250 words per page, 30 pages/hour)
+  const getReadingTime = () => {
+    const pages = book.pageCount;
+    if (!pages) return null;
+    const hours = Math.floor(pages / 30);
+    const mins = Math.round((pages % 30) / 30 * 60);
+    if (hours === 0) return `${mins} min`;
+    return `${hours}h ${mins}m`;
+  };
+
   const description = book.description || '';
   const shortDescription = description.slice(0, 150) + (description.length > 150 ? '...' : '');
 
@@ -443,6 +492,30 @@ const BookPage = () => {
             <div className="additional-info">
               <p><strong>{t.isbnColon}</strong> {book.industryIdentifiers?.[0]?.identifier || t.notAvailable}</p>
             </div>
+            
+            {/* Book Info Badges */}
+            <div className="book-info-badges">
+              {book.pageCount && (
+                <span className="info-badge">
+                  <FaBook /> {book.pageCount} {t.pages || 'pages'}
+                </span>
+              )}
+              {getReadingTime() && (
+                <span className="info-badge">
+                  <FaClock /> {getReadingTime()} {t.readTime || 'read'}
+                </span>
+              )}
+              {book.language && (
+                <span className="info-badge">
+                  {book.language.toUpperCase()}
+                </span>
+              )}
+              {book.maturityRating && book.maturityRating !== 'NOT_MATURE' && (
+                <span className="info-badge mature">
+                  {book.maturityRating === 'MATURE' ? '18+' : book.maturityRating}
+                </span>
+              )}
+            </div>
             <div className="publication-info">
               <p><strong>{t.publisherColon}</strong> {book.publisher || t.unknown}</p>
               <p><strong>{t.publishedDateColon}</strong> {book.publishedDate || t.unknown}</p>
@@ -469,6 +542,13 @@ const BookPage = () => {
                 onClick={() => setShowCollectionModal(true)}
               >
                 📚 {t.addToCollection}
+              </button>
+              <button 
+                className="share-button"
+                onClick={handleShare}
+                title="Share this book"
+              >
+                <FaShareAlt /> {t.share || 'Share'}
               </button>
               <button 
                 className={`loan-button ${loanStatus === 'pending' ? 'pending' : ''} ${loanStatus === 'approved' ? 'approved' : ''}`}

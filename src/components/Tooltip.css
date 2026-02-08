@@ -12,6 +12,9 @@
   font-size: 0.8rem;
   font-weight: 500;
   white-space: nowrap;
+  max-width: min(300px, 90vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
   z-index: 1000;
   pointer-events: none;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);

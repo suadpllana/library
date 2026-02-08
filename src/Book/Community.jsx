@@ -13,6 +13,7 @@ import { HiSparkles } from 'react-icons/hi';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import UserSearch from './UserSearch';
 import { toast } from 'react-toastify';
 import './Community.css';
 
@@ -320,6 +321,15 @@ const Community = () => {
     // Input validation
     if (!trimmedMessage || sending) return;
     
+    // Rate limiting - max 5 messages per 10 seconds
+    const now = Date.now();
+    const recentMessages = (window.__msgTimestamps || []).filter(ts => now - ts < 10000);
+    if (recentMessages.length >= 5) {
+      toast.error(t('slowDown') || 'You\'re sending messages too fast. Please slow down.');
+      return;
+    }
+    window.__msgTimestamps = [...recentMessages, now];
+    
     // Message length limits
     const MAX_MESSAGE_LENGTH = 2000;
     const MIN_MESSAGE_LENGTH = 1;
@@ -593,10 +603,13 @@ const Community = () => {
       const searchTerm = value.slice(lastAtIndex + 1).toLowerCase();
       if (searchTerm.length > 0 && !searchTerm.includes(' ')) {
         // Search for users
+        // Sanitize search term to prevent PostgREST filter injection
+        const safeTerm = searchTerm.replace(/[%_.,()"'\\]/g, '');
+        if (!safeTerm) return;
         const { data } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
-          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`)
+          .select('id, first_name, last_name, username')
+          .or(`first_name.ilike.%${safeTerm}%,last_name.ilike.%${safeTerm}%,username.ilike.%${safeTerm}%`)
           .limit(5);
 
         if (data?.length) {
@@ -718,6 +731,11 @@ const Community = () => {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* User Search */}
+        <div className="user-search-section">
+          <UserSearch />
         </div>
 
         {/* Online Users */}
@@ -1061,8 +1079,14 @@ const Community = () => {
               }
               value={newMessage}
               onChange={handleInputChange}
+              maxLength={2000}
               disabled={CHANNELS.find(c => c.id === activeChannel)?.adminOnly && !isAdmin}
             />
+            {newMessage.length > 1500 && (
+              <span className={`char-counter ${newMessage.length > 1900 ? 'danger' : 'warning'}`}>
+                {newMessage.length}/2000
+              </span>
+            )}
             <button type="button" className="input-action" title={t('mentionSomeone')}>
               <FaAt />
             </button>

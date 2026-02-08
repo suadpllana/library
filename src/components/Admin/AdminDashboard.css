@@ -65,6 +65,13 @@
   background: rgba(15, 15, 26, 0.5);
   padding: 0 2.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
@@ -77,6 +84,8 @@
   font-size: 0.95rem;
   font-weight: 500;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tab-btn:hover {
@@ -684,7 +693,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.25rem;
   margin-bottom: 2.5rem;
 }
@@ -725,6 +734,9 @@
 .stat-card.returned .stat-icon { background: rgba(59, 130, 246, 0.15); }
 .stat-card.reviews .stat-icon { background: rgba(236, 72, 153, 0.15); }
 .stat-card.rating .stat-icon { background: rgba(245, 158, 11, 0.15); }
+.stat-card.wishlist .stat-icon { background: rgba(236, 72, 153, 0.15); }
+.stat-card.collections .stat-icon { background: rgba(139, 92, 246, 0.15); }
+.stat-card.rejected .stat-icon { background: rgba(239, 68, 68, 0.15); }
 
 .stat-info {
   display: flex;
@@ -756,7 +768,7 @@
 
 .action-buttons {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
 }
 
@@ -1494,7 +1506,7 @@
 
 .chat-container {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: minmax(240px, 320px) 1fr;
   height: calc(100vh - 250px);
   min-height: 500px;
 }
@@ -2187,7 +2199,7 @@
 
 .analytics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(350px, 100%), 1fr));
   gap: 1.25rem;
 }
 
@@ -2463,7 +2475,7 @@
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
   gap: 1.5rem;
 }
 
@@ -2612,4 +2624,263 @@
   .top-name {
     min-width: 100px;
   }
+}
+
+/* ========================================
+   BACK TO APP & REFRESH BUTTONS
+   ======================================== */
+
+.back-to-app-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.back-to-app-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+  color: #a5b4fc;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background: rgba(52, 211, 153, 0.25);
+  border-color: rgba(52, 211, 153, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ========================================
+   BANNED BADGE
+   ======================================== */
+
+.banned-badge {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: pulse 2s infinite;
+}
+
+.action-btn.ban {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.action-btn.ban:hover {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+/* ========================================
+   FEE PAYMENTS ADMIN SECTION
+   ======================================== */
+
+.fees-admin-section .section-header {
+  margin-bottom: 1.5rem;
+}
+
+.fees-admin-section .section-subtitle {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.fee-amount-cell {
+  font-weight: 700;
+  color: #f59e0b;
+  font-size: 1.05rem;
+}
+
+.verified-text {
+  color: #22c55e;
+  font-size: 0.85rem;
+}
+
+.rejected-note {
+  color: #f97316;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.user-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.user-cell small {
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.status-badge.status-unpaid {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* ========================================
+   AUDIT LOG SECTION
+   ======================================== */
+
+.audit-section .section-header {
+  margin-bottom: 1.5rem;
+}
+
+.audit-subtitle {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.migration-notice {
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: left;
+  max-width: 700px;
+  margin: 1rem auto;
+}
+
+.migration-notice-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.migration-notice h3 {
+  color: #fbbf24;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.migration-notice p {
+  color: #d1d5db;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.migration-notice ol {
+  color: #d1d5db;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+  line-height: 2;
+}
+
+.migration-notice ol strong {
+  color: #f3f4f6;
+}
+
+.migration-notice code {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.migration-notice-hint {
+  font-size: 0.85rem;
+  color: #9ca3af !important;
+}
+
+.migration-notice .action-btn {
+  margin-top: 0.5rem;
+}
+
+.audit-action-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.audit-action-badge.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.audit-action-badge.success {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.audit-action-badge.info {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+.audit-target-type {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #a5a5c0;
+  text-transform: capitalize;
+  margin-right: 0.35rem;
+}
+
+.audit-target-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #6b6b8a;
+}
+
+.audit-details {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #a5a5c0;
+  font-size: 0.85rem;
+}
+
+/* ========================================
+   CHAT PANEL HEADER IMPROVEMENTS
+   ======================================== */
+
+.chat-panel-header {
+  padding: 1rem 1.5rem;
+  background: rgba(15, 15, 26, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }

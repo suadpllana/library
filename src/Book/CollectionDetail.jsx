@@ -73,6 +73,19 @@ const CollectionDetail = () => {
     if (!confirm(t.confirmRemoveFromCollection)) return;
 
     try {
+      // Verify collection ownership before removing
+      const { data: collection } = await supabase
+        .from('reading_collections')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!collection) {
+        toast.error('You don\'t have permission to modify this collection');
+        return;
+      }
+
       const { error } = await supabase
         .from('collection_books')
         .delete()

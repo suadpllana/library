@@ -108,7 +108,8 @@ const MyCollections = () => {
       const { error } = await supabase
         .from('reading_collections')
         .delete()
-        .eq('id', collectionId);
+        .eq('id', collectionId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
       toast.success(t.collectionDeletedSuccess);

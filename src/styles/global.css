@@ -675,3 +675,126 @@ button {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 10000;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-to-content:focus {
+  top: 0.5rem;
+}
+
+/* Focus visible styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================
+   RESPONSIVE TYPOGRAPHY & LAYOUT
+   ======================================== */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.6rem; }
+  h3 { font-size: 1.25rem; }
+
+  .modal-content {
+    padding: var(--space-xl);
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  :root {
+    --space-xl: 1.5rem;
+    --space-2xl: 2rem;
+  }
+
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.35rem; }
+  h3 { font-size: 1.1rem; }
+  h4 { font-size: 1rem; }
+
+  body {
+    font-size: 0.95rem;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  h1 { font-size: 1.35rem; }
+  h2 { font-size: 1.15rem; }
+  h3 { font-size: 1rem; }
+
+  body {
+    font-size: 0.9rem;
+  }
+
+  .modal-content {
+    padding: 1.25rem;
+  }
+}
+
+/* Better scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* Smooth page transitions */
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

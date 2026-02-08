@@ -6,8 +6,9 @@ import { useLanguage } from '../context/LanguageContext';
 import translations from '../i18n/translations';
 import { toast } from 'react-toastify';
 import { notifyLoanUpdate } from '../lib/emailNotifications';
-import { FaArrowLeftLong, FaClockRotateLeft, FaBook, FaCalendarCheck, FaHourglass, FaCircleCheck, FaCircleXmark, FaBoxArchive, FaList, FaGrip } from 'react-icons/fa6';
+import { FaArrowLeftLong, FaClockRotateLeft, FaBook, FaCalendarCheck, FaHourglass, FaCircleCheck, FaCircleXmark, FaBoxArchive, FaList, FaGrip, FaFileExport, FaRotateLeft, FaBan } from 'react-icons/fa6';
 import { MdFilterListOff } from 'react-icons/md';
+import ConfirmDialog from '../components/ConfirmDialog';
 import './LoanedBooks.css';
 
 const LoanedBooks = () => {
@@ -22,6 +23,8 @@ const LoanedBooks = () => {
   const [extendingLoan, setExtendingLoan] = useState(null);
   const [returningLoan, setReturningLoan] = useState(null);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+  const [cancellingLoan, setCancellingLoan] = useState(null);
+  const [confirmCancel, setConfirmCancel] = useState(null);
 
   const filters = useMemo(() => [
     { id: 'all', label: t.allBooks, icon: <FaBook /> },
@@ -188,6 +191,77 @@ const LoanedBooks = () => {
 
   const getStatusCount = (status) => statusCounts[status] || 0;
 
+  // Cancel pending loan request
+  const handleCancelLoan = async () => {
+    if (!confirmCancel) return;
+    setCancellingLoan(confirmCancel.id);
+    try {
+      const { error } = await supabase
+        .from('loan_requests')
+        .delete()
+        .eq('id', confirmCancel.id)
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      setLoanedBooks(prev => prev.filter(b => b.id !== confirmCancel.id));
+      toast.success(t.loanCancelledSuccessfully || 'Loan request cancelled');
+    } catch (error) {
+      console.error('Error cancelling loan:', error);
+      toast.error(t.somethingWentWrong);
+    } finally {
+      setCancellingLoan(null);
+      setConfirmCancel(null);
+    }
+  };
+
+  // Re-request a rejected loan
+  const handleReRequest = async (loan) => {
+    try {
+      const { error } = await supabase
+        .from('loan_requests')
+        .update({ 
+          status: 'pending', 
+          notes: null,
+          requested_at: new Date().toISOString()
+        })
+        .eq('id', loan.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setLoanedBooks(prev => prev.map(b => 
+        b.id === loan.id ? { ...b, status: 'pending', notes: null, requested_at: new Date().toISOString() } : b
+      ));
+      toast.success(t.loanReRequested || 'Loan re-requested!');
+    } catch (error) {
+      console.error('Error re-requesting loan:', error);
+      toast.error(t.somethingWentWrong);
+    }
+  };
+
+  // Export loan history as CSV
+  const exportLoanHistory = () => {
+    if (loanedBooks.length === 0) {
+      toast.error('No loans to export');
+      return;
+    }
+    const csvContent = [
+      'Title,Authors,Status,Requested,Due Date,Returned',
+      ...loanedBooks.map(loan => {
+        const title = (loan.book_title || '').replace(/,/g, ';');
+        const authors = (Array.isArray(loan.book_authors) ? loan.book_authors.join('; ') : (loan.book_authors || 'Unknown')).replace(/,/g, ';');
+        return `"${title}","${authors}","${loan.status}","${formatDate(loan.requested_at)}","${formatDate(loan.due_date)}","${formatDate(loan.returned_at)}"`;
+      })
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `loan_history_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast.success('Loan history exported!');
+  };
+
   // Stats summary
   const stats = useMemo(() => ({
     total: loanedBooks.length,
@@ -288,6 +362,31 @@ const LoanedBooks = () => {
               </button>
             </div>
           )}
+
+          {loan.status === 'pending' && (
+            <div className="loan-card-actions">
+              <button
+                className="cancel-btn"
+                onClick={() => setConfirmCancel(loan)}
+                disabled={cancellingLoan === loan.id}
+              >
+                <FaBan />
+                {cancellingLoan === loan.id ? 'Cancelling...' : (t.cancelRequest || 'Cancel Request')}
+              </button>
+            </div>
+          )}
+
+          {loan.status === 'rejected' && (
+            <div className="loan-card-actions">
+              <button
+                className="rerequest-btn"
+                onClick={() => handleReRequest(loan)}
+              >
+                <FaRotateLeft />
+                {t.reRequest || 'Re-request'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -308,6 +407,11 @@ const LoanedBooks = () => {
           >
             <FaArrowLeftLong /> {t.goBack}
           </button>
+          {loanedBooks.length > 0 && (
+            <button className="export-history-btn" onClick={exportLoanHistory}>
+              <FaFileExport /> {t.export || 'Export'}
+            </button>
+          )}
         </div>
 
         {/* Stats Summary */}
@@ -532,6 +636,14 @@ const LoanedBooks = () => {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmCancel}
+        onClose={() => setConfirmCancel(null)}
+        onConfirm={handleCancelLoan}
+        title={t.cancelLoanRequest || 'Cancel Loan Request'}
+        message={`Are you sure you want to cancel the loan request for "${confirmCancel?.book_title || 'this book'}"?`}
+      />
     </div>
   );
 };

@@ -59,7 +59,7 @@
 /* Layout */
 .profile-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: minmax(280px, 320px) 1fr;
   gap: 2rem;
 }
 
@@ -987,6 +987,7 @@
 @media (max-width: 768px) {
   .profile-page {
     padding: 1rem;
+    margin-top: 70px;
   }
   
   .profile-sidebar {
@@ -996,11 +997,13 @@
   .profile-tabs {
     overflow-x: auto;
     flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
   }
   
   .profile-tabs button {
     min-width: auto;
     white-space: nowrap;
+    flex-shrink: 0;
   }
   
   .stats-grid {
@@ -1017,6 +1020,15 @@
   
   .saved-books-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile-card {
+    padding: 1.5rem;
+  }
+
+  .avatar-container {
+    width: 100px;
+    height: 100px;
   }
 }
 
@@ -1162,4 +1174,169 @@
 
 [data-theme="light"] .toggle-slider {
   background: #ccc;
+}
+
+/* ========================================
+   SETTINGS SECTION
+   ======================================== */
+.settings-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 1.5rem;
+}
+
+.settings-card {
+  background: linear-gradient(145deg, #1e1e35 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.settings-desc {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.export-data-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.export-data-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.25);
+  transform: translateY(-1px);
+}
+.export-data-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Danger Zone */
+.danger-zone {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+.danger-zone .settings-card-header {
+  color: #f87171;
+}
+
+.delete-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.delete-account-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Reading Goal Editor */
+.goal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.goal-edit-btn {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+}
+.goal-edit-btn:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+.goal-edit-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.goal-input {
+  width: 70px;
+  padding: 0.35rem 0.5rem;
+  background: #16162b;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.goal-save-btn, .goal-cancel-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+.goal-save-btn {
+  color: #10b981;
+}
+.goal-save-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+.goal-cancel-btn {
+  color: #f87171;
+}
+.goal-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+[data-theme="light"] .settings-card {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .settings-card-header {
+  color: #1a1a2e;
+}
+[data-theme="light"] .settings-desc {
+  color: #555566;
+}
+[data-theme="light"] .danger-zone .settings-card-header {
+  color: #dc2626;
 }

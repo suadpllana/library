@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
         if (insertError) {
           console.error('Error creating profile for OAuth user:', insertError);
         } else {
-          console.log('Created profile for OAuth user:', authUser.email);
+          // Profile created for OAuth user
         }
         
         return 'user';
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_banned')
         .eq('id', userId)
         .single();
       
@@ -93,6 +93,14 @@ export const AuthProvider = ({ children }) => {
         console.error('Error fetching user role:', error);
         return 'user';
       }
+      
+      // Check if user is banned
+      if (data?.is_banned) {
+        console.warn('User is banned. Signing out...');
+        await supabase.auth.signOut();
+        return 'banned';
+      }
+      
       return data?.role || 'user';
     } catch (error) {
       console.error('Error fetching user role:', error);
@@ -250,6 +258,7 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin = () => userRole === 'admin';
   const isUser = () => userRole === 'user';
+  const isBanned = () => userRole === 'banned';
 
   const value = {
     signUp: (data) => supabase.auth.signUp(data),
@@ -259,6 +268,7 @@ export const AuthProvider = ({ children }) => {
     userRole,
     isAdmin,
     isUser,
+    isBanned,
     loading
   };
 

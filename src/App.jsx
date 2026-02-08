@@ -29,7 +29,10 @@ const ReadingHistory = lazy(() => import('./Book/ReadingHistory'));
 const ReadingStats = lazy(() => import('./Book/ReadingStats'));
 const BookNotes = lazy(() => import('./Book/BookNotes'));
 const Community = lazy(() => import('./Book/Community'));
+const PublicProfile = lazy(() => import('./Book/PublicProfile'));
+const FeesPage = lazy(() => import('./Book/FeesPage'));
 const UsernameModal = lazy(() => import('./components/UsernameModal'));
+const AnnouncementBanner = lazy(() => import('./components/AnnouncementBanner'));
 
 const LoadingFallback = () => (
   <div className="loading-screen" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -64,7 +67,22 @@ const UserRoute = ({ children }) => {
     return <div className="loading-screen">Loading...</div>;
   }
   
-  if (userRole === 'admin') {
+  if (userRole === 'banned') {
+    return (
+      <div className="banned-screen" style={{ 
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+        minHeight: '100vh', background: '#0f0f1a', color: '#fff', textAlign: 'center', padding: '2rem' 
+      }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🚫</div>
+        <h1 style={{ marginBottom: '0.5rem' }}>Account Suspended</h1>
+        <p style={{ color: '#a5a5c0', maxWidth: '400px', lineHeight: 1.6 }}>
+          Your account has been suspended by an administrator. 
+          If you believe this is a mistake, please contact support.
+        </p>
+      </div>
+    );
+  }
+   if (userRole === 'admin') {
     return <Navigate to="/admin" />;
   }
   
@@ -134,12 +152,17 @@ const UserLayout = () => {
 
   return (
     <>
+      <a href="#main-content" className="skip-to-content">Skip to content</a>
       <Nav />
+      <Suspense fallback={null}>
+        <AnnouncementBanner />
+      </Suspense>
       {!checkingUsername && needsUsername && (
         <Suspense fallback={null}>
           <UsernameModal onComplete={() => setNeedsUsername(false)} />
         </Suspense>
       )}
+      <main id="main-content">
       <Routes>
         <Route path="/" element={<Book />} />
         <Route path="/discover" element={<Discover />} />
@@ -157,7 +180,10 @@ const UserLayout = () => {
         <Route path="/stats" element={<ReadingStats />} />
         <Route path="/notes" element={<BookNotes />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/user/:username" element={<PublicProfile />} />
+        <Route path="/fees" element={<FeesPage />} />
       </Routes>
+      </main>
       {!isCommunity && <AiWidget externalOpen={aiOpen} onToggle={handleAiToggle} />}
       {!isCommunity && <ChatSupport externalOpen={chatOpen} onToggle={handleChatToggle} />}
     </>

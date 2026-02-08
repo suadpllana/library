@@ -482,7 +482,7 @@
   margin: 0;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .author-detail {
     padding: 1.5rem 1rem;
     margin-top: 60px;
@@ -556,8 +556,10 @@
     gap: 1rem;
   }
 
+}
+
 @media (min-width: 768px) and (max-width: 1217px) {
   .author-books-grid {
     grid-template-columns: repeat(4, 1fr);
   }
-}}
+}

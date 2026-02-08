@@ -40,6 +40,7 @@ const WishlistModal = ({ watchlist, setWatchlist, setOpenModal, refreshWishlist 
           .from('wishlist')
           .update({ position: idx })
           .eq('id', item.id)
+          .eq('user_id', item.user_id)
       );
       
       await Promise.all(updates);

@@ -115,13 +115,21 @@ const Book = () => {
 
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
-    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+    // Validate email format properly
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newsletterEmail || !emailRegex.test(newsletterEmail)) {
       toast.error(t.pleaseProvideValidEmail);
       return;
     }
+    // Sanitize email before storing
+    const sanitizedEmail = newsletterEmail.trim().toLowerCase().slice(0, 254);
     try {
       const saved = JSON.parse(localStorage.getItem('newsletter') || '[]');
-      if (!saved.includes(newsletterEmail)) saved.unshift(newsletterEmail);
+      if (saved.includes(sanitizedEmail)) {
+        toast.info(t.alreadySubscribed || 'You are already subscribed!');
+        return;
+      }
+      saved.unshift(sanitizedEmail);
       localStorage.setItem('newsletter', JSON.stringify(saved.slice(0, 50)));
       setNewsletterEmail('');
       toast.success(t.thanksForSubscribing);

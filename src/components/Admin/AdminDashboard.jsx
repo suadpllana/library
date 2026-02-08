@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
 import './AdminDashboard.css';
@@ -111,7 +111,43 @@ const AdminDashboard = () => {
   const [reviewSearch, setReviewSearch] = useState('');
   const [reviewFilter, setReviewFilter] = useState('all');
 
+  // Ban user
+  const [banningUserId, setBanningUserId] = useState(null);
+  const [banReason, setBanReason] = useState('');
+
+  // Audit log
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLogsPage, setAuditLogsPage] = useState(0);
+  const [auditLogsTotalCount, setAuditLogsTotalCount] = useState(0);
+
+  // Edit announcement
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
+
+  // Fee payments
+  const [feePayments, setFeePayments] = useState([]);
+  const [feeFilter, setFeeFilter] = useState('all');
+  const [feesPage, setFeesPage] = useState(0);
+  const [feesTotalCount, setFeesTotalCount] = useState(0);
+  const [feeRejectId, setFeeRejectId] = useState(null);
+  const [feeRejectNote, setFeeRejectNote] = useState('');
+
+  // Confirm dialog state
+  const [confirmAction, setConfirmAction] = useState(null);
+
+  // Migration status (tracks whether admin_enhanced.sql has been run)
+  const [migrationReady, setMigrationReady] = useState(true);
+
   // Export functions
+  const sanitizeCSVValue = (value) => {
+    if (value == null) return '';
+    const str = String(value);
+    // Prevent CSV injection - prepend values starting with dangerous chars
+    if (/^[=+\-@\t\r]/.test(str)) {
+      return `'${str}`;
+    }
+    return str;
+  };
+
   const exportToCSV = (data, filename) => {
     if (data.length === 0) {
       toast.error('No data to export');
@@ -123,12 +159,12 @@ const AdminDashboard = () => {
       headers.join(','),
       ...data.map(row => 
         headers.map(header => {
-          const value = row[header];
+          const value = sanitizeCSVValue(row[header]);
           // Handle values with commas or quotes
-          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
             return `"${value.replace(/"/g, '""')}"`;
           }
-          return value ?? '';
+          return value;
         }).join(',')
       )
     ].join('\n');
@@ -138,6 +174,7 @@ const AdminDashboard = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+    URL.revokeObjectURL(link.href);
     toast.success(`Exported ${data.length} records to ${filename}.csv`);
   };
 
@@ -225,6 +262,10 @@ const AdminDashboard = () => {
       await fetchAnnouncements();
     } else if (activeTab === 'settings') {
       await fetchSystemSettings();
+    } else if (activeTab === 'audit') {
+      await fetchAuditLogs();
+    } else if (activeTab === 'fees') {
+      await fetchFeePayments();
     }
     setLoading(false);
   };
@@ -540,17 +581,15 @@ const AdminDashboard = () => {
 
       if (profilesError) throw profilesError;
 
-      // Fetch user emails from auth.users (using RPC or direct query if possible)
+      // Fetch user emails via server-side RPC (never use auth.admin on client)
       let emailsMap = {};
       try {
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-        if (!authError && authUsers?.users) {
-          authUsers.users.forEach(u => {
-            emailsMap[u.id] = u.email;
-          });
+        const { data: emailData, error: emailError } = await supabase.rpc('get_user_emails', { user_ids: userIds });
+        if (!emailError && emailData) {
+          emailData.forEach(u => { emailsMap[u.id] = u.email; });
         }
       } catch (e) {
-        console.error('Could not fetch user emails - admin API might not be available');
+        // Emails not available - non-critical
       }
 
       // Merge profiles and emails into loans
@@ -657,6 +696,7 @@ const AdminDashboard = () => {
       console.log('Update result:', data);
 
       toast.success(`Loan request ${action}!`);
+      logAdminAction(`loan_${action}`, 'loan', loanId, `${action} loan request`);
       setRejectingLoanId(null);
       setRejectMessage('');
       fetchLoanRequests();
@@ -679,6 +719,7 @@ const AdminDashboard = () => {
       if (error) throw error;
 
       toast.success('Book marked as returned!');
+      logAdminAction('mark_returned', 'loan', loanId, 'Marked book as returned');
       fetchLoanRequests();
     } catch (error) {
       console.error('Error marking as returned:', error);
@@ -696,6 +737,7 @@ const AdminDashboard = () => {
       if (error) throw error;
 
       toast.success(`User ${userName} deleted successfully`);
+      logAdminAction('delete_user', 'user', userId, `Deleted user ${userName}`);
       setDeletingUserId(null);
       fetchUsers();
     } catch (error) {
@@ -728,6 +770,7 @@ const AdminDashboard = () => {
       if (error) throw error;
 
       toast.success(`User ${inviteForm.email} invited successfully as ${inviteForm.role}!`);
+      logAdminAction('invite_user', 'user', null, `Invited ${inviteForm.email} as ${inviteForm.role}`);
       setShowInviteModal(false);
       setInviteForm({
         email: '',
@@ -771,6 +814,7 @@ const AdminDashboard = () => {
       }
 
       toast.success('Review deleted successfully');
+      logAdminAction('delete_review', 'review', reviewId, 'Deleted review');
       fetchReviews();
       fetchStats();
     } catch (error) {
@@ -998,21 +1042,79 @@ const AdminDashboard = () => {
 
   // Change user role
   const handleChangeRole = async (userId, newRole) => {
-    if (!confirm(`Change this user's role to ${newRole}?`)) return;
+    const targetUser = users.find(u => u.id === userId);
+    const userName = targetUser ? `${targetUser.first_name} ${targetUser.last_name}`.trim() : 'this user';
+    
+    if (userId === user?.id) {
+      toast.error('You cannot change your own role');
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to ${newRole === 'admin' ? 'promote' : 'demote'} ${userName} to ${newRole}?`)) return;
+    
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-      if (error) throw error;
-      toast.success(`User role updated to ${newRole}`);
-      fetchUsers();
-      if (userDetailId === userId) {
-        setUserDetail(prev => prev ? { ...prev, role: newRole } : prev);
+      // Try RPC function first (SECURITY DEFINER - bypasses RLS)
+      let success = false;
+      let rpcError = null;
+      
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('change_user_role', {
+        p_user_id: userId,
+        p_new_role: newRole
+      });
+      
+      if (rpcErr) {
+        rpcError = rpcErr;
+        // If RPC doesn't exist, fallback to direct update
+        if (rpcErr.message?.includes('function') || rpcErr.code === '42883' || rpcErr.message?.includes('does not exist')) {
+          // Try direct update (requires admin update RLS policy on profiles)
+          const { data: updateData, error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: newRole, updated_at: new Date().toISOString() })
+            .eq('id', userId)
+            .select();
+          
+          if (updateError) {
+            throw new Error(
+              `Direct update failed: ${updateError.message}. You need to run the database migration. ` +
+              `Go to your Supabase Dashboard → SQL Editor → paste the contents of admin_enhanced.sql and run it.`
+            );
+          }
+          
+          if (!updateData || updateData.length === 0) {
+            // RLS blocked the update silently
+            throw new Error(
+              'Role update blocked by Row Level Security. To fix this, go to your Supabase Dashboard → SQL Editor and run:\n\n' +
+              'CREATE POLICY "Admins can update any profile" ON profiles FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = \'admin\'));\n\n' +
+              'Or run the full admin_enhanced.sql migration from the supabase/migrations folder.'
+            );
+          }
+          success = true;
+        } else {
+          throw rpcErr;
+        }
+      } else {
+        success = true;
+      }
+      
+      if (success) {
+        toast.success(`${userName} ${newRole === 'admin' ? 'promoted to admin' : 'demoted to user'} successfully`);
+        
+        // Log the action
+        logAdminAction(
+          newRole === 'admin' ? 'promote_user' : 'demote_user',
+          'user',
+          userId,
+          `${newRole === 'admin' ? 'Promoted' : 'Demoted'} ${userName} to ${newRole}`
+        );
+        
+        fetchUsers();
+        if (userDetailId === userId) {
+          setUserDetail(prev => prev ? { ...prev, role: newRole } : prev);
+        }
       }
     } catch (error) {
       console.error('Error changing role:', error);
-      toast.error('Failed to change user role');
+      toast.error(`Failed to change role: ${error.message}`);
     }
   };
 
@@ -1076,6 +1178,7 @@ const AdminDashboard = () => {
       });
       if (error) throw error;
       toast.success('Announcement published!');
+      logAdminAction('create_announcement', 'announcement', null, `Published: ${announcementForm.title}`);
       setShowAnnouncementModal(false);
       setAnnouncementForm({ title: '', message: '', type: 'info' });
       fetchAnnouncements();
@@ -1107,8 +1210,10 @@ const AdminDashboard = () => {
       const { error } = await supabase.from('announcements').delete().eq('id', id);
       if (error) throw error;
       toast.success('Announcement deleted');
+      logAdminAction('delete_announcement', 'announcement', id, 'Deleted announcement');
       fetchAnnouncements();
     } catch (error) {
+      console.error('Error deleting announcement:', error);
       toast.error('Failed to delete announcement');
     }
   };
@@ -1155,12 +1260,221 @@ const AdminDashboard = () => {
       });
       if (error) throw error;
       toast.success('Settings saved successfully!');
+      logAdminAction('update_settings', 'settings', '1', 'Updated system settings');
     } catch (error) {
       console.error('Error saving settings:', error);
       toast.error('Failed to save settings — the settings table may not exist yet');
     } finally {
       setSavingSettings(false);
     }
+  };
+
+  // ===== BAN / UNBAN USER =====
+  const handleBanUser = async (userId, reason = '') => {
+    const targetUser = users.find(u => u.id === userId);
+    const userName = targetUser ? `${targetUser.first_name} ${targetUser.last_name}`.trim() : 'this user';
+    
+    try {
+      // Try RPC first
+      const { error: rpcErr } = await supabase.rpc('ban_user', {
+        p_user_id: userId,
+        p_ban: true,
+        p_reason: reason || 'Banned by admin'
+      });
+      
+      if (rpcErr) {
+        // Fallback to direct update
+        if (rpcErr.message?.includes('function') || rpcErr.code === '42883') {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ 
+              is_banned: true, 
+              banned_at: new Date().toISOString(),
+              ban_reason: reason || 'Banned by admin',
+              banned_by: user.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+          if (error) throw error;
+        } else {
+          throw rpcErr;
+        }
+      }
+      
+      toast.success(`${userName} has been banned`);
+      logAdminAction('ban_user', 'user', userId, `Banned ${userName}: ${reason || 'No reason provided'}`);
+      setBanningUserId(null);
+      setBanReason('');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error banning user:', error);
+      toast.error(`Failed to ban user: ${error.message}`);
+    }
+  };
+
+  const handleUnbanUser = async (userId) => {
+    const targetUser = users.find(u => u.id === userId);
+    const userName = targetUser ? `${targetUser.first_name} ${targetUser.last_name}`.trim() : 'this user';
+    
+    if (!confirm(`Unban ${userName}?`)) return;
+    
+    try {
+      const { error: rpcErr } = await supabase.rpc('ban_user', {
+        p_user_id: userId,
+        p_ban: false
+      });
+      
+      if (rpcErr) {
+        if (rpcErr.message?.includes('function') || rpcErr.code === '42883') {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ 
+              is_banned: false, 
+              banned_at: null,
+              ban_reason: null,
+              banned_by: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+          if (error) throw error;
+        } else {
+          throw rpcErr;
+        }
+      }
+      
+      toast.success(`${userName} has been unbanned`);
+      logAdminAction('unban_user', 'user', userId, `Unbanned ${userName}`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+      toast.error(`Failed to unban user: ${error.message}`);
+    }
+  };
+
+  // ===== AUDIT LOG =====
+  const logAdminAction = async (action, targetType, targetId = null, details = null) => {
+    if (!migrationReady) return; // Skip if migration not run
+    try {
+      const { error: rpcErr } = await supabase.rpc('log_admin_action', {
+        p_action: action,
+        p_target_type: targetType,
+        p_target_id: targetId,
+        p_details: details
+      });
+      
+      if (rpcErr) {
+        // Fallback to direct insert
+        if (rpcErr.message?.includes('function') || rpcErr.code === '42883') {
+          const { error: insertErr } = await supabase.from('admin_audit_log').insert({
+            admin_id: user.id,
+            admin_name: user?.user_metadata?.first_name || 'Admin',
+            action,
+            target_type: targetType,
+            target_id: targetId,
+            details
+          });
+          // If table doesn't exist, mark migration not ready
+          if (insertErr && (insertErr.code === '42P01' || insertErr.message?.includes('does not exist') || insertErr.code === 'PGRST204' || String(insertErr.code) === '404')) {
+            setMigrationReady(false);
+          }
+        }
+      }
+    } catch {
+      // Audit logging should never block the main action
+    }
+  };
+
+  const fetchAuditLogs = async (page = auditLogsPage) => {
+    try {
+      const { count, error: countErr } = await supabase
+        .from('admin_audit_log')
+        .select('*', { count: 'exact', head: true });
+      
+      // If table doesn't exist (404 or relation error), mark migration as not ready
+      if (countErr && (countErr.code === '42P01' || countErr.message?.includes('does not exist') 
+          || String(countErr?.code) === '404' || countErr?.message?.includes('relation')
+          || countErr?.code === 'PGRST204')) {
+        setMigrationReady(false);
+        setAuditLogs([]);
+        return;
+      }
+      
+      setAuditLogsTotalCount(count || 0);
+      setMigrationReady(true);
+      
+      const { data, error } = await supabase
+        .from('admin_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      
+      if (error) throw error;
+      setAuditLogs(data || []);
+    } catch (error) {
+      // Don't log 404 errors for missing tables
+      if (error?.code === '42P01' || error?.message?.includes('does not exist') || String(error?.code) === '404') {
+        setMigrationReady(false);
+        setAuditLogs([]);
+        return;
+      }
+      console.error('Error fetching audit logs:', error);
+      setAuditLogs([]);
+    }
+  };
+
+  // ===== EDIT ANNOUNCEMENT =====
+  const handleEditAnnouncement = async () => {
+    if (!editingAnnouncement) return;
+    if (!editingAnnouncement.title.trim() || !editingAnnouncement.message.trim()) {
+      toast.error('Title and message are required');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .update({
+          title: editingAnnouncement.title.trim(),
+          message: editingAnnouncement.message.trim(),
+          type: editingAnnouncement.type,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingAnnouncement.id);
+      if (error) throw error;
+      toast.success('Announcement updated');
+      logAdminAction('update_announcement', 'announcement', editingAnnouncement.id, `Updated: ${editingAnnouncement.title}`);
+      setEditingAnnouncement(null);
+      fetchAnnouncements();
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+      toast.error('Failed to update announcement');
+    }
+  };
+
+  // ===== DELETE CHAT CONVERSATION =====
+  const handleDeleteChatConversation = async (userId, userName) => {
+    if (!confirm(`Delete all messages from ${userName}? This cannot be undone.`)) return;
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('user_id', userId);
+      if (error) throw error;
+      toast.success(`Conversation with ${userName} deleted`);
+      logAdminAction('delete_conversation', 'chat', userId, `Deleted conversation with ${userName}`);
+      if (selectedChat?.user_id === userId) {
+        setSelectedChat(null);
+        setChatMessages([]);
+      }
+      fetchChatConversations();
+    } catch (error) {
+      toast.error('Failed to delete conversation');
+    }
+  };
+
+  // ===== REFRESH CURRENT TAB DATA =====
+  const handleRefreshTab = () => {
+    fetchData();
+    toast.info('Data refreshed');
   };
 
   // Filtered reviews
@@ -1207,6 +1521,103 @@ const AdminDashboard = () => {
     return new Date(loan.due_date) < new Date();
   };
 
+  // ===== FEE PAYMENTS =====
+  const fetchFeePayments = async (page = feesPage) => {
+    try {
+      let query = supabase
+        .from('fee_payments')
+        .select('*', { count: 'exact' });
+
+      if (feeFilter !== 'all') {
+        query = query.eq('status', feeFilter);
+      }
+
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Fetch related profiles and loans separately
+        const userIds = [...new Set(data.map(f => f.user_id).filter(Boolean))];
+        const loanIds = [...new Set(data.map(f => f.loan_id).filter(Boolean))];
+
+        const [profilesRes, loansRes] = await Promise.all([
+          userIds.length > 0
+            ? supabase.from('profiles').select('id, first_name, last_name, email, username').in('id', userIds)
+            : { data: [] },
+          loanIds.length > 0
+            ? supabase.from('loan_requests').select('id, book_title, book_authors, due_date, returned_at, status').in('id', loanIds)
+            : { data: [] }
+        ]);
+
+        const profilesMap = {};
+        (profilesRes.data || []).forEach(p => { profilesMap[p.id] = p; });
+        const loansMap = {};
+        (loansRes.data || []).forEach(l => { loansMap[l.id] = l; });
+
+        const enriched = data.map(fee => ({
+          ...fee,
+          profiles: profilesMap[fee.user_id] || null,
+          loan_requests: loansMap[fee.loan_id] || null
+        }));
+
+        setFeePayments(enriched);
+      } else {
+        setFeePayments([]);
+      }
+
+      setFeesTotalCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching fee payments:', error);
+    }
+  };
+
+  const handleVerifyFee = async (feeId) => {
+    try {
+      const { error } = await supabase
+        .from('fee_payments')
+        .update({
+          status: 'verified',
+          verified_at: new Date().toISOString(),
+          verified_by: user.id
+        })
+        .eq('id', feeId);
+
+      if (error) throw error;
+      toast.success('Payment verified successfully');
+      await fetchFeePayments();
+    } catch (error) {
+      console.error('Error verifying fee:', error);
+      toast.error('Failed to verify payment');
+    }
+  };
+
+  const handleRejectFee = async () => {
+    if (!feeRejectId) return;
+    try {
+      const { error } = await supabase
+        .from('fee_payments')
+        .update({
+          status: 'rejected',
+          admin_note: feeRejectNote || 'Payment could not be verified',
+          verified_at: new Date().toISOString(),
+          verified_by: user.id
+        })
+        .eq('id', feeRejectId);
+
+      if (error) throw error;
+      toast.success('Payment rejected');
+      setFeeRejectId(null);
+      setFeeRejectNote('');
+      await fetchFeePayments();
+    } catch (error) {
+      console.error('Error rejecting fee:', error);
+      toast.error('Failed to reject payment');
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -1232,6 +1643,12 @@ const AdminDashboard = () => {
         <h1>📊 Admin Dashboard</h1>
         <div className="admin-user-info">
           <span>Welcome, {user?.user_metadata?.first_name || 'Admin'}</span>
+          <Link to="/" className="back-to-app-btn">
+            🏠 Back to App
+          </Link>
+          <button onClick={handleRefreshTab} className="refresh-btn" title="Refresh current tab data">
+            🔄 Refresh
+          </button>
           <button onClick={handleSignOut} className="sign-out-btn">
             Sign Out
           </button>
@@ -1293,6 +1710,18 @@ const AdminDashboard = () => {
         >
           ⚙️ Settings
         </button>
+        <button 
+          className={`tab-btn ${activeTab === 'fees' ? 'active' : ''}`}
+          onClick={() => setActiveTab('fees')}
+        >
+          💰 Fees
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
+          onClick={() => setActiveTab('audit')}
+        >
+          🔍 Audit Log
+        </button>
       </nav>
       
       <main className="admin-content">
@@ -1347,6 +1776,14 @@ const AdminDashboard = () => {
                 </div>
               </div>
               
+              <div className="stat-card rejected">
+                <div className="stat-icon">❌</div>
+                <div className="stat-info">
+                  <span className="stat-value">{stats.rejectedLoans}</span>
+                  <span className="stat-label">Rejected</span>
+                </div>
+              </div>
+              
               <div className="stat-card returned">
                 <div className="stat-icon">📥</div>
                 <div className="stat-info">
@@ -1368,6 +1805,22 @@ const AdminDashboard = () => {
                 <div className="stat-info">
                   <span className="stat-value">{stats.avgRating}</span>
                   <span className="stat-label">Avg Rating</span>
+                </div>
+              </div>
+
+              <div className="stat-card wishlist">
+                <div className="stat-icon">💫</div>
+                <div className="stat-info">
+                  <span className="stat-value">{stats.totalWishlistItems}</span>
+                  <span className="stat-label">Wishlist Items</span>
+                </div>
+              </div>
+
+              <div className="stat-card collections">
+                <div className="stat-icon">📚</div>
+                <div className="stat-info">
+                  <span className="stat-value">{stats.totalCollections}</span>
+                  <span className="stat-label">Collections</span>
                 </div>
               </div>
             </div>
@@ -1415,6 +1868,37 @@ const AdminDashboard = () => {
                 >
                   <span className="action-icon">⭐</span>
                   <span>Moderate Reviews</span>
+                </button>
+                <button 
+                  className="quick-action-btn"
+                  onClick={() => setActiveTab('chat')}
+                >
+                  <span className="action-icon">💬</span>
+                  <span>Support Chat</span>
+                  {unreadChats > 0 && (
+                    <span className="action-badge warning">{unreadChats} unread</span>
+                  )}
+                </button>
+                <button 
+                  className="quick-action-btn"
+                  onClick={() => { setActiveTab('announcements'); setShowAnnouncementModal(true); }}
+                >
+                  <span className="action-icon">📢</span>
+                  <span>New Announcement</span>
+                </button>
+                <button 
+                  className="quick-action-btn"
+                  onClick={() => setActiveTab('analytics')}
+                >
+                  <span className="action-icon">📈</span>
+                  <span>View Analytics</span>
+                </button>
+                <button 
+                  className="quick-action-btn"
+                  onClick={() => setActiveTab('audit')}
+                >
+                  <span className="action-icon">🔍</span>
+                  <span>Audit Log</span>
                 </button>
               </div>
             </div>
@@ -1668,6 +2152,7 @@ const AdminDashboard = () => {
                         <td>
                           {u.first_name} {u.last_name}
                           {u.id === user?.id && <span className="you-badge">(You)</span>}
+                          {u.is_banned && <span className="banned-badge">BANNED</span>}
                         </td>
                         <td>{u.email}</td>
                         <td>
@@ -1693,15 +2178,30 @@ const AdminDashboard = () => {
                               >
                                 {u.role === 'admin' ? '⬇️' : '⬆️'} {u.role === 'admin' ? 'Demote' : 'Promote'}
                               </button>
-                              {u.role !== 'admin' && (
+                              {u.is_banned ? (
                                 <button
-                                  className="action-btn delete-sm"
-                                  onClick={() => setDeletingUserId(u.id)}
-                                  title="Delete user"
+                                  className="action-btn approve"
+                                  onClick={() => handleUnbanUser(u.id)}
+                                  title="Unban user"
                                 >
-                                  🗑️
+                                  🔓 Unban
+                                </button>
+                              ) : (
+                                <button
+                                  className="action-btn ban"
+                                  onClick={() => setBanningUserId(u.id)}
+                                  title="Ban user"
+                                >
+                                  🚫 Ban
                                 </button>
                               )}
+                              <button
+                                className="action-btn delete-sm"
+                                onClick={() => setDeletingUserId(u.id)}
+                                title="Delete user"
+                              >
+                                🗑️
+                              </button>
                             </>
                           )}
                         </td>
@@ -1898,6 +2398,13 @@ const AdminDashboard = () => {
                           <span>{selectedChat.user_email}</span>
                         </div>
                       </div>
+                      <button 
+                        className="action-btn delete-sm"
+                        onClick={() => handleDeleteChatConversation(selectedChat.user_id, selectedChat.user_name)}
+                        title="Delete conversation"
+                      >
+                        🗑️ Delete Chat
+                      </button>
                     </div>
                     
                     <div className="chat-messages-list">
@@ -2096,6 +2603,12 @@ const AdminDashboard = () => {
                       >
                         {ann.is_active ? '👁️‍🗨️ Hide' : '👁️ Show'}
                       </button>
+                      <button
+                        className="action-btn detail"
+                        onClick={() => setEditingAnnouncement({ id: ann.id, title: ann.title, message: ann.message, type: ann.type })}
+                      >
+                        ✏️ Edit
+                      </button>
                       <button 
                         className="action-btn delete-sm"
                         onClick={() => handleDeleteAnnouncement(ann.id)}
@@ -2268,6 +2781,174 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+          </div>
+        ) : activeTab === 'fees' ? (
+          /* FEES TAB */
+          <div className="fees-admin-section">
+            <div className="section-header">
+              <h2>💰 Fee Payments</h2>
+              <span className="section-subtitle">Verify or reject user fee payments for late book returns ($1/day)</span>
+            </div>
+
+            <div className="filter-bar">
+              {['all', 'pending', 'verified', 'rejected', 'unpaid'].map(f => (
+                <button
+                  key={f}
+                  className={`filter-btn ${feeFilter === f ? 'active' : ''}`}
+                  onClick={() => { setFeeFilter(f); setFeesPage(0); setTimeout(() => fetchFeePayments(0), 0); }}
+                >
+                  {f === 'all' ? '📋 All' : f === 'pending' ? '⏳ Pending' : f === 'verified' ? '✅ Verified' : f === 'rejected' ? '❌ Rejected' : '💸 Unpaid'}
+                </button>
+              ))}
+            </div>
+
+            {feePayments.length === 0 ? (
+              <p className="no-data">No fee payments found.</p>
+            ) : (
+              <>
+                <div className="table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Book</th>
+                        <th>Days Late</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {feePayments.map(fee => (
+                        <tr key={fee.id}>
+                          <td>
+                            <div className="user-cell">
+                              <strong>{fee.profiles?.first_name} {fee.profiles?.last_name}</strong>
+                              <small>{fee.profiles?.username || fee.profiles?.email}</small>
+                            </div>
+                          </td>
+                          <td>{fee.loan_requests?.book_title || 'Unknown'}</td>
+                          <td>{fee.days_overdue}</td>
+                          <td className="fee-amount-cell">${Number(fee.amount).toFixed(2)}</td>
+                          <td>
+                            <span className={`status-badge status-${fee.status}`}>
+                              {fee.status}
+                            </span>
+                          </td>
+                          <td>{fee.paid_at ? formatDate(fee.paid_at) : '—'}</td>
+                          <td className="actions-cell">
+                            {fee.status === 'pending' && (
+                              <div className="table-actions">
+                                <button className="action-btn approve" onClick={() => handleVerifyFee(fee.id)} title="Verify payment">
+                                  ✅ Verify
+                                </button>
+                                <button className="action-btn reject" onClick={() => { setFeeRejectId(fee.id); setFeeRejectNote(''); }} title="Reject payment">
+                                  ❌ Reject
+                                </button>
+                              </div>
+                            )}
+                            {fee.status === 'verified' && (
+                              <span className="verified-text">Verified {fee.verified_at ? formatDate(fee.verified_at) : ''}</span>
+                            )}
+                            {fee.status === 'rejected' && fee.admin_note && (
+                              <span className="rejected-note" title={fee.admin_note}>Note: {fee.admin_note.substring(0, 30)}...</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {feesTotalCount > PAGE_SIZE && (
+                  <div className="pagination-controls">
+                    <button className="pagination-btn" disabled={feesPage === 0} onClick={() => { const p = feesPage - 1; setFeesPage(p); fetchFeePayments(p); }}>← Previous</button>
+                    <span className="pagination-info">Page {feesPage + 1} of {Math.ceil(feesTotalCount / PAGE_SIZE)}</span>
+                    <button className="pagination-btn" disabled={(feesPage + 1) * PAGE_SIZE >= feesTotalCount} onClick={() => { const p = feesPage + 1; setFeesPage(p); fetchFeePayments(p); }}>Next →</button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : activeTab === 'audit' ? (
+          /* AUDIT LOG TAB */
+          <div className="audit-section">
+            <div className="section-header">
+              <h2>🔍 Admin Audit Log</h2>
+              <span className="audit-subtitle">Track all admin actions and changes</span>
+            </div>
+            {!migrationReady ? (
+              <div className="migration-notice">
+                <div className="migration-notice-icon">⚠️</div>
+                <h3>Database Setup Required</h3>
+                <p>The audit log table and admin RPC functions haven't been created yet. To enable full admin features (role changes, audit log, ban/unban), run the migration:</p>
+                <ol>
+                  <li>Go to your <strong>Supabase Dashboard</strong></li>
+                  <li>Open the <strong>SQL Editor</strong></li>
+                  <li>Paste the contents of <code>supabase/migrations/admin_enhanced.sql</code></li>
+                  <li>Click <strong>Run</strong></li>
+                </ol>
+                <p className="migration-notice-hint">This will create the <code>admin_audit_log</code> table, <code>change_user_role</code>, <code>ban_user</code>, and <code>log_admin_action</code> RPC functions, and the necessary RLS policies.</p>
+                <button className="action-btn" onClick={() => { setMigrationReady(true); fetchAuditLogs(); }}>🔄 Retry Connection</button>
+              </div>
+            ) : auditLogs.length === 0 ? (
+              <p className="no-data">No audit log entries yet. Admin actions will be recorded here automatically.</p>
+            ) : (
+              <>
+                <div className="table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Action</th>
+                        <th>Admin</th>
+                        <th>Target</th>
+                        <th>Details</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs.map((log) => (
+                        <tr key={log.id}>
+                          <td>
+                            <span className={`audit-action-badge ${log.action.includes('delete') || log.action.includes('ban') ? 'danger' : log.action.includes('promote') || log.action.includes('approve') ? 'success' : 'info'}`}>
+                              {log.action.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td>{log.admin_name || 'Unknown'}</td>
+                          <td>
+                            <span className="audit-target-type">{log.target_type}</span>
+                            {log.target_id && <span className="audit-target-id">{log.target_id.substring(0, 8)}...</span>}
+                          </td>
+                          <td className="audit-details">{log.details || '—'}</td>
+                          <td>{formatDate(log.created_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {auditLogsTotalCount > PAGE_SIZE && (
+                  <div className="pagination-controls">
+                    <button 
+                      className="pagination-btn"
+                      disabled={auditLogsPage === 0}
+                      onClick={() => { const p = auditLogsPage - 1; setAuditLogsPage(p); fetchAuditLogs(p); }}
+                    >
+                      ← Previous
+                    </button>
+                    <span className="pagination-info">
+                      Page {auditLogsPage + 1} of {Math.ceil(auditLogsTotalCount / PAGE_SIZE)}
+                    </span>
+                    <button 
+                      className="pagination-btn"
+                      disabled={(auditLogsPage + 1) * PAGE_SIZE >= auditLogsTotalCount}
+                      onClick={() => { const p = auditLogsPage + 1; setAuditLogsPage(p); fetchAuditLogs(p); }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         ) : null}
       </main>
@@ -2592,7 +3273,111 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Ban User Modal */}
+      {banningUserId && (
+        <div className="modal-overlay">
+          <div className="rejection-modal">
+            <h2>🚫 Ban User</h2>
+            <p>
+              Ban <strong>{users.find(u => u.id === banningUserId)?.first_name} {users.find(u => u.id === banningUserId)?.last_name}</strong>? 
+              They will not be able to access the application.
+            </p>
+            <textarea
+              className="rejection-textarea"
+              placeholder="Reason for banning (optional)..."
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+              rows="3"
+              maxLength={500}
+            />
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => { setBanningUserId(null); setBanReason(''); }}>
+                Cancel
+              </button>
+              <button className="modal-btn delete-confirm" onClick={() => handleBanUser(banningUserId, banReason)}>
+                🚫 Ban User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fee Reject Modal */}
+      {feeRejectId && (
+        <div className="modal-overlay">
+          <div className="rejection-modal">
+            <h2>❌ Reject Fee Payment</h2>
+            <p>Provide a reason for rejecting this payment:</p>
+            <textarea
+              className="rejection-textarea"
+              placeholder="e.g., Payment not received, incorrect amount, etc."
+              value={feeRejectNote}
+              onChange={(e) => setFeeRejectNote(e.target.value)}
+              rows="3"
+              maxLength={500}
+            />
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => { setFeeRejectId(null); setFeeRejectNote(''); }}>
+                Cancel
+              </button>
+              <button className="modal-btn confirm" onClick={handleRejectFee}>
+                Reject Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Announcement Modal */}
+      {editingAnnouncement && (
+        <div className="modal-overlay">
+          <div className="invite-modal">
+            <h2>✏️ Edit Announcement</h2>
+            <div className="invite-form">
+              <div className="form-group">
+                <label>Type</label>
+                <select 
+                  value={editingAnnouncement.type}
+                  onChange={(e) => setEditingAnnouncement(prev => ({ ...prev, type: e.target.value }))}
+                >
+                  <option value="info">ℹ️ Info</option>
+                  <option value="warning">⚠️ Warning</option>
+                  <option value="success">✅ Success</option>
+                  <option value="urgent">🚨 Urgent</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Title *</label>
+                <input 
+                  type="text"
+                  value={editingAnnouncement.title}
+                  onChange={(e) => setEditingAnnouncement(prev => ({ ...prev, title: e.target.value }))}
+                  maxLength={200}
+                />
+              </div>
+              <div className="form-group">
+                <label>Message *</label>
+                <textarea
+                  value={editingAnnouncement.message}
+                  onChange={(e) => setEditingAnnouncement(prev => ({ ...prev, message: e.target.value }))}
+                  rows="4"
+                  className="rejection-textarea"
+                  maxLength={2000}
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setEditingAnnouncement(null)}>Cancel</button>
+              <button className="modal-btn invite-confirm" onClick={handleEditAnnouncement}>
+                ✏️ Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 };
 

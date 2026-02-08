@@ -89,8 +89,9 @@ const Auth = () => {
         .eq('email', email)
         .maybeSingle();
 
+      // Always show generic message to prevent email enumeration
       if (!existingProfile) {
-        setError('No account found with this email address.');
+        setSuccess('If an account exists with this email, a password reset link has been sent.');
         setLoading(false);
         return;
       }

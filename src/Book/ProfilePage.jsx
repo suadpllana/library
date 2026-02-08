@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaArrowLeftLong, FaCamera, FaPen, FaFloppyDisk, FaXmark, FaBook, FaHeart, FaClock, FaStar, FaChartLine, FaTrophy, FaCalendarDays, FaCircleCheck, FaBookOpen, FaMedal, FaFire, FaBell } from "react-icons/fa6";
+import { FaArrowLeftLong, FaCamera, FaPen, FaFloppyDisk, FaXmark, FaBook, FaHeart, FaClock, FaStar, FaChartLine, FaTrophy, FaCalendarDays, FaCircleCheck, FaBookOpen, FaMedal, FaFire, FaBell, FaGear, FaDownload, FaTrashCan, FaShieldHalved } from "react-icons/fa6";
 import { supabase } from '../lib/supabase';
 import { getEmailPreferences, updateEmailPreferences } from '../lib/emailNotifications';
 import { useAuth } from '../context/AuthContext';
+import ConfirmDialog from '../components/ConfirmDialog';
 import './ProfilePage.css';
 import { useLanguage } from '../context/LanguageContext';
 import translations from '../i18n/translations';
@@ -41,6 +42,10 @@ const ProfilePage = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [emailPrefs, setEmailPrefs] = useState(null);
   const [savingPrefs, setSavingPrefs] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState(12);
+  const [exportingData, setExportingData] = useState(false);
 
   useEffect(() => {
     if (!authUser) {
@@ -289,6 +294,10 @@ const ProfilePage = () => {
     try {
       if (!authUser) return;
 
+      // Sanitize name inputs
+      const sanitizedFirst = sanitizeInput(editForm.first_name);
+      const sanitizedLast = sanitizeInput(editForm.last_name);
+
       // Validate username if provided
       if (editForm.username) {
         const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
@@ -313,8 +322,8 @@ const ProfilePage = () => {
         .from('profiles')
         .upsert({
           id: authUser.id,
-          first_name: editForm.first_name,
-          last_name: editForm.last_name,
+          first_name: sanitizedFirst,
+          last_name: sanitizedLast,
           username: editForm.username ? editForm.username.toLowerCase() : null,
           updated_at: new Date().toISOString()
         });
@@ -398,6 +407,99 @@ const ProfilePage = () => {
         } 
       } 
     });
+  };
+
+  // Sanitize text input - strip all HTML/script content, not just specific chars
+  const sanitizeInput = (text) => {
+    if (!text) return '';
+    // Strip all HTML tags completely
+    const stripped = text.replace(/<[^>]*>/g, '');
+    // Remove any remaining control characters
+    const cleaned = stripped.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    return cleaned.trim().slice(0, 100);
+  };
+
+  // Export personal data (GDPR compliance)
+  const handleExportData = async () => {
+    if (exportingData) return;
+    setExportingData(true);
+    try {
+      const [
+        { data: wishlistData },
+        { data: loansData },
+        { data: reviewsData },
+        { data: collectionsData },
+        { data: profileData }
+      ] = await Promise.all([
+        supabase.from('wishlist').select('*').eq('user_id', authUser.id),
+        supabase.from('loan_requests').select('*').eq('user_id', authUser.id),
+        supabase.from('book_reviews').select('*').eq('user_id', authUser.id),
+        supabase.from('reading_collections').select('*').eq('user_id', authUser.id),
+        supabase.from('profiles').select('*').eq('id', authUser.id).single()
+      ]);
+
+      const exportObj = {
+        exported_at: new Date().toISOString(),
+        profile: {
+          email: authUser.email,
+          first_name: profileData?.first_name,
+          last_name: profileData?.last_name,
+          username: profileData?.username,
+          created_at: authUser.created_at
+        },
+        wishlist: wishlistData || [],
+        loan_requests: loansData || [],
+        reviews: reviewsData || [],
+        collections: collectionsData || []
+      };
+
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `my_library_data_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success(t.dataExported || 'Your data has been exported!');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast.error(t.somethingWentWrong);
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  // Update reading goal
+  const handleSaveGoal = async () => {
+    const goal = Math.max(1, Math.min(365, parseInt(goalInput) || 12));
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authUser.id,
+          reading_goal: goal,
+          updated_at: new Date().toISOString()
+        });
+      if (error) throw error;
+      setUserProfile(prev => ({ ...prev, reading_goal: goal }));
+      setEditingGoal(false);
+      toast.success(t.goalUpdated || 'Reading goal updated!');
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      toast.error(t.somethingWentWrong);
+    }
+  };
+
+  // Delete account request
+  const handleDeleteAccount = async () => {
+    try {
+      // Sign out and notify
+      toast.info(t.accountDeleteRequested || 'Account deletion requested. Please contact support to complete the process.');
+      await supabase.auth.signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(t.somethingWentWrong);
+    }
   };
 
   const handleResetPassword = async () => {
@@ -562,6 +664,12 @@ const ProfilePage = () => {
             >
               <FaBell /> {t.emailNotifications || 'Email Notifications'}
             </button>
+            <button 
+              className={activeSection === 'settings' ? 'active' : ''}
+              onClick={() => setActiveSection('settings')}
+            >
+              <FaGear /> {t.settings || 'Settings'}
+            </button>
           </div>
 
           {/* Overview Section */}
@@ -571,7 +679,32 @@ const ProfilePage = () => {
               <div className="reading-goal-card">
                 <div className="goal-header">
                   <h3><FaBookOpen /> {t.readingGoal} {new Date().getFullYear()}</h3>
-                  <span className="goal-text">{stats.booksRead} / {userProfile?.reading_goal || 12} {t.booksReadGoal}</span>
+                  <div className="goal-header-right">
+                    {editingGoal ? (
+                      <div className="goal-edit-inline">
+                        <input 
+                          type="number" 
+                          min="1" max="365" 
+                          value={goalInput}
+                          onChange={(e) => setGoalInput(e.target.value)}
+                          className="goal-input"
+                        />
+                        <button className="goal-save-btn" onClick={handleSaveGoal}>
+                          <FaFloppyDisk />
+                        </button>
+                        <button className="goal-cancel-btn" onClick={() => setEditingGoal(false)}>
+                          <FaXmark />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="goal-text">{stats.booksRead} / {userProfile?.reading_goal || 12} {t.booksReadGoal}</span>
+                        <button className="goal-edit-btn" onClick={() => { setGoalInput(userProfile?.reading_goal || 12); setEditingGoal(true); }} title="Edit goal">
+                          <FaPen />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="progress-bar-container">
                   <div 
@@ -934,6 +1067,39 @@ const ProfilePage = () => {
               )}
             </div>
           )}
+          {/* Settings Section */}
+          {activeSection === 'settings' && (
+            <div className="settings-section">
+              <h3><FaGear /> {t.settings || 'Settings'}</h3>
+
+              {/* Data Privacy */}
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <FaShieldHalved />
+                  <h4>{t.dataPrivacy || 'Data & Privacy'}</h4>
+                </div>
+                <p className="settings-desc">{t.dataPrivacyDesc || 'Download all your personal data or request account deletion.'}</p>
+                
+                <div className="settings-actions">
+                  <button className="export-data-btn" onClick={handleExportData} disabled={exportingData}>
+                    <FaDownload /> {exportingData ? (t.exporting || 'Exporting...') : (t.exportMyData || 'Export My Data')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="settings-card danger-zone">
+                <div className="settings-card-header">
+                  <FaTrashCan />
+                  <h4>{t.dangerZone || 'Danger Zone'}</h4>
+                </div>
+                <p className="settings-desc">{t.deleteAccountWarning || 'Once you delete your account, there is no going back. Please be certain.'}</p>
+                <button className="delete-account-btn" onClick={() => setShowDeleteConfirm(true)}>
+                  <FaTrashCan /> {t.deleteAccount || 'Delete Account'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1005,6 +1171,14 @@ const ProfilePage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteAccount}
+        title={t.deleteAccount || 'Delete Account'}
+        message={t.deleteAccountConfirm || 'Are you sure you want to delete your account? This action cannot be undone. All your data including wishlist, reviews, and collections will be permanently lost.'}
+      />
     </div>
   );
 };

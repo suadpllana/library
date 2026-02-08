@@ -4,8 +4,10 @@ import './WishlistPage.css';
 import { toast } from 'react-toastify';
 import { FaArrowLeftLong, FaPlus, FaTrash } from "react-icons/fa6";
 import { MdGridView, MdViewList, MdSort } from "react-icons/md";
+import { FaFileExport, FaCheckSquare, FaRegSquare } from 'react-icons/fa';
 import WishlistModal from './WishlistModal';
 import AddBookModal from './AddBookModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../context/LanguageContext';
 import translations from '../i18n/translations';
@@ -22,6 +24,9 @@ const WishlistPage = () => {
   const [loanStatuses, setLoanStatuses] = useState({});
   const [requestingLoan, setRequestingLoan] = useState({});
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+  const [removingBook, setRemovingBook] = useState(null); // book to confirm removal
+  const [selectedBooks, setSelectedBooks] = useState([]); // bulk selection
+  const [selectMode, setSelectMode] = useState(false);
 
   useEffect(() => {
     fetchWishlist();
@@ -81,22 +86,78 @@ const WishlistPage = () => {
 
   const handleRemoveFromWatchlist = async (e, book) => {
     e.stopPropagation();
+    setRemovingBook(book);
+  };
+
+  const confirmRemove = async () => {
+    if (!removingBook) return;
     try {
       const { error } = await supabase
         .from('wishlist')
         .delete()
-        .eq('id', book.id);
+        .eq('id', removingBook.id);
 
       if (error) throw error;
 
-      const updatedWatchlist = watchlist.filter(item => item.id !== book.id);
+      const updatedWatchlist = watchlist.filter(item => item.id !== removingBook.id);
       setWatchlist(updatedWatchlist);
-      localStorage.setItem("wishlist_order", JSON.stringify(updatedWatchlist)); // ✅ update localStorage
+      localStorage.setItem("wishlist_order", JSON.stringify(updatedWatchlist));
       toast.success(t.removedFromWishlist);
     } catch (error) {
       console.error('Error removing book from wishlist:', error);
       toast.error(t.somethingWentWrong);
+    } finally {
+      setRemovingBook(null);
     }
+  };
+
+  const handleBulkRemove = async () => {
+    if (selectedBooks.length === 0) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      for (const bookId of selectedBooks) {
+        await supabase.from('wishlist').delete().eq('id', bookId).eq('user_id', user.id);
+      }
+      const updatedWatchlist = watchlist.filter(item => !selectedBooks.includes(item.id));
+      setWatchlist(updatedWatchlist);
+      localStorage.setItem("wishlist_order", JSON.stringify(updatedWatchlist));
+      toast.success(`${selectedBooks.length} book(s) removed`);
+      setSelectedBooks([]);
+      setSelectMode(false);
+    } catch (error) {
+      console.error('Error bulk removing:', error);
+      toast.error(t.somethingWentWrong);
+    }
+  };
+
+  const exportWishlist = () => {
+    if (watchlist.length === 0) {
+      toast.error('No books to export');
+      return;
+    }
+    const csvContent = [
+      'Title,Authors,Added Date',
+      ...watchlist.map(book => {
+        const title = (book.title || '').replace(/,/g, ';');
+        const authors = (book.authors?.join('; ') || 'Unknown').replace(/,/g, ';');
+        const date = book.created_at ? new Date(book.created_at).toLocaleDateString() : 'N/A';
+        return `"${title}","${authors}","${date}"`;
+      })
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `wishlist_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast.success('Wishlist exported!');
+  };
+
+  const toggleBookSelection = (bookId) => {
+    setSelectedBooks(prev => 
+      prev.includes(bookId) ? prev.filter(id => id !== bookId) : [...prev, bookId]
+    );
   };
 
   const handleBookClick = (book) => {
@@ -211,6 +272,21 @@ const WishlistPage = () => {
           <button className="sort-wishlist-btn" onClick={() => setOpenModal(true)}>
             <MdSort /> {t.sort || 'Sort'}
           </button>
+          <button className="export-btn" onClick={exportWishlist} title="Export wishlist">
+            <FaFileExport /> {t.export || 'Export'}
+          </button>
+          <button 
+            className={`select-btn ${selectMode ? 'active' : ''}`}
+            onClick={() => { setSelectMode(!selectMode); setSelectedBooks([]); }}
+            title="Select multiple"
+          >
+            {selectMode ? <FaCheckSquare /> : <FaRegSquare />} {t.select || 'Select'}
+          </button>
+          {selectMode && selectedBooks.length > 0 && (
+            <button className="bulk-remove-btn" onClick={handleBulkRemove}>
+              <FaTrash /> {t.removeSelected || 'Remove'} ({selectedBooks.length})
+            </button>
+          )}
         </div>
         <div className="toolbar-right">
           <input
@@ -250,7 +326,16 @@ const WishlistPage = () => {
       ) : (
         <div className={`watchlist-container ${viewMode}`}>
           {filteredBooks?.map((book) => (
-            <div key={book.id} className={`watchlist-item ${viewMode}`}>
+            <div key={book.id} className={`watchlist-item ${viewMode} ${selectedBooks.includes(book.id) ? 'selected' : ''}`}>
+              {selectMode && (
+                <label className="select-checkbox" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selectedBooks.includes(book.id)}
+                    onChange={() => toggleBookSelection(book.id)}
+                  />
+                </label>
+              )}
               {viewMode === 'list' ? (
                 // List View
                 <>
@@ -355,6 +440,14 @@ const WishlistPage = () => {
           onBookAdded={handleBookAdded}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!removingBook}
+        onClose={() => setRemovingBook(null)}
+        onConfirm={confirmRemove}
+        title="Remove from Wishlist"
+        message={`Are you sure you want to remove "${removingBook?.title || 'this book'}" from your wishlist?`}
+      />
     </div>
   );
 };

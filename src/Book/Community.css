@@ -15,6 +15,8 @@
 
 .community-sidebar {
   width: 280px;
+  min-width: 220px;
+  max-width: 280px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -23,6 +25,7 @@
   position: sticky;
   top: 70px;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -144,6 +147,12 @@
   border-radius: var(--radius-full);
   margin-left: auto;
   font-weight: 600;
+}
+
+/* User Search Section */
+.user-search-section {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border-color);
 }
 
 /* Online Users Section */
@@ -1070,6 +1079,26 @@
 
 .input-wrapper input:disabled {
   cursor: not-allowed;
+}
+
+/* Character Counter */
+.char-counter {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.char-counter.warning {
+  color: #facc15;
+}
+.char-counter.danger {
+  color: #f87171;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .send-btn {

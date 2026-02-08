@@ -9,12 +9,14 @@ import { toast } from 'react-toastify';
 import NotificationBell from '../components/NotificationBell';
 import ThemeToggle from '../components/ThemeToggle';
 import ConfirmDialog from '../components/ConfirmDialog';
+import UserSearch from './UserSearch';
 import "./Nav.css";
 
 const Nav = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, user } = useAuth();
@@ -24,16 +26,17 @@ const Nav = () => {
   const categoryRef = useRef(null);
 
   const isActive = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
-  const isDropdownActive = () => ['/discover', '/search', '/collections', '/history', '/stats', '/notes', '/community'].some(path => location.pathname.startsWith(path));
+  const isDropdownActive = () => ['/discover', '/search', '/collections', '/history', '/stats', '/notes', '/profile'].some(path => location.pathname.startsWith(path));
   const isCategoryPage = () => location.pathname.startsWith('/category');
   const currentCategoryName = location.state?.categoryName || null;
 
   const toggleMoreMenu = () => setShowMoreMenu(!showMoreMenu);
   const handleMenuItemClick = () => setShowMoreMenu(false);
 
-  // Close more menu when routing/navigation changes
+  // Close menus when routing/navigation changes
   useEffect(() => {
     setShowMoreMenu(false);
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -75,12 +78,13 @@ const Nav = () => {
           </Link>
         </div>
 
-        {/* 2. LINKS SECTION (Wishlist to Profile) */}
-        <div className="nav-center">
+        {/* 2. LINKS SECTION (Wishlist to Community) */}
+        <div className={`nav-center ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <Link to="/wishlist" className={isActive('/wishlist') ? 'active' : ''}>
             💫 {t('wishlist')} {wishlistCount > 0 && <span className="wishlist-badge">{wishlistCount}</span>}
           </Link>
-          <Link to="/loaned-books" className={isActive('/loaned-books') ? 'active' : ''}>📋 {t('loanedBooks')}</Link>
+          <Link to="/loaned-books" className={isActive('/loaned-books') ? 'active' : ''}>📋 {t('Loans')}</Link>
+          <Link to="/fees" className={isActive('/fees') ? 'active' : ''}>💰 {t('fees') || 'Fees'}</Link>
           
           <div className="category-wrapper" ref={categoryRef}>
             <button className={`category-trigger ${showCategories ? 'open' : ''} ${isCategoryPage() ? 'active' : ''}`} onClick={() => setShowCategories(!showCategories)}>
@@ -92,41 +96,59 @@ const Nav = () => {
           <Link to="/authors" className={isActive('/authors') ? 'active' : ''}>👨‍💼 {t('authors')}</Link>
 
           <div className="nav-dropdown" ref={dropdownRef}>
-            <span className={`nav-dropdown-trigger ${showMoreMenu ? 'open' : ''} ${isDropdownActive() ? 'active' : ''}`} onClick={toggleMoreMenu}>
+            <span 
+              className={`nav-dropdown-trigger ${showMoreMenu ? 'open' : ''} ${isDropdownActive() ? 'active' : ''}`} 
+              onClick={toggleMoreMenu}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMoreMenu(); } }}
+              role="button"
+              tabIndex={0}
+              aria-expanded={showMoreMenu}
+              aria-haspopup="true"
+            >
               📚 {t('Library')} <span className="arrow">▾</span>
             </span>
             {showMoreMenu && (
-              <div className="nav-dropdown-menu">
-                <Link to="/discover" onClick={handleMenuItemClick}>✨ {t('discover')}</Link>
-                <Link to="/search" onClick={handleMenuItemClick}>🔍 {t('search')}</Link>
-                <Link to="/community" onClick={handleMenuItemClick}>💬 {t('community')}</Link>
-                <Link to="/collections" onClick={handleMenuItemClick}>📚 {t('collections')}</Link>
-                <Link to="/history" onClick={handleMenuItemClick}>📖 {t('history')}</Link>
-                <Link to="/notes" onClick={handleMenuItemClick}>📝 {t('Notes') || 'Notes'}</Link>
-                <Link to="/stats" onClick={handleMenuItemClick}>📊 {t('Stats') || 'Statistics'}</Link>
+              <div className="nav-dropdown-menu" role="menu">
+                <Link to="/discover" onClick={handleMenuItemClick} role="menuitem">✨ {t('discover')}</Link>
+                <Link to="/search" onClick={handleMenuItemClick} role="menuitem">🔍 {t('search')}</Link>
+                <Link to="/collections" onClick={handleMenuItemClick} role="menuitem">📚 {t('collections')}</Link>
+                <Link to="/history" onClick={handleMenuItemClick} role="menuitem">📖 {t('history')}</Link>
+                <Link to="/notes" onClick={handleMenuItemClick} role="menuitem">📝 {t('Notes') || 'Notes'}</Link>
+                <Link to="/stats" onClick={handleMenuItemClick} role="menuitem">📊 {t('Stats') || 'Statistics'}</Link>
+                <Link to="/profile" onClick={handleMenuItemClick} role="menuitem">👤 {t('profile')}</Link>
               </div>
             )}
           </div>
 
-          <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>👤 {t('profile')}</Link>
+          <Link to="/community" className={isActive('/community') ? 'active' : ''}>💬 {t('community')}</Link>
         </div>
+
+        {/* Mobile hamburger toggle */}
+        <button 
+          className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`}
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          <span></span><span></span><span></span>
+        </button>
 
         {/* 3. NOTIF & SIGN OUT SECTION */}
         <div className="nav-right">
+          <UserSearch />
           <NotificationBell />
-          <div className="lang-switch" role="listbox" aria-label="Language selector">
-            <button
-              className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
-              aria-label="English"
-              onClick={() => setLang('en')}
-              title="English"
-            >🇬🇧 EN</button>
-            <button
-              className={`lang-btn ${lang === 'sq' ? 'active' : ''}`}
-              aria-label="Shqip"
-              onClick={() => setLang('sq')}
-              title="Shqip"
-            >🇦🇱 SQ</button>
+          <div className="lang-select-wrapper">
+            <select
+              className="lang-select"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              aria-label="Language selector"
+            >
+              <option value="en">🇬🇧 EN</option>
+              <option value="sq">🇦🇱 SQ</option>
+              <option value="de">🇩🇪 DE</option>
+              <option value="es">🇪🇸 ES</option>
+            </select>
           </div>
           <button onClick={() => setShowSignOutConfirm(true)} className="sign-out-btn">🚪 {t('signOut')}</button>
         </div>
